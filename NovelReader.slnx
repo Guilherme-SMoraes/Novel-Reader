@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NovelReader.API/NovelReader.API.csproj" />
+    <Project Path="src/NovelReader.Application/NovelReader.Application.csproj" />
+    <Project Path="src/NovelReader.Domain/NovelReader.Domain.csproj" />
+    <Project Path="src/NovelReader.Infrastructure/NovelReader.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NovelReader.Application.Tests/NovelReader.Application.Tests.csproj" />
+    <Project Path="tests/NovelReader.Domain.Tests/NovelReader.Domain.Tests.csproj" />
+    <Project Path="tests/NovelReader.Integration.Tests/NovelReader.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

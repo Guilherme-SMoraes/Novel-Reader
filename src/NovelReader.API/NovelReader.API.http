@@ -1,0 +1,6 @@
+@NovelReader.API_HostAddress = http://localhost:5092
+
+GET {{NovelReader.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

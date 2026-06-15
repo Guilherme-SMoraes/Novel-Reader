@@ -1,0 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NovelReader.Domain.Entities;
+
+namespace NovelReader.Infrastructure.Persistence.Configurations
+{
+    public class ProgressConfiguration : IEntityTypeConfiguration<Progress>
+    {
+        public void Configure(EntityTypeBuilder<Progress> builder)
+        {
+            builder.ToTable("Progresses");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.ReadingDescription)
+                .HasMaxLength(2500);
+
+            builder.OwnsOne(x => x.StoppedAtChapter, sc =>
+            {
+               sc.Property(w => w.Volume).HasColumnName("StoppedVolume");
+               sc.Property(w => w.Chapter).HasColumnName("StoppedChapter");
+            });
+        }
+    }
+}
