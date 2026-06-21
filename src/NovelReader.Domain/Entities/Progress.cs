@@ -12,6 +12,7 @@ namespace NovelReader.Domain.Entities
         public string? ReadingDescription { get; set; }
         public DateTime StoppedAt { get; init; }
 
+        private Progress(){ }
         public Progress(Guid workId, WorkChapter stoppedAtChapter, ReadingStatus readingStatus)
         {
             Id = Guid.NewGuid();

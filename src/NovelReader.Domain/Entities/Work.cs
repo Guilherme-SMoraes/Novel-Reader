@@ -20,6 +20,7 @@ namespace NovelReader.Domain.Entities
         public List<Character> Characters { get; private set; }
         public List<Progress> Progresses { get; private set; }
 
+        private Work(){ }
         public Work(string title, 
                     WorkType workType, 
                     string aggregatorLink, 

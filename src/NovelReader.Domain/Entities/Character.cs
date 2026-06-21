@@ -12,6 +12,8 @@ namespace NovelReader.Domain.Entities
         public WorkChapter FirstAppearance { get; init; }
         public Guid WorkId { get; init; }
 
+        private Character(){ }
+
         public Character(string name, CharacterType characterType, WorkChapter firstAppearance, Guid workId)
         {
             if (string.IsNullOrWhiteSpace(name))

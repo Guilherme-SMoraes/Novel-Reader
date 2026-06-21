@@ -1,7 +1,7 @@
 using NovelReader.Domain.Entities;
 using NovelReader.Domain.Enums;
 using NovelReader.Domain.ValueObjects;
-using NovelReader.Domain.Tests.Helpers;
+using NovelReader.Common.Tests.Helpers;
 
 namespace NovelReader.Domain.Tests.Entities;
 

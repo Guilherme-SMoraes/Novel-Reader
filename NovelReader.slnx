@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NovelReader.Application.Tests/NovelReader.Application.Tests.csproj" />
+    <Project Path="tests/NovelReader.Common.Tests/NovelReader.Common.Tests.csproj" />
     <Project Path="tests/NovelReader.Domain.Tests/NovelReader.Domain.Tests.csproj" />
     <Project Path="tests/NovelReader.Integration.Tests/NovelReader.Integration.Tests.csproj" />
   </Folder>
