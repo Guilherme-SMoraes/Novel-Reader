@@ -109,8 +109,8 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                     .SetProperty(w => w.LinkWhereToRead, work.LinkWhereToRead)
                     .SetProperty(w => w.TotalChapter.Volume, work.TotalChapter.Volume)
                     .SetProperty(w => w.TotalChapter.Chapter, work.TotalChapter.Chapter)
-                    .SetProperty(w => w.TranslatedUpTo.Volume, work.TranslatedUpTo?.Volume)
-                    .SetProperty(w => w.TranslatedUpTo.Chapter, work.TranslatedUpTo?.Chapter)
+                    .SetProperty(w => w.TranslatedUpTo!.Volume, work.TranslatedUpTo?.Volume)
+                    .SetProperty(w => w.TranslatedUpTo!.Chapter, work.TranslatedUpTo?.Chapter)
                     .SetProperty(w => w.TranslatedLanguage, work.TranslatedLanguage), 
                     cancellationToken);
 
