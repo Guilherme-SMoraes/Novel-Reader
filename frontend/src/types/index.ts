@@ -2,9 +2,9 @@ export type WorkType = 1 | 2 | 3 | 4 | 5;
 export const WorkTypeLabels: Record<WorkType, string> = {
   1: 'Novel',
   2: 'Web Novel',
-  3: 'Manga',
-  4: 'Manhwa',
-  5: 'Manhua',
+  3: 'Manhwa',
+  4: 'Manhua',
+  5: 'Manga',
 };
 
 export type Language = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -40,31 +40,35 @@ export interface WorkChapter {
   chapter: number;
 }
 
+export interface WorkFormat {
+  id?: string;
+  workId?: string;
+  workType: WorkType;
+  totalChapter: WorkChapter;
+  translatedUpTo?: WorkChapter | null;
+  isFullyTranslated?: boolean | null;
+  translatedLanguage?: Language | null;
+  linkWhereToRead?: string | null;
+}
+
 export interface Work {
   id: string;
   title: string;
   description: string | null;
-  workType: WorkType;
   aggregatorLink: string;
-  linkWhereToRead: string | null;
   coverImageUrl: string | null;
-  totalChapter: WorkChapter;
-  translatedUpTo: WorkChapter | null;
-  isFullyTranslated: boolean | null;
   originalLanguage: Language;
-  translatedLanguage: Language | null;
+  formats: WorkFormat[];
   genres?: Genre[];
 }
 
 export interface CreateWorkRequest {
   title: string;
   description?: string | null;
-  workType: WorkType;
   aggregatorLink: string;
-  linkWhereToRead?: string | null;
   coverImageUrl?: string | null;
-  totalChapter: WorkChapter;
   originalLanguage: Language;
+  formats: WorkFormat[];
   genreIds?: string[];
 }
 
@@ -72,17 +76,15 @@ export interface UpdateWorkRequest {
   title: string;
   description?: string | null;
   aggregatorLink: string;
-  linkWhereToRead?: string | null;
   coverImageUrl?: string | null;
-  totalChapter: WorkChapter;
-  translatedUpTo?: WorkChapter | null;
-  translatedLanguage?: Language | null;
+  formats: WorkFormat[];
   genreIds?: string[];
 }
 
 export interface Progress {
   id: string;
   workId: string;
+  workType: WorkType;
   stoppedAtChapter: WorkChapter;
   readingStatus: ReadingStatus;
   readingDescription: string | null;
@@ -91,6 +93,7 @@ export interface Progress {
 
 export interface CreateProgressRequest {
   workId: string;
+  workType: WorkType;
   stoppedAtChapter: WorkChapter;
   readingStatus: ReadingStatus;
   readingDescription?: string | null;

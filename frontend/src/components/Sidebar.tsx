@@ -219,13 +219,25 @@ export const Sidebar: React.FC<Props> = ({
                   <div style={{ fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {w.title}
                   </div>
-                  <div style={{ display: 'flex', gap: 4, margin: '4px 0' }}>
-                    <span className="badge badge-novel" style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
-                      {WorkTypeLabels[w.workType]}
-                    </span>
+                  <div style={{ display: 'flex', gap: 4, margin: '4px 0', flexWrap: 'wrap' }}>
+                    {w.formats && w.formats.length > 0 ? (
+                      w.formats.map((f) => (
+                        <span key={f.workType} className="badge badge-novel" style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
+                          {WorkTypeLabels[f.workType]}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="badge badge-novel" style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
+                        Obra
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                    Total: {w.totalChapter.chapter} caps
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    {w.formats && w.formats.length > 0 ? (
+                      w.formats.map((f) => `${WorkTypeLabels[f.workType]}: ${f.totalChapter.chapter} caps`).join(' • ')
+                    ) : (
+                      'Sem formatos'
+                    )}
                   </div>
                 </div>
               </div>

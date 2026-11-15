@@ -5,6 +5,7 @@ namespace NovelReader.Application.DTOs.Progress
 {
     public record CreateProgressRequest(
         Guid WorkId,
+        WorkType WorkType,
         WorkChapterDto StoppedAtChapter,
         ReadingStatus ReadingStatus,
         string? ReadingDescription

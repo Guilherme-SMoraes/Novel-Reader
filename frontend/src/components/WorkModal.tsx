@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkType } from '../types';
+import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkFormat, WorkType } from '../types';
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { GenreMultiSelect } from './GenreMultiSelect';
-import { X, Image as ImageIcon } from 'lucide-react';
+import { X, Image as ImageIcon, Layers } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -13,6 +13,18 @@ interface Props {
   onSaved: () => void;
   onOpenManageGenres?: () => void;
 }
+
+interface FormatFormState {
+  workType: WorkType;
+  chapter: string;
+  volume: string;
+  transChapter: string;
+  transVolume: string;
+  transLanguage: Language | '';
+  linkWhereToRead: string;
+}
+
+const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5];
 
 export const WorkModal: React.FC<Props> = ({
   isOpen,
@@ -24,17 +36,15 @@ export const WorkModal: React.FC<Props> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [workType, setWorkType] = useState<WorkType>(2); // Web Novel default
   const [originalLanguage, setOriginalLanguage] = useState<Language>(3); // Coreano default
-  const [translatedLanguage, setTranslatedLanguage] = useState<Language | ''>('');
   const [aggregatorLink, setAggregatorLink] = useState('');
-  const [linkWhereToRead, setLinkWhereToRead] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [volume, setVolume] = useState<string>('');
-  const [chapter, setChapter] = useState<string>('1');
-  const [transVolume, setTransVolume] = useState<string>('');
-  const [transChapter, setTransChapter] = useState<string>('');
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+
+  // Formatos
+  const [formats, setFormats] = useState<FormatFormState[]>([]);
+  const [activeTabWorkType, setActiveTabWorkType] = useState<WorkType>(2);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,36 +52,106 @@ export const WorkModal: React.FC<Props> = ({
     if (workToEdit) {
       setTitle(workToEdit.title);
       setDescription(workToEdit.description || '');
-      setWorkType(workToEdit.workType);
       setOriginalLanguage(workToEdit.originalLanguage);
-      setTranslatedLanguage(workToEdit.translatedLanguage || '');
       setAggregatorLink(workToEdit.aggregatorLink);
-      setLinkWhereToRead(workToEdit.linkWhereToRead || '');
       setCoverImageUrl(workToEdit.coverImageUrl || '');
-      setVolume(workToEdit.totalChapter.volume ? workToEdit.totalChapter.volume.toString() : '');
-      setChapter(workToEdit.totalChapter.chapter.toString());
-      setTransVolume(workToEdit.translatedUpTo?.volume ? workToEdit.translatedUpTo.volume.toString() : '');
-      setTransChapter(workToEdit.translatedUpTo?.chapter ? workToEdit.translatedUpTo.chapter.toString() : '');
       setSelectedGenreIds(workToEdit.genres ? workToEdit.genres.map((g) => g.id) : []);
+
+      if (workToEdit.formats && workToEdit.formats.length > 0) {
+        const loadedFormats: FormatFormState[] = workToEdit.formats.map((f) => ({
+          workType: f.workType,
+          chapter: f.totalChapter.chapter.toString(),
+          volume: f.totalChapter.volume ? f.totalChapter.volume.toString() : '',
+          transChapter: f.translatedUpTo ? f.translatedUpTo.chapter.toString() : '',
+          transVolume: f.translatedUpTo?.volume ? f.translatedUpTo.volume.toString() : '',
+          transLanguage: f.translatedLanguage || '',
+          linkWhereToRead: f.linkWhereToRead || '',
+        }));
+        setFormats(loadedFormats);
+        setActiveTabWorkType(loadedFormats[0].workType);
+      } else {
+        // Fallback para novo formato
+        setFormats([
+          {
+            workType: 2,
+            chapter: '100',
+            volume: '',
+            transChapter: '',
+            transVolume: '',
+            transLanguage: '',
+            linkWhereToRead: '',
+          },
+        ]);
+        setActiveTabWorkType(2);
+      }
     } else {
       setTitle('');
       setDescription('');
-      setWorkType(2);
       setOriginalLanguage(3);
-      setTranslatedLanguage('');
       setAggregatorLink('');
-      setLinkWhereToRead('');
       setCoverImageUrl('');
-      setVolume('');
-      setChapter('1');
-      setTransVolume('');
-      setTransChapter('');
       setSelectedGenreIds([]);
+      setFormats([
+        {
+          workType: 2,
+          chapter: '100',
+          volume: '',
+          transChapter: '',
+          transVolume: '',
+          transLanguage: '',
+          linkWhereToRead: '',
+        },
+      ]);
+      setActiveTabWorkType(2);
     }
     setError(null);
   }, [workToEdit, isOpen]);
 
   if (!isOpen) return null;
+
+  const toggleFormat = (wt: WorkType) => {
+    const exists = formats.some((f) => f.workType === wt);
+    if (exists) {
+      if (formats.length <= 1) {
+        setError('A obra deve conter pelo menos um formato.');
+        return;
+      }
+      const updated = formats.filter((f) => f.workType !== wt);
+      setFormats(updated);
+      if (activeTabWorkType === wt) {
+        setActiveTabWorkType(updated[0].workType);
+      }
+    } else {
+      const newFormat: FormatFormState = {
+        workType: wt,
+        chapter: '100',
+        volume: '',
+        transChapter: '',
+        transVolume: '',
+        transLanguage: '',
+        linkWhereToRead: '',
+      };
+      setFormats([...formats, newFormat]);
+      setActiveTabWorkType(wt);
+    }
+    setError(null);
+  };
+
+  const updateActiveFormatField = <K extends keyof FormatFormState>(
+    field: K,
+    value: FormatFormState[K]
+  ) => {
+    setFormats((prev) =>
+      prev.map((f) => {
+        if (f.workType === activeTabWorkType) {
+          return { ...f, [field]: value };
+        }
+        return f;
+      })
+    );
+  };
+
+  const activeFormat = formats.find((f) => f.workType === activeTabWorkType) || formats[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,30 +159,47 @@ export const WorkModal: React.FC<Props> = ({
     setError(null);
 
     try {
-      const chapterNum = parseInt(chapter, 10);
-      if (isNaN(chapterNum) || chapterNum <= 0) {
-        throw new Error('Capítulo total deve ser maior que zero.');
+      if (formats.length === 0) {
+        throw new Error('Selecione pelo menos um formato para a obra.');
       }
 
-      if (workToEdit) {
-        const hasTranslation = transChapter.trim() !== '';
-        const req: UpdateWorkRequest = {
-          title: title.trim(),
-          description: description.trim() || null,
-          aggregatorLink: aggregatorLink.trim(),
-          linkWhereToRead: linkWhereToRead.trim() || null,
-          coverImageUrl: coverImageUrl.trim() || null,
+      // Validar cada formato
+      const formattedList: WorkFormat[] = formats.map((f) => {
+        const chapterNum = parseInt(f.chapter, 10);
+        if (isNaN(chapterNum) || chapterNum <= 0) {
+          throw new Error(`O total de capítulos para o formato "${WorkTypeLabels[f.workType]}" deve ser maior que zero.`);
+        }
+
+        const hasTranslation = f.transChapter.trim() !== '';
+        const transNum = hasTranslation ? parseInt(f.transChapter, 10) : null;
+        if (transNum !== null && transNum > chapterNum) {
+          throw new Error(`Capítulos traduzidos de "${WorkTypeLabels[f.workType]}" não podem ultrapassar o total de capítulos.`);
+        }
+
+        return {
+          workType: f.workType,
           totalChapter: {
-            volume: volume ? parseInt(volume, 10) : null,
+            volume: f.volume ? parseInt(f.volume, 10) : null,
             chapter: chapterNum,
           },
           translatedUpTo: hasTranslation
             ? {
-                volume: transVolume ? parseInt(transVolume, 10) : null,
-                chapter: parseInt(transChapter, 10),
+                volume: f.transVolume ? parseInt(f.transVolume, 10) : null,
+                chapter: transNum!,
               }
             : null,
-          translatedLanguage: translatedLanguage ? (Number(translatedLanguage) as Language) : null,
+          translatedLanguage: f.transLanguage ? (Number(f.transLanguage) as Language) : null,
+          linkWhereToRead: f.linkWhereToRead.trim() || null,
+        };
+      });
+
+      if (workToEdit) {
+        const req: UpdateWorkRequest = {
+          title: title.trim(),
+          description: description.trim() || null,
+          aggregatorLink: aggregatorLink.trim(),
+          coverImageUrl: coverImageUrl.trim() || null,
+          formats: formattedList,
           genreIds: selectedGenreIds,
         };
         await worksApi.update(workToEdit.id, req);
@@ -110,15 +207,10 @@ export const WorkModal: React.FC<Props> = ({
         const req: CreateWorkRequest = {
           title: title.trim(),
           description: description.trim() || null,
-          workType,
           originalLanguage,
           aggregatorLink: aggregatorLink.trim(),
-          linkWhereToRead: linkWhereToRead.trim() || null,
           coverImageUrl: coverImageUrl.trim() || null,
-          totalChapter: {
-            volume: volume ? parseInt(volume, 10) : null,
-            chapter: chapterNum,
-          },
+          formats: formattedList,
           genreIds: selectedGenreIds,
         };
         await worksApi.create(req);
@@ -135,7 +227,7 @@ export const WorkModal: React.FC<Props> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: '640px', width: '100%', padding: '24px 28px' }}>
+      <div className="modal-content" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: '680px', width: '100%', padding: '24px 28px' }}>
         {/* Cabeçalho */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #1e293b', paddingBottom: 12 }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>
@@ -163,7 +255,7 @@ export const WorkModal: React.FC<Props> = ({
               required
               className="input-text"
               style={{ width: '100%' }}
-              placeholder="Ex: Omniscient Reader's Viewpoint"
+              placeholder="Ex: Solo Leveling"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -194,27 +286,9 @@ export const WorkModal: React.FC<Props> = ({
             />
           </div>
 
-          {/* Tipo e Idioma Original (se criando) */}
-          {!workToEdit && (
-            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                  Tipo de Obra *
-                </label>
-                <select
-                  className="input-text"
-                  style={{ width: '100%' }}
-                  value={workType}
-                  onChange={(e) => setWorkType(Number(e.target.value) as WorkType)}
-                >
-                  {Object.entries(WorkTypeLabels).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+          {/* Idioma Original (se criando) e Link Agregador */}
+          <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+            {!workToEdit && (
               <div style={{ flex: 1, minWidth: 0 }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                   Idioma Original *
@@ -232,8 +306,23 @@ export const WorkModal: React.FC<Props> = ({
                   ))}
                 </select>
               </div>
+            )}
+
+            <div style={{ flex: workToEdit ? 1 : 1, minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+                Link do Agregador (NovelUpdates, AniList, etc.) *
+              </label>
+              <input
+                type="url"
+                required
+                className="input-text"
+                style={{ width: '100%' }}
+                placeholder="https://novelupdates.com/series/..."
+                value={aggregatorLink}
+                onChange={(e) => setAggregatorLink(e.target.value)}
+              />
             </div>
-          )}
+          </div>
 
           {/* Capa com Prévia */}
           <div style={{ width: '100%' }}>
@@ -284,107 +373,168 @@ export const WorkModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Capítulos Totais */}
-          <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                Capítulo Total *
-              </label>
-              <input
-                type="number"
-                min="1"
-                required
-                className="input-text"
-                style={{ width: '100%' }}
-                placeholder="Ex: 551"
-                value={chapter}
-                onChange={(e) => setChapter(e.target.value)}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                Volume Total
-              </label>
-              <input
-                type="number"
-                min="1"
-                className="input-text"
-                style={{ width: '100%' }}
-                placeholder="Opcional"
-                value={volume}
-                onChange={(e) => setVolume(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Tradução (se editando) */}
-          {workToEdit && (
-            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                  Traduzido até Capítulo
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input-text"
-                  style={{ width: '100%' }}
-                  placeholder="Ex: 250"
-                  value={transChapter}
-                  onChange={(e) => setTransChapter(e.target.value)}
-                />
+          {/* SEÇÃO MULTIFORMATO */}
+          <div style={{ background: '#0b1120', border: '1px solid #334155', borderRadius: 10, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Layers size={18} color="#a855f7" />
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f8fafc' }}>
+                Formatos da Obra *
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                  Idioma da Tradução
-                </label>
-                <select
-                  className="input-text"
-                  style={{ width: '100%' }}
-                  value={translatedLanguage}
-                  onChange={(e) => setTranslatedLanguage(e.target.value ? (Number(e.target.value) as Language) : '')}
-                >
-                  <option value="">Nenhum / Não informado</option>
-                  {Object.entries(LanguageLabels).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                (Selecione um ou mais tipos: ex. Novel + Manhwa)
+              </span>
+            </div>
+
+            {/* Pílulas de seleção de formatos */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              {ALL_WORK_TYPES.map((wt) => {
+                const isSelected = formats.some((f) => f.workType === wt);
+                return (
+                  <button
+                    key={wt}
+                    type="button"
+                    onClick={() => toggleFormat(wt)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 20,
+                      fontSize: '0.8rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      background: isSelected ? '#7c3aed' : '#1e293b',
+                      color: isSelected ? '#ffffff' : '#94a3b8',
+                      border: isSelected ? '1px solid #a855f7' : '1px solid #334155',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {isSelected ? '✓ ' : '+ '}
+                    {WorkTypeLabels[wt]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Seletor de abas dos formatos ativos para configuração */}
+            {formats.length > 1 && (
+              <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid #334155', marginBottom: 14, paddingBottom: 6 }}>
+                {formats.map((f) => {
+                  const isActive = f.workType === activeTabWorkType;
+                  return (
+                    <button
+                      key={f.workType}
+                      type="button"
+                      onClick={() => setActiveTabWorkType(f.workType)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        fontSize: '0.8rem',
+                        fontWeight: isActive ? 700 : 500,
+                        background: isActive ? '#1e293b' : 'transparent',
+                        color: isActive ? '#38bdf8' : '#64748b',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Configurar {WorkTypeLabels[f.workType]}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Links Externos (2 Colunas) */}
-          <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                Link do Agregador *
-              </label>
-              <input
-                type="url"
-                required
-                className="input-text"
-                style={{ width: '100%' }}
-                placeholder="https://novelupdates.com/..."
-                value={aggregatorLink}
-                onChange={(e) => setAggregatorLink(e.target.value)}
-              />
-            </div>
+            {/* Campos de configuração do Formato Ativo */}
+            {activeFormat && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#38bdf8' }}>
+                  Capítulos & Links para {WorkTypeLabels[activeFormat.workType]}:
+                </div>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-                Link de Onde Você Lê (opcional)
-              </label>
-              <input
-                type="url"
-                className="input-text"
-                style={{ width: '100%' }}
-                placeholder="https://site-leitura.com/..."
-                value={linkWhereToRead}
-                onChange={(e) => setLinkWhereToRead(e.target.value)}
-              />
-            </div>
+                {/* Capítulos Totais do Formato */}
+                <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Capítulo Total * ({WorkTypeLabels[activeFormat.workType]})
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      className="input-text"
+                      style={{ width: '100%' }}
+                      placeholder="Ex: 270"
+                      value={activeFormat.chapter}
+                      onChange={(e) => updateActiveFormatField('chapter', e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Volume Total (opcional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="input-text"
+                      style={{ width: '100%' }}
+                      placeholder="Opcional"
+                      value={activeFormat.volume}
+                      onChange={(e) => updateActiveFormatField('volume', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Tradução do Formato */}
+                <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Traduzido até Capítulo (opcional)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input-text"
+                      style={{ width: '100%' }}
+                      placeholder="Ex: 200"
+                      value={activeFormat.transChapter}
+                      onChange={(e) => updateActiveFormatField('transChapter', e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Idioma da Tradução
+                    </label>
+                    <select
+                      className="input-text"
+                      style={{ width: '100%' }}
+                      value={activeFormat.transLanguage}
+                      onChange={(e) =>
+                        updateActiveFormatField('transLanguage', e.target.value ? (Number(e.target.value) as Language) : '')
+                      }
+                    >
+                      <option value="">Nenhum / Não informado</option>
+                      {Object.entries(LanguageLabels).map(([val, label]) => (
+                        <option key={val} value={val}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Link de Leitura do Formato */}
+                <div style={{ width: '100%' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                    Link de Onde Você Lê {WorkTypeLabels[activeFormat.workType]} (opcional)
+                  </label>
+                  <input
+                    type="url"
+                    className="input-text"
+                    style={{ width: '100%' }}
+                    placeholder={`Ex: https://site-leitura-${WorkTypeLabels[activeFormat.workType].toLowerCase()}.com`}
+                    value={activeFormat.linkWhereToRead}
+                    onChange={(e) => updateActiveFormatField('linkWhereToRead', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Rodapé com Ações */}

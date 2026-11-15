@@ -9,28 +9,34 @@ namespace NovelReader.Domain.Entities
         public string Title { get; set; }
         public string? Description { get; set; }
         public List<Genre> Genres { get; private set; }
-        public WorkType WorkType { get; init; }
         public string AggregatorLink { get; set; }
-        public string? LinkWhereToRead { get; set; }
         public string? CoverImageUrl { get; set; }
-        public WorkChapter TotalChapter { get; private set; }
-        public WorkChapter? TranslatedUpTo { get; private set; }
-        public bool? IsFullyTranslated => TranslatedUpTo == null ? null : TotalChapter == TranslatedUpTo;
         public Language OriginalLanguage { get; init; }
-        public Language? TranslatedLanguage { get; private set; }
+        public List<WorkFormat> Formats { get; private set; }
         public List<Character> Characters { get; private set; }
         public List<Progress> Progresses { get; private set; }
         public List<Attachment> Attachments { get; private set; }
 
 #pragma warning disable CS8618
-        private Work(){ }
+        private Work() { }
 #pragma warning restore CS8618
-        public Work(string title, 
-                    WorkType workType, 
-                    string aggregatorLink, 
-                    WorkChapter totalChapter,
+
+        public Work(string title,
+                    string aggregatorLink,
+                    Language originalLanguage)
+            : this(Guid.NewGuid(), title, aggregatorLink, originalLanguage)
+        {
+        }
+
+        public Work(Guid id,
+                    string title,
+                    string aggregatorLink,
                     Language originalLanguage)
         {
+            if (id == Guid.Empty)
+            {
+                throw new ArgumentException("Id não pode ser vazio");
+            }
             if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException("Título não pode ser vazio");
@@ -40,16 +46,33 @@ namespace NovelReader.Domain.Entities
                 throw new ArgumentException("O Link do agregador não pode ser vazio");
             }
 
-            Id = Guid.NewGuid();
+            Id = id;
             Title = title;
-            WorkType = workType;
             AggregatorLink = aggregatorLink;
-            TotalChapter = totalChapter;
             OriginalLanguage = originalLanguage;
+            Formats = new();
             Genres = new();
             Characters = new();
             Progresses = new();
             Attachments = new();
+        }
+
+        public void AddFormat(WorkFormat format)
+        {
+            if (Formats.Any(x => x.WorkType == format.WorkType))
+            {
+                throw new InvalidOperationException($"A obra já possui o formato {format.WorkType}.");
+            }
+            Formats.Add(format);
+        }
+
+        public void RemoveFormat(WorkType workType)
+        {
+            if (Formats.Count <= 1)
+            {
+                throw new InvalidOperationException("A obra deve conter pelo menos um formato.");
+            }
+            Formats.RemoveAll(x => x.WorkType == workType);
         }
 
         public void AddGenre(Genre genre)
@@ -60,30 +83,35 @@ namespace NovelReader.Domain.Entities
             }
             Genres.Add(genre);
         }
+
         public void RemoveGenre(Guid id)
         {
             Genres.RemoveAll(x => x.Id == id);
         }
+
         public void AddCharacter(Character character)
         {
-            if(Characters.Any(x => x.Id == character.Id))
+            if (Characters.Any(x => x.Id == character.Id))
             {
                 return;
             }
             Characters.Add(character);
         }
+
         public void RemoveCharacter(Guid id)
         {
-            Characters.RemoveAll(x => x.Id==id);
+            Characters.RemoveAll(x => x.Id == id);
         }
+
         public void AddProgress(Progress progress)
         {
-            if(Progresses.Any(x => x.Id == progress.Id))
+            if (Progresses.Any(x => x.Id == progress.Id))
             {
                 return;
             }
             Progresses.Add(progress);
         }
+
         public void AddAttachment(Attachment attachment)
         {
             if (Attachments.Any(x => x.Id == attachment.Id))
@@ -92,27 +120,10 @@ namespace NovelReader.Domain.Entities
             }
             Attachments.Add(attachment);
         }
+
         public void RemoveAttachment(Guid id)
         {
             Attachments.RemoveAll(x => x.Id == id);
-        }
-        public void UpdateTotalChapters(WorkChapter totalChapter)
-        {
-            if(TranslatedUpTo != null && totalChapter < TranslatedUpTo)
-            {
-                throw new InvalidOperationException("O total de capítulos não pode ser menor que os capítulos traduzidos.");
-            }
-            TotalChapter = totalChapter;
-        }
-
-        public void UpdateTranslatedChapters(WorkChapter translatedChapters, Language translatedLanguage)
-        {
-            if(translatedChapters > TotalChapter)
-            {
-                throw new InvalidOperationException("Os capítulos traduzidos não podem ultrapassar o total de capítulos.");
-            }
-            TranslatedUpTo = translatedChapters;
-            TranslatedLanguage = translatedLanguage;
         }
     }
 }

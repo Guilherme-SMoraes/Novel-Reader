@@ -35,11 +35,12 @@ namespace NovelReader.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByWorkId(
             [FromRoute] Guid workId,
+            [FromQuery] NovelReader.Domain.Enums.WorkType? workType = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             CancellationToken cancellationToken = default)
         {
-            var result = await _progressService.GetByWorkIdAsync(workId, page, pageSize, cancellationToken);
+            var result = await _progressService.GetByWorkIdAsync(workId, workType, page, pageSize, cancellationToken);
             return Ok(result);
         }
 

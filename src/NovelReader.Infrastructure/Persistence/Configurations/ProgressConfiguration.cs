@@ -10,6 +10,7 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Progresses");
             builder.HasKey(x => x.Id);
+            builder.Property(x => x.WorkType).IsRequired();
             builder.Property(x => x.ReadingDescription)
                 .HasColumnType("text");
 
@@ -18,6 +19,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                sc.Property(w => w.Volume).HasColumnName("StoppedVolume");
                sc.Property(w => w.Chapter).HasColumnName("StoppedChapter");
             });
+
+            builder.HasIndex(x => new { x.WorkId, x.WorkType });
         }
     }
 }

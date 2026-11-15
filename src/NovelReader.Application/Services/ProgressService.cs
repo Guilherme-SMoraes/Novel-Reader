@@ -3,6 +3,7 @@ using NovelReader.Application.DTOs.Progress;
 using NovelReader.Application.Interfaces;
 using NovelReader.Domain.Common;
 using NovelReader.Domain.Entities;
+using NovelReader.Domain.Enums;
 using NovelReader.Domain.Interfaces.Repositories;
 using NovelReader.Domain.ValueObjects;
 
@@ -38,8 +39,14 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Obra com ID {request.WorkId} não encontrada.");
             }
 
+            var format = work.Formats.FirstOrDefault(f => f.WorkType == request.WorkType);
+            if (format is null)
+            {
+                throw new InvalidOperationException($"A obra não possui o formato {request.WorkType}.");
+            }
+
             var stoppedChapter = new WorkChapter(request.StoppedAtChapter.Volume, request.StoppedAtChapter.Chapter);
-            var progress = new Progress(request.WorkId, stoppedChapter, request.ReadingStatus)
+            var progress = new Progress(request.WorkId, request.WorkType, stoppedChapter, request.ReadingStatus)
             {
                 ReadingDescription = request.ReadingDescription
             };
@@ -49,7 +56,7 @@ namespace NovelReader.Application.Services
             return ProgressResponse.FromEntity(progress);
         }
 
-        public async Task<PagedResult<ProgressResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ProgressResponse>> GetByWorkIdAsync(Guid workId, WorkType? workType, int page, int pageSize, CancellationToken cancellationToken = default)
         {
             var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
             if (work is null)
@@ -57,7 +64,7 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }
 
-            var pagedProgress = await _progressRepository.GetByWorkIdAsync(workId, page, pageSize, cancellationToken);
+            var pagedProgress = await _progressRepository.GetByWorkIdAsync(workId, workType, page, pageSize, cancellationToken);
             var items = pagedProgress.Items.Select(ProgressResponse.FromEntity);
 
             return new PagedResult<ProgressResponse>(items, pagedProgress.TotalCount, pagedProgress.Page, pagedProgress.PageSize);

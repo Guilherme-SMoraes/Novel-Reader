@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import type { CreateProgressRequest, ReadingStatus } from '../types';
-import { ReadingStatusLabels } from '../types';
+import type { CreateProgressRequest, ReadingStatus, WorkFormat } from '../types';
+import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   workId: string;
+  currentFormat: WorkFormat;
   lastChapter?: number;
   onClose: () => void;
   onCreated: () => void;
@@ -15,6 +16,7 @@ interface Props {
 export const CreateProgressModal: React.FC<Props> = ({
   isOpen,
   workId,
+  currentFormat,
   lastChapter,
   onClose,
   onCreated,
@@ -38,9 +40,13 @@ export const CreateProgressModal: React.FC<Props> = ({
       if (isNaN(chapterNum) || chapterNum <= 0) {
         throw new Error('Capítulo deve ser maior que zero.');
       }
+      if (chapterNum > currentFormat.totalChapter.chapter) {
+        throw new Error(`Capítulo não pode ser maior que o total do formato (${currentFormat.totalChapter.chapter}).`);
+      }
 
       const req: CreateProgressRequest = {
         workId,
+        workType: currentFormat.workType,
         stoppedAtChapter: {
           volume: volume ? parseInt(volume, 10) : null,
           chapter: chapterNum,
@@ -63,7 +69,12 @@ export const CreateProgressModal: React.FC<Props> = ({
     <div className="modal-overlay">
       <div className="modal-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Registrar Progresso de Leitura</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Registrar Progresso</h2>
+            <span className="badge badge-novel" style={{ fontSize: '0.72rem' }}>
+              {WorkTypeLabels[currentFormat.workType]}
+            </span>
+          </div>
           <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
             <X size={20} />
           </button>
@@ -78,19 +89,44 @@ export const CreateProgressModal: React.FC<Props> = ({
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Capítulo Onde Parou *</label>
-              <input type="number" min="1" required value={chapter} onChange={(e) => setChapter(e.target.value)} style={{ width: '100%' }} />
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                Capítulo Onde Parou * (Máx: {currentFormat.totalChapter.chapter})
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={currentFormat.totalChapter.chapter}
+                required
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+                style={{ width: '100%' }}
+              />
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Volume (opcional)</label>
-              <input type="number" min="1" value={volume} onChange={(e) => setVolume(e.target.value)} style={{ width: '100%' }} placeholder="Ex: 2" />
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                Volume (opcional)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+                style={{ width: '100%' }}
+                placeholder="Ex: 2"
+              />
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status da Leitura</label>
-            <select value={readingStatus} onChange={(e) => setReadingStatus(Number(e.target.value) as ReadingStatus)} style={{ width: '100%' }}>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Status da Leitura
+            </label>
+            <select
+              value={readingStatus}
+              onChange={(e) => setReadingStatus(Number(e.target.value) as ReadingStatus)}
+              style={{ width: '100%' }}
+            >
               {Object.entries(ReadingStatusLabels).map(([val, label]) => (
                 <option key={val} value={val}>{label}</option>
               ))}
@@ -99,20 +135,22 @@ export const CreateProgressModal: React.FC<Props> = ({
 
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Diário de Leitura & Reflexões (sem limite de tamanho)
+              Diário de Leitura / Reflexão (opcional)
             </label>
             <textarea
-              rows={5}
+              rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              style={{ width: '100%', resize: 'vertical', lineHeight: '1.5' }}
-              placeholder="Escreva seus pensamentos sobre o que está acontecendo na história, impressões do arco, acontecimentos marcantes..."
+              placeholder="Ex: Neste capítulo o protagonista usou a habilidade X para derrotar o boss..."
+              style={{ width: '100%', resize: 'vertical' }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
-            <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
-            <button type="submit" disabled={loading} className="btn-primary">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+            <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Salvando...' : 'Salvar Progresso'}
             </button>
           </div>

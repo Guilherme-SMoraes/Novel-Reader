@@ -99,8 +99,13 @@ export const worksApi = {
 };
 
 export const progressApi = {
-  getByWorkId: (workId: string, page = 1, pageSize = 20) =>
-    request<PagedResult<Progress>>(`/works/${workId}/progress?page=${page}&pageSize=${pageSize}`),
+  getByWorkId: (workId: string, workType?: WorkType, page = 1, pageSize = 20) => {
+    const q = new URLSearchParams();
+    if (workType) q.append('workType', workType.toString());
+    q.append('page', page.toString());
+    q.append('pageSize', pageSize.toString());
+    return request<PagedResult<Progress>>(`/works/${workId}/progress?${q.toString()}`);
+  },
 
   create: (data: CreateProgressRequest) =>
     request<Progress>(`/works/${data.workId}/progress`, {

@@ -27,7 +27,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Where(x => x.Id == id)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            if(deleted == 0)
+            if (deleted == 0)
             {
                 throw new KeyNotFoundException($"Work {id} não encontrado");
             }
@@ -39,11 +39,12 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             {
                 return new PagedResult<Work>([], 0, page, pageSize);
             }
-            
+
             var query = _context.Works
                 .AsNoTracking()
                 .Include(x => x.Genres)
-                .Where(x => EF.Functions.ILike(x.Title,$"%{name}%"));
+                .Include(x => x.Formats)
+                .Where(x => EF.Functions.ILike(x.Title, $"%{name}%"));
 
             var total = await query.CountAsync(cancellationToken);
 
@@ -51,7 +52,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
-            
+
             return new PagedResult<Work>(items, total, page, pageSize);
         }
 
@@ -72,6 +73,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             var query = _context.Works
                 .AsNoTracking()
                 .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .Include(x => x.Progresses)
                 .AsQueryable();
 
@@ -82,7 +84,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
             if (workType.HasValue)
             {
-                query = query.Where(x => x.WorkType == workType.Value);
+                query = query.Where(x => x.Formats.Any(f => f.WorkType == workType.Value));
             }
 
             if (genreId.HasValue)
@@ -92,7 +94,19 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
             if (readingStatus.HasValue)
             {
-                query = query.Where(x => x.Progresses.OrderByDescending(p => p.StoppedAt).Select(p => p.ReadingStatus).FirstOrDefault() == readingStatus.Value);
+                if (workType.HasValue)
+                {
+                    query = query.Where(x => x.Progresses.Where(p => p.WorkType == workType.Value)
+                                                .OrderByDescending(p => p.StoppedAt)
+                                                .Select(p => p.ReadingStatus)
+                                                .FirstOrDefault() == readingStatus.Value);
+                }
+                else
+                {
+                    query = query.Where(x => x.Progresses.OrderByDescending(p => p.StoppedAt)
+                                                .Select(p => p.ReadingStatus)
+                                                .FirstOrDefault() == readingStatus.Value);
+                }
             }
 
             var total = await query.CountAsync(cancellationToken);
@@ -112,6 +126,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .Include(x => x.Characters)
                 .Include(x => x.Progresses)
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -122,6 +137,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             var query = _context.Works
                 .AsNoTracking()
                 .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .Where(x => x.Genres.Any(w => w.Id == genreId));
 
             var total = await query.CountAsync(cancellationToken);
@@ -136,25 +152,51 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
         public async Task UpdateAsync(Work work, CancellationToken cancellationToken)
         {
-            var updated = await _context.Works
-                .Where(x => x.Id == work.Id)
-                .ExecuteUpdateAsync(x => x
-                    .SetProperty(w => w.Title, work.Title)
-                    .SetProperty(w => w.Description, work.Description)
-                    .SetProperty(w => w.AggregatorLink, work.AggregatorLink)
-                    .SetProperty(w => w.LinkWhereToRead, work.LinkWhereToRead)
-                    .SetProperty(w => w.CoverImageUrl, work.CoverImageUrl)
-                    .SetProperty(w => w.TotalChapter.Volume, work.TotalChapter.Volume)
-                    .SetProperty(w => w.TotalChapter.Chapter, work.TotalChapter.Chapter)
-                    .SetProperty(w => w.TranslatedUpTo!.Volume, work.TranslatedUpTo?.Volume)
-                    .SetProperty(w => w.TranslatedUpTo!.Chapter, work.TranslatedUpTo?.Chapter)
-                    .SetProperty(w => w.TranslatedLanguage, work.TranslatedLanguage), 
-                    cancellationToken);
+            var existingWork = await _context.Works
+                .Include(x => x.Formats)
+                .FirstOrDefaultAsync(x => x.Id == work.Id, cancellationToken);
 
-            if(updated == 0)
+            if (existingWork is null)
             {
                 throw new KeyNotFoundException($"Work {work.Id} não encontrado");
             }
+
+            existingWork.Title = work.Title;
+            existingWork.Description = work.Description;
+            existingWork.AggregatorLink = work.AggregatorLink;
+            existingWork.CoverImageUrl = work.CoverImageUrl;
+
+            var targetTypes = work.Formats.Select(f => f.WorkType).ToHashSet();
+            existingWork.Formats.RemoveAll(f => !targetTypes.Contains(f.WorkType));
+
+            foreach (var format in work.Formats)
+            {
+                var existingFormat = existingWork.Formats.FirstOrDefault(f => f.WorkType == format.WorkType);
+                if (existingFormat != null)
+                {
+                    existingFormat.LinkWhereToRead = format.LinkWhereToRead;
+                    existingFormat.UpdateTotalChapters(format.TotalChapter);
+                    if (format.TranslatedUpTo != null && format.TranslatedLanguage.HasValue)
+                    {
+                        existingFormat.UpdateTranslatedChapters(format.TranslatedUpTo, format.TranslatedLanguage.Value);
+                    }
+                    else
+                    {
+                        existingFormat.ClearTranslatedChapters();
+                    }
+                }
+                else
+                {
+                    var newFormat = new WorkFormat(existingWork.Id, format.WorkType, format.TotalChapter, format.LinkWhereToRead);
+                    if (format.TranslatedUpTo != null && format.TranslatedLanguage.HasValue)
+                    {
+                        newFormat.UpdateTranslatedChapters(format.TranslatedUpTo, format.TranslatedLanguage.Value);
+                    }
+                    existingWork.AddFormat(newFormat);
+                }
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         public async Task AddGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken)

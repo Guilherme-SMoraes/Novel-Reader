@@ -6,9 +6,9 @@ namespace NovelReader.Common.Tests.Helpers;
 
 public static class EntityFactory
 {
-    public static Progress CreateValidProgress(Guid workId)
+    public static Progress CreateValidProgress(Guid workId, WorkType workType = WorkType.WebNovel)
     {
-        return new Progress(workId, new WorkChapter(null, 704), ReadingStatus.Reading);
+        return new Progress(workId, workType, new WorkChapter(null, 704), ReadingStatus.Reading);
     }
     public static Genre CreateValidGenre()
     {
@@ -20,7 +20,10 @@ public static class EntityFactory
     }
     public static Work CreateValidWork()
     {
+        var work = new Work("Overgeared", "https://www.novelupdates.com/series/overgeared", Language.Korean);
         var totalChapter = new WorkChapter(null, 2059);
-        return new("Overgeared", WorkType.WebNovel, "https://www.novelupdates.com/series/overgeared", totalChapter, Language.Korean);
+        var format = new WorkFormat(work.Id, WorkType.WebNovel, totalChapter);
+        work.AddFormat(format);
+        return work;
     }
 }

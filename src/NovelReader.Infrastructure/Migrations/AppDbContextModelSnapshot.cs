@@ -131,9 +131,12 @@ namespace NovelReader.Infrastructure.Migrations
                     b.Property<Guid>("WorkId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("WorkType")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkId");
+                    b.HasIndex("WorkId", "WorkType");
 
                     b.ToTable("Progresses", (string)null);
                 });
@@ -157,10 +160,6 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasMaxLength(1500)
                         .HasColumnType("character varying(1500)");
 
-                    b.Property<string>("LinkWhereToRead")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
-
                     b.Property<int>("OriginalLanguage")
                         .HasColumnType("integer");
 
@@ -169,15 +168,36 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.HasKey("Id");
+
+                    b.ToTable("Works", (string)null);
+                });
+
+            modelBuilder.Entity("NovelReader.Domain.Entities.WorkFormat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LinkWhereToRead")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
                     b.Property<int?>("TranslatedLanguage")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("WorkId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("WorkType")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Works", (string)null);
+                    b.HasIndex("WorkId", "WorkType")
+                        .IsUnique();
+
+                    b.ToTable("WorkFormats", (string)null);
                 });
 
             modelBuilder.Entity("WorkGenres", b =>
@@ -270,11 +290,17 @@ namespace NovelReader.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("NovelReader.Domain.Entities.Work", b =>
+            modelBuilder.Entity("NovelReader.Domain.Entities.WorkFormat", b =>
                 {
+                    b.HasOne("NovelReader.Domain.Entities.Work", null)
+                        .WithMany("Formats")
+                        .HasForeignKey("WorkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.OwnsOne("NovelReader.Domain.ValueObjects.WorkChapter", "TotalChapter", b1 =>
                         {
-                            b1.Property<Guid>("WorkId")
+                            b1.Property<Guid>("WorkFormatId")
                                 .HasColumnType("uuid");
 
                             b1.Property<int>("Chapter")
@@ -285,17 +311,17 @@ namespace NovelReader.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("TotalVolume");
 
-                            b1.HasKey("WorkId");
+                            b1.HasKey("WorkFormatId");
 
-                            b1.ToTable("Works");
+                            b1.ToTable("WorkFormats");
 
                             b1.WithOwner()
-                                .HasForeignKey("WorkId");
+                                .HasForeignKey("WorkFormatId");
                         });
 
                     b.OwnsOne("NovelReader.Domain.ValueObjects.WorkChapter", "TranslatedUpTo", b1 =>
                         {
-                            b1.Property<Guid>("WorkId")
+                            b1.Property<Guid>("WorkFormatId")
                                 .HasColumnType("uuid");
 
                             b1.Property<int>("Chapter")
@@ -306,12 +332,12 @@ namespace NovelReader.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("TranslatedVolume");
 
-                            b1.HasKey("WorkId");
+                            b1.HasKey("WorkFormatId");
 
-                            b1.ToTable("Works");
+                            b1.ToTable("WorkFormats");
 
                             b1.WithOwner()
-                                .HasForeignKey("WorkId");
+                                .HasForeignKey("WorkFormatId");
                         });
 
                     b.Navigation("TotalChapter")
@@ -340,6 +366,8 @@ namespace NovelReader.Infrastructure.Migrations
                     b.Navigation("Attachments");
 
                     b.Navigation("Characters");
+
+                    b.Navigation("Formats");
 
                     b.Navigation("Progresses");
                 });

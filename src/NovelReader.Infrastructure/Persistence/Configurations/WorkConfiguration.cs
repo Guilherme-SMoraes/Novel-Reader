@@ -18,35 +18,29 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.AggregatorLink)
                     .IsRequired()
                     .HasMaxLength(2048);
-            builder.Property(x => x.LinkWhereToRead)
-                    .HasMaxLength(2048);
             builder.Property(x => x.CoverImageUrl)
                     .HasMaxLength(2048);
-                
-            builder.OwnsOne(x => x.TotalChapter, tc =>
-            {
-               tc.Property(w => w.Volume).HasColumnName("TotalVolume");
-               tc.Property(w => w.Chapter).HasColumnName("TotalChapter");
-            });
-            builder.OwnsOne(x => x.TranslatedUpTo, tu =>
-            {
-                tu.Property(w => w.Volume).HasColumnName("TranslatedVolume");
-                tu.Property(w => w.Chapter).HasColumnName("TranslatedChapter");
-            });
-            builder.Navigation(x => x.TranslatedUpTo).IsRequired(false);
+
+            builder.HasMany(x => x.Formats)
+                    .WithOne()
+                    .HasForeignKey(x => x.WorkId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.Characters)
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)
                     .OnDelete(DeleteBehavior.Cascade);
+
             builder.HasMany(x => x.Progresses)
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)
                     .OnDelete(DeleteBehavior.Cascade);
+
             builder.HasMany(x => x.Attachments)
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)
                     .OnDelete(DeleteBehavior.Cascade);
+
             builder.HasMany(x => x.Genres)
                     .WithMany()
                     .UsingEntity("WorkGenres");

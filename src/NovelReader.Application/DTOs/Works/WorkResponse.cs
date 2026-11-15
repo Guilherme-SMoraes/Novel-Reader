@@ -9,15 +9,10 @@ namespace NovelReader.Application.DTOs.Works
         Guid Id,
         string Title,
         string? Description,
-        WorkType WorkType,
         string AggregatorLink,
-        string? LinkWhereToRead,
         string? CoverImageUrl,
-        WorkChapterDto TotalChapter,
-        WorkChapterDto? TranslatedUpTo,
-        bool? IsFullyTranslated,
         Language OriginalLanguage,
-        Language? TranslatedLanguage,
+        IReadOnlyList<WorkFormatDto> Formats,
         IReadOnlyList<GenreResponse> Genres
     )
     {
@@ -26,15 +21,10 @@ namespace NovelReader.Application.DTOs.Works
                 work.Id,
                 work.Title,
                 work.Description,
-                work.WorkType,
                 work.AggregatorLink,
-                work.LinkWhereToRead,
                 work.CoverImageUrl,
-                new WorkChapterDto(work.TotalChapter.Volume, work.TotalChapter.Chapter),
-                work.TranslatedUpTo != null ? new WorkChapterDto(work.TranslatedUpTo.Volume, work.TranslatedUpTo.Chapter) : null,
-                work.IsFullyTranslated,
                 work.OriginalLanguage,
-                work.TranslatedLanguage,
+                work.Formats?.Select(WorkFormatDto.FromEntity).ToList() ?? new List<WorkFormatDto>(),
                 work.Genres?.Select(GenreResponse.FromEntity).ToList() ?? new List<GenreResponse>()
             );
     }

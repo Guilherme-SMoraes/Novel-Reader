@@ -33,19 +33,27 @@ namespace NovelReader.Application.Services
                 throw new ValidationException(validationResult.Errors);
             }
 
-            var totalChapter = new WorkChapter(request.TotalChapter.Volume, request.TotalChapter.Chapter);
             var work = new Work(
                 request.Title,
-                request.WorkType,
                 request.AggregatorLink,
-                totalChapter,
                 request.OriginalLanguage
             )
             {
                 Description = request.Description,
-                LinkWhereToRead = request.LinkWhereToRead,
                 CoverImageUrl = request.CoverImageUrl
             };
+
+            foreach (var formatReq in request.Formats)
+            {
+                var totalChapter = new WorkChapter(formatReq.TotalChapter.Volume, formatReq.TotalChapter.Chapter);
+                var format = new WorkFormat(work.Id, formatReq.WorkType, totalChapter, formatReq.LinkWhereToRead);
+                if (formatReq.TranslatedUpTo != null && formatReq.TranslatedLanguage.HasValue)
+                {
+                    var translatedChapter = new WorkChapter(formatReq.TranslatedUpTo.Volume, formatReq.TranslatedUpTo.Chapter);
+                    format.UpdateTranslatedChapters(translatedChapter, formatReq.TranslatedLanguage.Value);
+                }
+                work.AddFormat(format);
+            }
 
             await _workRepository.CreateAsync(work, cancellationToken);
 
@@ -102,26 +110,30 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Obra com ID {id} não encontrada.");
             }
 
-            work.Title = request.Title;
-            work.Description = request.Description;
-            work.AggregatorLink = request.AggregatorLink;
-            work.LinkWhereToRead = request.LinkWhereToRead;
-            work.CoverImageUrl = request.CoverImageUrl;
-
-            var totalChapter = new WorkChapter(request.TotalChapter.Volume, request.TotalChapter.Chapter);
-
-            if (request.TranslatedUpTo != null && request.TranslatedLanguage.HasValue)
+            var updatedWork = new Work(
+                id,
+                request.Title,
+                request.AggregatorLink,
+                work.OriginalLanguage
+            )
             {
-                var translatedChapter = new WorkChapter(request.TranslatedUpTo.Volume, request.TranslatedUpTo.Chapter);
-                work.UpdateTotalChapters(totalChapter);
-                work.UpdateTranslatedChapters(translatedChapter, request.TranslatedLanguage.Value);
-            }
-            else
+                Description = request.Description,
+                CoverImageUrl = request.CoverImageUrl
+            };
+
+            foreach (var formatReq in request.Formats)
             {
-                work.UpdateTotalChapters(totalChapter);
+                var totalChapter = new WorkChapter(formatReq.TotalChapter.Volume, formatReq.TotalChapter.Chapter);
+                var format = new WorkFormat(id, formatReq.WorkType, totalChapter, formatReq.LinkWhereToRead);
+                if (formatReq.TranslatedUpTo != null && formatReq.TranslatedLanguage.HasValue)
+                {
+                    var translatedChapter = new WorkChapter(formatReq.TranslatedUpTo.Volume, formatReq.TranslatedUpTo.Chapter);
+                    format.UpdateTranslatedChapters(translatedChapter, formatReq.TranslatedLanguage.Value);
+                }
+                updatedWork.AddFormat(format);
             }
 
-            await _workRepository.UpdateAsync(work, cancellationToken);
+            await _workRepository.UpdateAsync(updatedWork, cancellationToken);
 
             if (request.GenreIds != null)
             {

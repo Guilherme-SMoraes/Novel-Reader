@@ -77,13 +77,16 @@ export const WorkDetail: React.FC<Props> = ({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
-            <span className="badge badge-novel">{WorkTypeLabels[work.workType]}</span>
-            <span className="badge-tag">Idioma Original: {LanguageLabels[work.originalLanguage]}</span>
-            {work.translatedUpTo && (
-              <span className="badge-tag" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>
-                Traduzido até cap. {work.translatedUpTo.chapter}
-              </span>
+            {work.formats && work.formats.length > 0 ? (
+              work.formats.map((f) => (
+                <span key={f.workType} className="badge badge-novel">
+                  {WorkTypeLabels[f.workType]} ({f.totalChapter.chapter} caps)
+                </span>
+              ))
+            ) : (
+              <span className="badge badge-novel">Obra</span>
             )}
+            <span className="badge-tag">Idioma Original: {LanguageLabels[work.originalLanguage]}</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
                 onClick={onOpenEditWork}
@@ -145,17 +148,21 @@ export const WorkDetail: React.FC<Props> = ({
                 Agregador <ExternalLink size={13} />
               </a>
             )}
-            {work.linkWhereToRead && (
-              <a
-                href={work.linkWhereToRead}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary"
-                style={{ textDecoration: 'none', fontSize: '0.8rem' }}
-              >
-                Ler Online <ExternalLink size={13} />
-              </a>
-            )}
+            {work.formats &&
+              work.formats
+                .filter((f) => f.linkWhereToRead)
+                .map((f) => (
+                  <a
+                    key={f.workType}
+                    href={f.linkWhereToRead!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-primary"
+                    style={{ textDecoration: 'none', fontSize: '0.8rem' }}
+                  >
+                    Ler {WorkTypeLabels[f.workType]} <ExternalLink size={13} />
+                  </a>
+                ))}
           </div>
         </div>
       </div>

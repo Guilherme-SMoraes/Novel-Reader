@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NovelReader.Domain.Common;
 using NovelReader.Domain.Entities;
+using NovelReader.Domain.Enums;
 using NovelReader.Domain.Interfaces.Repositories;
 
 namespace NovelReader.Infrastructure.Persistence.Repositories
@@ -13,6 +14,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
         {
             _context = appDbContext;
         }
+
         public async Task CreateAsync(Progress progress, CancellationToken cancellationToken)
         {
             _context.Progresses.Add(progress);
@@ -25,7 +27,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Where(x => x.Id == id)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            if(deleted == 0)
+            if (deleted == 0)
             {
                 throw new KeyNotFoundException($"Progress {id} não encontrado");
             }
@@ -38,13 +40,19 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
-        public async Task<PagedResult<Progress>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken)
+        public async Task<PagedResult<Progress>> GetByWorkIdAsync(Guid workId, WorkType? workType, int page, int pageSize, CancellationToken cancellationToken)
         {
             var query = _context.Progresses
                 .AsNoTracking()
-                .Where(x => x.WorkId == workId)
-                .OrderByDescending(x => x.StoppedAt);
-            
+                .Where(x => x.WorkId == workId);
+
+            if (workType.HasValue)
+            {
+                query = query.Where(x => x.WorkType == workType.Value);
+            }
+
+            query = query.OrderByDescending(x => x.StoppedAt);
+
             var total = await query.CountAsync(cancellationToken);
 
             var items = await query
@@ -61,7 +69,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Where(x => x.Id == id)
                 .ExecuteUpdateAsync(x => x.SetProperty(w => w.ReadingDescription, description), cancellationToken);
 
-            if(updated == 0)
+            if (updated == 0)
             {
                 throw new KeyNotFoundException($"Progress {id} não encontrado");
             }

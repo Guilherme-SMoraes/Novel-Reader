@@ -10,26 +10,19 @@ public class WorkTests
     [Fact]
     public void Should_CreateWork_WhenDataIsValid()
     {
-        // Arrange
-        var totalChapter = new WorkChapter(null, 2059);
+        var work = new Work("Overgeared", "https://www.novelupdates.com/series/overgeared", Language.Korean);
 
-        // Act
-        var work = new Work("Overgeared", WorkType.WebNovel, "https://www.novelupdates.com/series/overgeared", totalChapter, Language.Korean);
-
-        // Assert
         Assert.NotEqual(Guid.Empty, work.Id);
         Assert.Equal("Overgeared", work.Title);
-        Assert.Equal(WorkType.WebNovel, work.WorkType);
         Assert.Equal("https://www.novelupdates.com/series/overgeared", work.AggregatorLink);
         Assert.Equal(Language.Korean, work.OriginalLanguage);
-        Assert.Equal(new WorkChapter(null, 2059), work.TotalChapter);
         Assert.Null(work.Description);
-        Assert.Null(work.LinkWhereToRead);
-        Assert.Null(work.TranslatedUpTo);
-        Assert.Null(work.TranslatedLanguage);
+        Assert.Null(work.CoverImageUrl);
+        Assert.Empty(work.Formats);
         Assert.Empty(work.Genres);
         Assert.Empty(work.Characters);
         Assert.Empty(work.Progresses);
+        Assert.Empty(work.Attachments);
     }
 
     [Theory]
@@ -38,10 +31,8 @@ public class WorkTests
     [InlineData(null)]
     public void Should_ThrowArgumentException_WhenTitleIsInvalid(string? title)
     {
-        var totalChapter = new WorkChapter(null, 2059);
-
         var act = () =>
-            new Work(title!, WorkType.WebNovel, "https://www.novelupdates.com/series/overgeared", totalChapter, Language.Korean);
+            new Work(title!, "https://www.novelupdates.com/series/overgeared", Language.Korean);
 
         Assert.Throws<ArgumentException>(act);
     }
@@ -52,12 +43,55 @@ public class WorkTests
     [InlineData(null)]
     public void Should_ThrowArgumentException_WhenAggregatorLinkIsInvalid(string? aggregatorLink)
     {
-        var totalChapter = new WorkChapter(null, 2059);
-
         var act = () =>
-            new Work("Overgeared", WorkType.WebNovel, aggregatorLink!, totalChapter, Language.Korean);
+            new Work("Overgeared", aggregatorLink!, Language.Korean);
 
         Assert.Throws<ArgumentException>(act);
+    }
+
+    [Fact]
+    public void Should_AddFormat_WhenWorkTypeNotPresent()
+    {
+        var work = EntityFactory.CreateValidWork();
+        var newFormat = new WorkFormat(work.Id, WorkType.Manhwa, new WorkChapter(null, 200));
+
+        work.AddFormat(newFormat);
+
+        Assert.Equal(2, work.Formats.Count);
+        Assert.Contains(work.Formats, f => f.WorkType == WorkType.Manhwa);
+    }
+
+    [Fact]
+    public void Should_ThrowInvalidOperationException_WhenFormatAlreadyExists()
+    {
+        var work = EntityFactory.CreateValidWork();
+        var duplicateFormat = new WorkFormat(work.Id, WorkType.WebNovel, new WorkChapter(null, 100));
+
+        var act = () => work.AddFormat(duplicateFormat);
+
+        Assert.Throws<InvalidOperationException>(act);
+    }
+
+    [Fact]
+    public void Should_RemoveFormat_WhenMultipleFormatsExist()
+    {
+        var work = EntityFactory.CreateValidWork();
+        work.AddFormat(new WorkFormat(work.Id, WorkType.Manhwa, new WorkChapter(null, 200)));
+
+        work.RemoveFormat(WorkType.Manhwa);
+
+        Assert.Single(work.Formats);
+        Assert.DoesNotContain(work.Formats, f => f.WorkType == WorkType.Manhwa);
+    }
+
+    [Fact]
+    public void Should_ThrowInvalidOperationException_WhenRemovingLastFormat()
+    {
+        var work = EntityFactory.CreateValidWork();
+
+        var act = () => work.RemoveFormat(WorkType.WebNovel);
+
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     [Fact]
@@ -154,77 +188,5 @@ public class WorkTests
         work.AddProgress(progress);
 
         Assert.Single(work.Progresses);
-    }
-    
-    [Fact]
-    public void Should_UpdateTranslatedUpTo_WhenTranslatedUpToLessOrEqualThanTotalChapter()
-    {
-        var work = EntityFactory.CreateValidWork();
-        var translatedUpTo = new WorkChapter(null, 2059);
-
-        work.UpdateTranslatedChapters(translatedUpTo, Language.English);
-
-        Assert.Equal(new WorkChapter(null, 2059), work.TranslatedUpTo);
-    }
-    
-    [Fact]
-    public void Should_ThrowInvalidOperationException_WhenTranslatedUpToGreaterThanTotalChapters()
-    {
-        var work = EntityFactory.CreateValidWork();
-        var translatedUpTo = new WorkChapter(null, 2060);
-
-        var act = () => 
-            work.UpdateTranslatedChapters(translatedUpTo, Language.English);
-
-        Assert.Throws<InvalidOperationException>(act);
-    }
-
-    [Fact]
-    public void Should_UpdateTotalChapter_WhenTotalChapterGreaterThanTranslatedUpTo()
-    {
-        var work = EntityFactory.CreateValidWork();
-        var translatedUpTo = new WorkChapter(null, 2059);
-        var totalChapterUpdate = new WorkChapter(null, 2060);
-        work.UpdateTranslatedChapters(translatedUpTo, Language.English);
-
-        work.UpdateTotalChapters(totalChapterUpdate);
-
-        Assert.Equal(new WorkChapter(null, 2060), work.TotalChapter);
-    }
-    
-    [Fact]
-    public void Should_ThrowInvalidOperationException_WhenTotalChapterLessThanTranslatedUpTo()
-    {
-        var work = EntityFactory.CreateValidWork();
-        var translatedUpTo = new WorkChapter(null, 2059);
-        var totalChapterUpdate = new WorkChapter(null, 2050);
-        work.UpdateTranslatedChapters(translatedUpTo, Language.English);
-
-        var act = () => work.UpdateTotalChapters(totalChapterUpdate);
-
-        Assert.Throws<InvalidOperationException>(act);
-    }
-
-    [Fact]
-    public void Should_ReturnNull_WhenTranslatedUpToIsNull()
-    {
-        var work = EntityFactory.CreateValidWork();
-        Assert.Null(work.IsFullyTranslated);
-    }
-
-    [Fact]
-    public void Should_ReturnTrue_WhenTranslatedUpToEqualsTotal()
-    {
-        var work = EntityFactory.CreateValidWork();
-        work.UpdateTranslatedChapters(new WorkChapter(null, 2059), Language.English);
-        Assert.True(work.IsFullyTranslated);
-    }
-
-    [Fact]
-    public void Should_ReturnFalse_WhenTranslatedUpToIsLessThanTotal()
-    {
-        var work = EntityFactory.CreateValidWork();
-        work.UpdateTranslatedChapters(new WorkChapter(null, 704), Language.English);
-        Assert.False(work.IsFullyTranslated);
     }
 }

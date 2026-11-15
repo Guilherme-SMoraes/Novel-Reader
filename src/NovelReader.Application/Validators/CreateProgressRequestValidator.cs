@@ -10,6 +10,9 @@ namespace NovelReader.Application.Validators
             RuleFor(x => x.WorkId)
                 .NotEmpty().WithMessage("WorkId inválido.");
 
+            RuleFor(x => x.WorkType)
+                .IsInEnum().WithMessage("Tipo de obra inválido.");
+
             RuleFor(x => x.StoppedAtChapter)
                 .NotNull().WithMessage("O capítulo onde parou é obrigatório.")
                 .DependentRules(() =>
