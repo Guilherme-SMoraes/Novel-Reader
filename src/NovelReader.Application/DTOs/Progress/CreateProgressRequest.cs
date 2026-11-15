@@ -1,0 +1,12 @@
+using NovelReader.Application.DTOs.Common;
+using NovelReader.Domain.Enums;
+
+namespace NovelReader.Application.DTOs.Progress
+{
+    public record CreateProgressRequest(
+        Guid WorkId,
+        WorkChapterDto StoppedAtChapter,
+        ReadingStatus ReadingStatus,
+        string? ReadingDescription
+    );
+}
