@@ -260,7 +260,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
       {/* Lightbox Modal */}
       {lightboxImage && (
         <div
-          className="modal-backdrop"
+          className="modal-overlay"
           onClick={() => setLightboxImage(null)}
           style={{ zIndex: 9999, padding: '20px' }}
         >

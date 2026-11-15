@@ -102,8 +102,8 @@ export const AttachmentModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: '600px' }}>
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '600px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
             {attachmentToEdit ? 'Editar Anexo' : 'Novo Anexo da Obra'}

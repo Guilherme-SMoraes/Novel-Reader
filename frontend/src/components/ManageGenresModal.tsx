@@ -53,8 +53,8 @@ export const ManageGenresModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: '520px' }}>
+    <div className="modal-overlay" style={{ zIndex: 1100 }}>
+      <div className="modal-content" style={{ maxWidth: '520px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Tag size={20} color="#38bdf8" />

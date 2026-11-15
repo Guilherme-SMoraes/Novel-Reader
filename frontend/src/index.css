@@ -137,11 +137,11 @@ input:focus, select:focus, textarea:focus, .input-text:focus {
   background: #334460;
 }
 
-/* Modal Overlay */
-.modal-overlay {
+/* Modal Overlay & Backdrop */
+.modal-overlay, .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -150,7 +150,7 @@ input:focus, select:focus, textarea:focus, .input-text:focus {
   padding: 20px;
 }
 
-.modal-content {
+.modal-content, .modal-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
