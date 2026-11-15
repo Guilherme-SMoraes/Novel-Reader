@@ -3,7 +3,7 @@ import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkT
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { GenreMultiSelect } from './GenreMultiSelect';
-import { X } from 'lucide-react';
+import { X, Image as ImageIcon } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -135,9 +135,10 @@ export const WorkModal: React.FC<Props> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxHeight: '90vh', overflowY: 'auto', maxWidth: '580px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+      <div className="modal-content" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: '640px', width: '100%', padding: '24px 28px' }}>
+        {/* Cabeçalho */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #1e293b', paddingBottom: 12 }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>
             {workToEdit ? 'Editar Obra' : 'Cadastrar Nova Obra'}
           </h2>
           <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
@@ -146,32 +147,36 @@ export const WorkModal: React.FC<Props> = ({
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '8px 12px', borderRadius: 6, marginBottom: 14, fontSize: '0.85rem' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '10px 14px', borderRadius: 6, marginBottom: 16, fontSize: '0.85rem' }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-              Título *
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Título */}
+          <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+              Título da Obra *
             </label>
             <input
               type="text"
               required
               className="input-text"
+              style={{ width: '100%' }}
               placeholder="Ex: Omniscient Reader's Viewpoint"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          {/* Sinopse */}
+          <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
               Sinopse / Descrição
             </label>
             <textarea
               className="input-text"
+              style={{ width: '100%', resize: 'vertical' }}
               rows={3}
               placeholder="Breve resumo da história..."
               value={description}
@@ -179,8 +184,8 @@ export const WorkModal: React.FC<Props> = ({
             />
           </div>
 
-          {/* Gêneros com Multi-Select */}
-          <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+          {/* Multi-Select de Gêneros */}
+          <div style={{ background: '#0f172a', padding: '14px', borderRadius: '8px', border: '1px solid #334155', width: '100%' }}>
             <GenreMultiSelect
               genres={genres}
               selectedGenreIds={selectedGenreIds}
@@ -189,14 +194,16 @@ export const WorkModal: React.FC<Props> = ({
             />
           </div>
 
+          {/* Tipo e Idioma Original (se criando) */}
           {!workToEdit && (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                   Tipo de Obra *
                 </label>
                 <select
                   className="input-text"
+                  style={{ width: '100%' }}
                   value={workType}
                   onChange={(e) => setWorkType(Number(e.target.value) as WorkType)}
                 >
@@ -208,12 +215,13 @@ export const WorkModal: React.FC<Props> = ({
                 </select>
               </div>
 
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                   Idioma Original *
                 </label>
                 <select
                   className="input-text"
+                  style={{ width: '100%' }}
                   value={originalLanguage}
                   onChange={(e) => setOriginalLanguage(Number(e.target.value) as Language)}
                 >
@@ -227,22 +235,59 @@ export const WorkModal: React.FC<Props> = ({
             </div>
           )}
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          {/* Capa com Prévia */}
+          <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
               URL da Imagem da Capa (opcional)
             </label>
-            <input
-              type="url"
-              className="input-text"
-              placeholder="https://exemplo.com/capa.jpg"
-              value={coverImageUrl}
-              onChange={(e) => setCoverImageUrl(e.target.value)}
-            />
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <input
+                type="url"
+                className="input-text"
+                style={{ flex: 1 }}
+                placeholder="https://exemplo.com/capa.jpg"
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+              />
+              {coverImageUrl ? (
+                <div
+                  style={{
+                    width: 44,
+                    height: 58,
+                    borderRadius: 6,
+                    backgroundImage: `url('${coverImageUrl}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    border: '1px solid #334155',
+                    flexShrink: 0,
+                  }}
+                  title="Prévia da capa"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 44,
+                    height: 58,
+                    borderRadius: 6,
+                    background: '#0f172a',
+                    border: '1px dashed #334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#475569',
+                    flexShrink: 0,
+                  }}
+                >
+                  <ImageIcon size={18} />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          {/* Capítulos Totais */}
+          <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                 Capítulo Total *
               </label>
               <input
@@ -250,19 +295,21 @@ export const WorkModal: React.FC<Props> = ({
                 min="1"
                 required
                 className="input-text"
+                style={{ width: '100%' }}
                 placeholder="Ex: 551"
                 value={chapter}
                 onChange={(e) => setChapter(e.target.value)}
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                 Volume Total
               </label>
               <input
                 type="number"
                 min="1"
                 className="input-text"
+                style={{ width: '100%' }}
                 placeholder="Opcional"
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
@@ -270,27 +317,30 @@ export const WorkModal: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Tradução (se editando) */}
           {workToEdit && (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                   Traduzido até Capítulo
                 </label>
                 <input
                   type="number"
                   min="0"
                   className="input-text"
+                  style={{ width: '100%' }}
                   placeholder="Ex: 250"
                   value={transChapter}
                   onChange={(e) => setTransChapter(e.target.value)}
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
                   Idioma da Tradução
                 </label>
                 <select
                   className="input-text"
+                  style={{ width: '100%' }}
                   value={translatedLanguage}
                   onChange={(e) => setTranslatedLanguage(e.target.value ? (Number(e.target.value) as Language) : '')}
                 >
@@ -305,34 +355,40 @@ export const WorkModal: React.FC<Props> = ({
             </div>
           )}
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-              Link do Agregador (NovelUpdates, AniList, etc.) *
-            </label>
-            <input
-              type="url"
-              required
-              className="input-text"
-              placeholder="https://novelupdates.com/series/..."
-              value={aggregatorLink}
-              onChange={(e) => setAggregatorLink(e.target.value)}
-            />
+          {/* Links Externos (2 Colunas) */}
+          <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+                Link do Agregador *
+              </label>
+              <input
+                type="url"
+                required
+                className="input-text"
+                style={{ width: '100%' }}
+                placeholder="https://novelupdates.com/..."
+                value={aggregatorLink}
+                onChange={(e) => setAggregatorLink(e.target.value)}
+              />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+                Link de Onde Você Lê (opcional)
+              </label>
+              <input
+                type="url"
+                className="input-text"
+                style={{ width: '100%' }}
+                placeholder="https://site-leitura.com/..."
+                value={linkWhereToRead}
+                onChange={(e) => setLinkWhereToRead(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-              Link de Onde Você Lê (opcional)
-            </label>
-            <input
-              type="url"
-              className="input-text"
-              placeholder="https://site-leitura.com/..."
-              value={linkWhereToRead}
-              onChange={(e) => setLinkWhereToRead(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+          {/* Rodapé com Ações */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14, borderTop: '1px solid #1e293b', paddingTop: 14 }}>
             <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
               Cancelar
             </button>

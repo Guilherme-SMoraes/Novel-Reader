@@ -54,7 +54,9 @@ button {
   transition: all 0.15s ease-in-out;
 }
 
-input, select, textarea {
+input, select, textarea, .input-text {
+  width: 100%;
+  box-sizing: border-box;
   background: #182234;
   border: 1px solid #27354a;
   border-radius: 6px;
@@ -62,10 +64,10 @@ input, select, textarea {
   padding: 8px 12px;
   font-size: 0.85rem;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus, select:focus, textarea:focus, .input-text:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 1px var(--border-focus);
 }
