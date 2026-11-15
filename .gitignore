@@ -46,6 +46,7 @@ ScaffoldingReadMe.txt
 CodeCoverage/
 node_modules/
 dist/
+.docker-data/
 
 # MSBuild Binary and Structured Log
 *.binlog
