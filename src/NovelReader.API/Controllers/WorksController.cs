@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using NovelReader.Application.DTOs.Works;
 using NovelReader.Application.Interfaces;
 using NovelReader.Domain.Common;
+using NovelReader.Domain.Enums;
 
 namespace NovelReader.API.Controllers
 {
@@ -41,9 +42,16 @@ namespace NovelReader.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PagedResult<WorkResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? title = null,
+            [FromQuery] WorkType? workType = null,
+            [FromQuery] Guid? genreId = null,
+            [FromQuery] ReadingStatus? readingStatus = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default)
         {
-            var result = await _workService.GetAllAsync(page, pageSize, cancellationToken);
+            var result = await _workService.GetAllAsync(title, workType, genreId, readingStatus, page, pageSize, cancellationToken);
             return Ok(result);
         }
 
@@ -80,6 +88,24 @@ namespace NovelReader.API.Controllers
         {
             var result = await _workService.ListByGenreAsync(genreId, page, pageSize, cancellationToken);
             return Ok(result);
+        }
+
+        [HttpPost("{workId:guid}/genres/{genreId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AddGenre([FromRoute] Guid workId, [FromRoute] Guid genreId, CancellationToken cancellationToken)
+        {
+            await _workService.AddGenreAsync(workId, genreId, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpDelete("{workId:guid}/genres/{genreId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RemoveGenre([FromRoute] Guid workId, [FromRoute] Guid genreId, CancellationToken cancellationToken)
+        {
+            await _workService.RemoveGenreAsync(workId, genreId, cancellationToken);
+            return NoContent();
         }
     }
 }

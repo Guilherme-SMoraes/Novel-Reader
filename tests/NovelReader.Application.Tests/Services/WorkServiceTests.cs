@@ -35,6 +35,7 @@ namespace NovelReader.Application.Tests.Services
                 WorkType.WebNovel,
                 "https://novelupdates.com/series/solo-leveling",
                 "https://readlightnovel.me",
+                "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f",
                 new WorkChapterDto(null, 270),
                 Language.Korean
             );
@@ -47,6 +48,7 @@ namespace NovelReader.Application.Tests.Services
             result.WorkType.Should().Be(request.WorkType);
             result.AggregatorLink.Should().Be(request.AggregatorLink);
             result.LinkWhereToRead.Should().Be(request.LinkWhereToRead);
+            result.CoverImageUrl.Should().Be(request.CoverImageUrl);
             result.TotalChapter.Chapter.Should().Be(270);
             result.OriginalLanguage.Should().Be(Language.Korean);
 
@@ -61,6 +63,7 @@ namespace NovelReader.Application.Tests.Services
                 null,
                 WorkType.WebNovel,
                 "",
+                null,
                 null,
                 new WorkChapterDto(null, 0),
                 Language.Korean
@@ -104,7 +107,7 @@ namespace NovelReader.Application.Tests.Services
             var work = EntityFactory.CreateValidWork();
             var paged = new PagedResult<Work>(new[] { work }, 1, 1, 10);
 
-            _workRepositoryMock.Setup(x => x.GetAllAsync(1, 10, It.IsAny<CancellationToken>()))
+            _workRepositoryMock.Setup(x => x.GetAllAsync(null, null, null, null, 1, 10, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(paged);
 
             var result = await _workService.GetAllAsync(1, 10, CancellationToken.None);
@@ -112,6 +115,22 @@ namespace NovelReader.Application.Tests.Services
             result.Should().NotBeNull();
             result.TotalCount.Should().Be(1);
             result.Items.Should().HaveCount(1);
+            result.Items.First().Title.Should().Be(work.Title);
+        }
+
+        [Fact]
+        public async Task GetAllAsync_WithFilters_ShouldReturnFilteredPagedWorks()
+        {
+            var work = EntityFactory.CreateValidWork();
+            var paged = new PagedResult<Work>(new[] { work }, 1, 1, 10);
+
+            _workRepositoryMock.Setup(x => x.GetAllAsync("Overgeared", WorkType.WebNovel, null, ReadingStatus.Reading, 1, 10, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(paged);
+
+            var result = await _workService.GetAllAsync("Overgeared", WorkType.WebNovel, null, ReadingStatus.Reading, 1, 10, CancellationToken.None);
+
+            result.Should().NotBeNull();
+            result.TotalCount.Should().Be(1);
             result.Items.First().Title.Should().Be(work.Title);
         }
 
@@ -127,6 +146,7 @@ namespace NovelReader.Application.Tests.Services
                 "New description",
                 "https://novelupdates.com/series/overgeared-new",
                 "https://wuxiaworld.com",
+                "https://images.unsplash.com/photo-1578632767115-351597cf2477",
                 new WorkChapterDto(null, 2100),
                 new WorkChapterDto(null, 1800),
                 Language.English
@@ -149,6 +169,7 @@ namespace NovelReader.Application.Tests.Services
                 null,
                 "https://link.com",
                 null,
+                null,
                 new WorkChapterDto(null, 100),
                 null,
                 null
@@ -167,6 +188,7 @@ namespace NovelReader.Application.Tests.Services
                 "",
                 null,
                 "",
+                null,
                 null,
                 new WorkChapterDto(null, 0),
                 null,
@@ -219,6 +241,47 @@ namespace NovelReader.Application.Tests.Services
             result.Should().NotBeNull();
             result.TotalCount.Should().Be(1);
             result.Items.First().Title.Should().Be(work.Title);
+        }
+
+        [Fact]
+        public async Task AddGenreAsync_ShouldCallRepository()
+        {
+            var workId = Guid.NewGuid();
+            var genreId = Guid.NewGuid();
+
+            await _workService.AddGenreAsync(workId, genreId, CancellationToken.None);
+
+            _workRepositoryMock.Verify(x => x.AddGenreAsync(workId, genreId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RemoveGenreAsync_ShouldCallRepository()
+        {
+            var workId = Guid.NewGuid();
+            var genreId = Guid.NewGuid();
+
+            await _workService.RemoveGenreAsync(workId, genreId, CancellationToken.None);
+
+            _workRepositoryMock.Verify(x => x.RemoveGenreAsync(workId, genreId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateAsync_WithInvalidUrl_ShouldThrowValidationException()
+        {
+            var request = new CreateWorkRequest(
+                "Title",
+                null,
+                WorkType.WebNovel,
+                "not-a-valid-url",
+                null,
+                null,
+                new WorkChapterDto(null, 100),
+                Language.Korean
+            );
+
+            var act = async () => await _workService.CreateAsync(request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ValidationException>();
         }
     }
 }

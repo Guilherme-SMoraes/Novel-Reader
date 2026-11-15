@@ -1,0 +1,161 @@
+import { useEffect, useState } from 'react';
+import type { Character, Genre, Progress, ReadingStatus, Work, WorkType } from './types';
+import { charactersApi, genresApi, progressApi, worksApi } from './services/api';
+import { Sidebar } from './components/Sidebar';
+import { WorkDetail } from './components/WorkDetail';
+import { CreateWorkModal } from './components/CreateWorkModal';
+import { BookOpen } from 'lucide-react';
+
+export function App() {
+  const [works, setWorks] = useState<Work[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
+
+  const [progressList, setProgressList] = useState<Progress[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
+
+  // Filtros
+  const [searchTitle, setSearchTitle] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<ReadingStatus | null>(null);
+  const [selectedType, setSelectedType] = useState<WorkType | null>(null);
+  const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+
+  const [isCreateWorkOpen, setIsCreateWorkOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Carrega gêneros uma vez
+  useEffect(() => {
+    genresApi.getAll()
+      .then((res) => setGenres(res.items))
+      .catch((err) => console.error('Erro ao carregar gêneros:', err));
+  }, []);
+
+  // Carrega obras sempre que os filtros mudarem
+  const fetchWorks = async () => {
+    try {
+      setLoading(true);
+      const res = await worksApi.getAll({
+        title: searchTitle || undefined,
+        workType: selectedType || undefined,
+        genreId: selectedGenreId || undefined,
+        readingStatus: selectedStatus || undefined,
+      });
+
+      setWorks(res.items);
+
+      // Se a obra selecionada não estiver na lista ou não houver obra selecionada, seleciona a primeira
+      if (res.items.length > 0) {
+        if (!selectedWorkId || !res.items.some((w) => w.id === selectedWorkId)) {
+          setSelectedWorkId(res.items[0].id);
+        }
+      } else {
+        setSelectedWorkId(null);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar obras:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchWorks();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchTitle, selectedStatus, selectedType, selectedGenreId]);
+
+  // Carrega detalhes, progressos e personagens da obra selecionada
+  const fetchWorkDetails = async (workId: string) => {
+    try {
+      const [progRes, charRes] = await Promise.all([
+        progressApi.getByWorkId(workId),
+        charactersApi.getByWorkId(workId),
+      ]);
+      setProgressList(progRes.items);
+      setCharacters(charRes.items);
+    } catch (err) {
+      console.error('Erro ao buscar detalhes da obra:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedWorkId) {
+      fetchWorkDetails(selectedWorkId);
+    } else {
+      setProgressList([]);
+      setCharacters([]);
+    }
+  }, [selectedWorkId]);
+
+  const selectedWork = works.find((w) => w.id === selectedWorkId);
+
+  const handleResetFilters = () => {
+    setSearchTitle('');
+    setSelectedStatus(null);
+    setSelectedType(null);
+    setSelectedGenreId(null);
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+      {/* Sidebar com Lista e Filtros */}
+      <Sidebar
+        works={works}
+        selectedWorkId={selectedWorkId}
+        onSelectWork={setSelectedWorkId}
+        onOpenCreateWork={() => setIsCreateWorkOpen(true)}
+        genres={genres}
+        searchTitle={searchTitle}
+        onSearchTitleChange={setSearchTitle}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedGenreId={selectedGenreId}
+        onGenreChange={setSelectedGenreId}
+        onResetFilters={handleResetFilters}
+      />
+
+      {/* Painel Principal */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        {loading && works.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+            Carregando sua biblioteca...
+          </div>
+        ) : selectedWork ? (
+          <WorkDetail
+            work={selectedWork}
+            progressList={progressList}
+            characters={characters}
+            onDataUpdated={() => fetchWorkDetails(selectedWork.id)}
+            onWorkDeleted={fetchWorks}
+          />
+        ) : (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 32 }}>
+            <BookOpen size={48} color="#6366f1" style={{ marginBottom: 16 }} />
+            <h2 style={{ fontSize: '1.25rem', color: '#e2e8f0', marginBottom: 6 }}>Nenhuma obra selecionada</h2>
+            <p style={{ fontSize: '0.88rem', maxWidth: 400, textAlign: 'center', marginBottom: 20 }}>
+              {works.length === 0
+                ? 'Você ainda não cadastrou nenhuma obra ou nenhuma corresponde aos filtros atuais.'
+                : 'Selecione uma obra na lista lateral para visualizar os detalhes, progresso e personagens.'}
+            </p>
+            <button onClick={() => setIsCreateWorkOpen(true)} className="btn-primary">
+              Cadastrar Primeira Obra
+            </button>
+          </div>
+        )}
+      </main>
+
+      {/* Modal para Cadastrar Obra */}
+      <CreateWorkModal
+        isOpen={isCreateWorkOpen}
+        onClose={() => setIsCreateWorkOpen(false)}
+        onCreated={fetchWorks}
+      />
+    </div>
+  );
+}
+
+export default App;

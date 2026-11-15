@@ -5,6 +5,7 @@ namespace NovelReader.Application.DTOs.Characters
     public record UpdateCharacterRequest(
         string Name,
         string? Description,
+        string? ImageUrl,
         CharacterType CharacterType
     );
 }

@@ -6,9 +6,9 @@ namespace NovelReader.Integration.Tests.Fixture;
 
 public class DatabaseFixture : IAsyncLifetime
 {
-    private PostgreSqlContainer _container;
-    private AppDbContext _context;
-    public string ConnectionString { get; private set; }
+    private PostgreSqlContainer _container = null!;
+    private AppDbContext _context = null!;
+    public string ConnectionString { get; private set; } = null!;
 
     public async Task DisposeAsync()
     {

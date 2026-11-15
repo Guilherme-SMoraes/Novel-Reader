@@ -3,6 +3,7 @@ using NovelReader.Application.DTOs.Works;
 using NovelReader.Application.Interfaces;
 using NovelReader.Domain.Common;
 using NovelReader.Domain.Entities;
+using NovelReader.Domain.Enums;
 using NovelReader.Domain.Interfaces.Repositories;
 using NovelReader.Domain.ValueObjects;
 
@@ -42,7 +43,8 @@ namespace NovelReader.Application.Services
             )
             {
                 Description = request.Description,
-                LinkWhereToRead = request.LinkWhereToRead
+                LinkWhereToRead = request.LinkWhereToRead,
+                CoverImageUrl = request.CoverImageUrl
             };
 
             await _workRepository.CreateAsync(work, cancellationToken);
@@ -58,7 +60,19 @@ namespace NovelReader.Application.Services
 
         public async Task<PagedResult<WorkResponse>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
         {
-            var pagedWorks = await _workRepository.GetAllAsync(page, pageSize, cancellationToken);
+            return await GetAllAsync(null, null, null, null, page, pageSize, cancellationToken);
+        }
+
+        public async Task<PagedResult<WorkResponse>> GetAllAsync(
+            string? title,
+            WorkType? workType,
+            Guid? genreId,
+            ReadingStatus? readingStatus,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var pagedWorks = await _workRepository.GetAllAsync(title, workType, genreId, readingStatus, page, pageSize, cancellationToken);
             var items = pagedWorks.Items.Select(WorkResponse.FromEntity);
 
             return new PagedResult<WorkResponse>(items, pagedWorks.TotalCount, pagedWorks.Page, pagedWorks.PageSize);
@@ -82,6 +96,7 @@ namespace NovelReader.Application.Services
             work.Description = request.Description;
             work.AggregatorLink = request.AggregatorLink;
             work.LinkWhereToRead = request.LinkWhereToRead;
+            work.CoverImageUrl = request.CoverImageUrl;
 
             var totalChapter = new WorkChapter(request.TotalChapter.Volume, request.TotalChapter.Chapter);
 
@@ -118,6 +133,16 @@ namespace NovelReader.Application.Services
             var items = pagedWorks.Items.Select(WorkResponse.FromEntity);
 
             return new PagedResult<WorkResponse>(items, pagedWorks.TotalCount, pagedWorks.Page, pagedWorks.PageSize);
+        }
+
+        public async Task AddGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken = default)
+        {
+            await _workRepository.AddGenreAsync(workId, genreId, cancellationToken);
+        }
+
+        public async Task RemoveGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken = default)
+        {
+            await _workRepository.RemoveGenreAsync(workId, genreId, cancellationToken);
         }
     }
 }

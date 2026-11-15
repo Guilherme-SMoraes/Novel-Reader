@@ -44,6 +44,7 @@ namespace NovelReader.Application.Tests.Services
                 work.Id,
                 "Greed",
                 "Protagonist of Overgeared",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
                 CharacterType.Protagonist,
                 new WorkChapterDto(null, 1)
             );
@@ -53,6 +54,7 @@ namespace NovelReader.Application.Tests.Services
             result.Should().NotBeNull();
             result.WorkId.Should().Be(work.Id);
             result.Name.Should().Be("Greed");
+            result.ImageUrl.Should().Be(request.ImageUrl);
             result.CharacterType.Should().Be(CharacterType.Protagonist);
             result.FirstAppearance.Chapter.Should().Be(1);
 
@@ -70,6 +72,7 @@ namespace NovelReader.Application.Tests.Services
                 workId,
                 "Greed",
                 null,
+                null,
                 CharacterType.Protagonist,
                 new WorkChapterDto(null, 1)
             );
@@ -86,6 +89,7 @@ namespace NovelReader.Application.Tests.Services
             var request = new CreateCharacterRequest(
                 Guid.Empty,
                 "",
+                null,
                 null,
                 (CharacterType)999,
                 new WorkChapterDto(null, 0)
@@ -162,7 +166,7 @@ namespace NovelReader.Application.Tests.Services
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(character);
 
-            var request = new UpdateCharacterRequest("Shin Youngwoo", "Real name of Greed", CharacterType.Protagonist);
+            var request = new UpdateCharacterRequest("Shin Youngwoo", "Real name of Greed", "https://images.unsplash.com/photo-1534528741775-53994a69daeb", CharacterType.Protagonist);
 
             await _characterService.UpdateAsync(character.Id, request, CancellationToken.None);
 
@@ -176,7 +180,7 @@ namespace NovelReader.Application.Tests.Services
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Character?)null);
 
-            var request = new UpdateCharacterRequest("Name", null, CharacterType.Supporting);
+            var request = new UpdateCharacterRequest("Name", null, null, CharacterType.Supporting);
 
             var act = async () => await _characterService.UpdateAsync(id, request, CancellationToken.None);
 
@@ -187,7 +191,7 @@ namespace NovelReader.Application.Tests.Services
         public async Task UpdateAsync_WithInvalidData_ShouldThrowValidationException()
         {
             var id = Guid.NewGuid();
-            var request = new UpdateCharacterRequest("", null, CharacterType.Supporting);
+            var request = new UpdateCharacterRequest("", null, null, CharacterType.Supporting);
 
             var act = async () => await _characterService.UpdateAsync(id, request, CancellationToken.None);
 

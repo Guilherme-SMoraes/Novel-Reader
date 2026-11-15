@@ -12,7 +12,9 @@ namespace NovelReader.Domain.Entities
         public string? ReadingDescription { get; set; }
         public DateTime StoppedAt { get; init; }
 
+#pragma warning disable CS8618
         private Progress(){ }
+#pragma warning restore CS8618
         public Progress(Guid workId, WorkChapter stoppedAtChapter, ReadingStatus readingStatus)
         {
             Id = Guid.NewGuid();

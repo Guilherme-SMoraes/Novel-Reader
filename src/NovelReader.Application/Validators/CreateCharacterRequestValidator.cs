@@ -11,7 +11,19 @@ namespace NovelReader.Application.Validators
                 .NotEmpty().WithMessage("WorkId inválido.");
 
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("O nome do personagem não pode ser vazio.");
+                .NotEmpty().WithMessage("O nome do personagem não pode ser vazio.")
+                .MaximumLength(200).WithMessage("O nome do personagem deve ter no máximo 200 caracteres.");
+
+            RuleFor(x => x.Description)
+                .MaximumLength(2500)
+                .When(x => !string.IsNullOrWhiteSpace(x.Description))
+                .WithMessage("A descrição do personagem deve ter no máximo 2500 caracteres.");
+
+            RuleFor(x => x.ImageUrl)
+                .MaximumLength(2048).WithMessage("O link da foto deve ter no máximo 2048 caracteres.")
+                .Must(BeAValidUrl)
+                .When(x => !string.IsNullOrWhiteSpace(x.ImageUrl))
+                .WithMessage("O link da foto deve ser uma URL válida.");
 
             RuleFor(x => x.CharacterType)
                 .IsInEnum().WithMessage("Tipo de personagem inválido.");
@@ -29,5 +41,9 @@ namespace NovelReader.Application.Validators
                         .WithMessage("O volume deve ser maior que zero.");
                 });
         }
+
+        private static bool BeAValidUrl(string? url) =>
+            Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
+            (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }

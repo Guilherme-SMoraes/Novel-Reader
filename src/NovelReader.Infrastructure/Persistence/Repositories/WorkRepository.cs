@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NovelReader.Domain.Common;
 using NovelReader.Domain.Entities;
+using NovelReader.Domain.Enums;
 using NovelReader.Domain.Interfaces.Repositories;
 
 namespace NovelReader.Infrastructure.Persistence.Repositories
@@ -56,13 +57,48 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
         public async Task<PagedResult<Work>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken)
         {
-            var query =  _context.Works
+            return await GetAllAsync(null, null, null, null, page, pageSize, cancellationToken);
+        }
+
+        public async Task<PagedResult<Work>> GetAllAsync(
+            string? title,
+            WorkType? workType,
+            Guid? genreId,
+            ReadingStatus? readingStatus,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            var query = _context.Works
                 .AsNoTracking()
-                .Include(x => x.Genres);
-            
+                .Include(x => x.Genres)
+                .Include(x => x.Progresses)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                query = query.Where(x => EF.Functions.ILike(x.Title, $"%{title}%"));
+            }
+
+            if (workType.HasValue)
+            {
+                query = query.Where(x => x.WorkType == workType.Value);
+            }
+
+            if (genreId.HasValue)
+            {
+                query = query.Where(x => x.Genres.Any(g => g.Id == genreId.Value));
+            }
+
+            if (readingStatus.HasValue)
+            {
+                query = query.Where(x => x.Progresses.OrderByDescending(p => p.StoppedAt).Select(p => p.ReadingStatus).FirstOrDefault() == readingStatus.Value);
+            }
+
             var total = await query.CountAsync(cancellationToken);
 
             var items = await query
+                .OrderBy(x => x.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
@@ -107,6 +143,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                     .SetProperty(w => w.Description, work.Description)
                     .SetProperty(w => w.AggregatorLink, work.AggregatorLink)
                     .SetProperty(w => w.LinkWhereToRead, work.LinkWhereToRead)
+                    .SetProperty(w => w.CoverImageUrl, work.CoverImageUrl)
                     .SetProperty(w => w.TotalChapter.Volume, work.TotalChapter.Volume)
                     .SetProperty(w => w.TotalChapter.Chapter, work.TotalChapter.Chapter)
                     .SetProperty(w => w.TranslatedUpTo!.Volume, work.TranslatedUpTo?.Volume)
@@ -118,6 +155,42 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             {
                 throw new KeyNotFoundException($"Work {work.Id} não encontrado");
             }
+        }
+
+        public async Task AddGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken)
+        {
+            var work = await _context.Works
+                .Include(x => x.Genres)
+                .FirstOrDefaultAsync(x => x.Id == workId, cancellationToken);
+
+            if (work is null)
+            {
+                throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
+            }
+
+            var genre = await _context.Genres.FirstOrDefaultAsync(x => x.Id == genreId, cancellationToken);
+            if (genre is null)
+            {
+                throw new KeyNotFoundException($"Gênero com ID {genreId} não encontrado.");
+            }
+
+            work.AddGenre(genre);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RemoveGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken)
+        {
+            var work = await _context.Works
+                .Include(x => x.Genres)
+                .FirstOrDefaultAsync(x => x.Id == workId, cancellationToken);
+
+            if (work is null)
+            {
+                throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
+            }
+
+            work.RemoveGenre(genreId);
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

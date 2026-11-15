@@ -61,6 +61,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .ExecuteUpdateAsync(x => x
                     .SetProperty(w => w.Name, character.Name)
                     .SetProperty(w => w.Description, character.Description)
+                    .SetProperty(w => w.ImageUrl, character.ImageUrl)
                     .SetProperty(w => w.CharacterType, character.CharacterType), 
                     cancellationToken);
 

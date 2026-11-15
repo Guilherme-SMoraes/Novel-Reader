@@ -7,6 +7,7 @@ namespace NovelReader.Application.DTOs.Characters
         Guid WorkId,
         string Name,
         string? Description,
+        string? ImageUrl,
         CharacterType CharacterType,
         WorkChapterDto FirstAppearance
     );

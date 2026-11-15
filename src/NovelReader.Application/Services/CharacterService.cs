@@ -44,7 +44,8 @@ namespace NovelReader.Application.Services
             var firstAppearance = new WorkChapter(request.FirstAppearance.Volume, request.FirstAppearance.Chapter);
             var character = new Character(request.Name, request.CharacterType, firstAppearance, request.WorkId)
             {
-                Description = request.Description
+                Description = request.Description,
+                ImageUrl = request.ImageUrl
             };
 
             await _characterRepository.CreateAsync(character, cancellationToken);
@@ -88,6 +89,7 @@ namespace NovelReader.Application.Services
 
             character.Name = request.Name;
             character.Description = request.Description;
+            character.ImageUrl = request.ImageUrl;
             character.CharacterType = request.CharacterType;
 
             await _characterRepository.UpdateAsync(character, cancellationToken);

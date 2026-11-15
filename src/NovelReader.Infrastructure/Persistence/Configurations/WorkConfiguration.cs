@@ -20,6 +20,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                     .HasMaxLength(2048);
             builder.Property(x => x.LinkWhereToRead)
                     .HasMaxLength(2048);
+            builder.Property(x => x.CoverImageUrl)
+                    .HasMaxLength(2048);
                 
             builder.OwnsOne(x => x.TotalChapter, tc =>
             {

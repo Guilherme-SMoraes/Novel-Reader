@@ -11,7 +11,7 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.ToTable("Progresses");
             builder.HasKey(x => x.Id);
             builder.Property(x => x.ReadingDescription)
-                .HasMaxLength(2500);
+                .HasColumnType("text");
 
             builder.OwnsOne(x => x.StoppedAtChapter, sc =>
             {

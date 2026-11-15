@@ -12,6 +12,7 @@ namespace NovelReader.Domain.Entities
         public WorkType WorkType { get; init; }
         public string AggregatorLink { get; set; }
         public string? LinkWhereToRead { get; set; }
+        public string? CoverImageUrl { get; set; }
         public WorkChapter TotalChapter { get; private set; }
         public WorkChapter? TranslatedUpTo { get; private set; }
         public bool? IsFullyTranslated => TranslatedUpTo == null ? null : TotalChapter == TranslatedUpTo;
@@ -20,7 +21,9 @@ namespace NovelReader.Domain.Entities
         public List<Character> Characters { get; private set; }
         public List<Progress> Progresses { get; private set; }
 
+#pragma warning disable CS8618
         private Work(){ }
+#pragma warning restore CS8618
         public Work(string title, 
                     WorkType workType, 
                     string aggregatorLink, 

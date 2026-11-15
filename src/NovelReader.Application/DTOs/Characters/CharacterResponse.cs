@@ -9,6 +9,7 @@ namespace NovelReader.Application.DTOs.Characters
         Guid WorkId,
         string Name,
         string? Description,
+        string? ImageUrl,
         CharacterType CharacterType,
         WorkChapterDto FirstAppearance
     )
@@ -19,6 +20,7 @@ namespace NovelReader.Application.DTOs.Characters
                 character.WorkId,
                 character.Name,
                 character.Description,
+                character.ImageUrl,
                 character.CharacterType,
                 new WorkChapterDto(character.FirstAppearance.Volume, character.FirstAppearance.Chapter)
             );

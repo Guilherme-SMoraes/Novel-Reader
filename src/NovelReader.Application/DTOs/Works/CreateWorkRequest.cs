@@ -9,6 +9,7 @@ namespace NovelReader.Application.DTOs.Works
         WorkType WorkType,
         string AggregatorLink,
         string? LinkWhereToRead,
+        string? CoverImageUrl,
         WorkChapterDto TotalChapter,
         Language OriginalLanguage
     );
