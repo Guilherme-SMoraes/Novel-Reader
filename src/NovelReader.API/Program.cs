@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using NovelReader.API.Middlewares;
 using NovelReader.Application;
 using NovelReader.Infrastructure;
+using NovelReader.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +33,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-app.UseHttpsRedirection();
+if (app.Environment.IsProduction() && !app.Configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
+{
+    app.UseHttpsRedirection();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (db.Database.IsRelational())
+    {
+        db.Database.Migrate();
+    }
+}
 
 app.MapControllers();
 
