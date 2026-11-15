@@ -1,0 +1,310 @@
+import React, { useState } from 'react';
+import type { Attachment, Work } from '../types';
+import { attachmentsApi } from '../services/api';
+import { AttachmentModal } from './AttachmentModal';
+import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText } from 'lucide-react';
+
+interface Props {
+  work: Work;
+  attachments: Attachment[];
+  onAttachmentsUpdated: () => void;
+}
+
+export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmentsUpdated }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+
+  const categories = ['TODAS', ...Array.from(new Set(attachments.map((a) => a.category)))];
+
+  const filtered = attachments.filter((a) => {
+    const matchesCategory = selectedCategory === 'TODAS' || a.category === selectedCategory;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      a.title.toLowerCase().includes(q) ||
+      (a.content && a.content.toLowerCase().includes(q)) ||
+      a.category.toLowerCase().includes(q);
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Deseja excluir o anexo "${title}"?`)) return;
+    try {
+      await attachmentsApi.delete(id);
+      onAttachmentsUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir anexo.');
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setEditingAttachment(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (attachment: Attachment) => {
+    setEditingAttachment(attachment);
+    setIsModalOpen(true);
+  };
+
+  const getCategoryColor = (cat: string) => {
+    switch (cat.toLowerCase()) {
+      case 'mapa':
+        return { bg: '#064e3b', text: '#34d399', border: '#059669' };
+      case 'sistema de poder':
+        return { bg: '#4c1d95', text: '#c084fc', border: '#7c3aed' };
+      case 'locais':
+        return { bg: '#1e3a8a', text: '#60a5fa', border: '#2563eb' };
+      case 'lore':
+        return { bg: '#78350f', text: '#fcd34d', border: '#d97706' };
+      case 'bestiário':
+        return { bg: '#831843', text: '#f472b6', border: '#db2777' };
+      case 'facções':
+        return { bg: '#134e4a', text: '#2dd4bf', border: '#0d9488' };
+      default:
+        return { bg: '#334155', text: '#94a3b8', border: '#475569' };
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Top Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Map size={22} color="#38bdf8" />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Anexos & Lore</h2>
+          <span style={{ fontSize: '0.85rem', color: '#94a3b8', background: '#1e293b', padding: '2px 8px', borderRadius: '12px' }}>
+            {attachments.length} {attachments.length === 1 ? 'item' : 'itens'}
+          </span>
+        </div>
+        <button className="btn-primary" onClick={handleOpenCreate}>
+          <Plus size={16} /> Novo Anexo
+        </button>
+      </div>
+
+      {/* Category Pills and Search */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '0.8rem',
+                border: '1px solid',
+                cursor: 'pointer',
+                background: selectedCategory === cat ? '#3b82f6' : '#1e293b',
+                color: selectedCategory === cat ? '#fff' : '#cbd5e1',
+                borderColor: selectedCategory === cat ? '#60a5fa' : '#334155',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="text"
+          placeholder="Buscar anexos..."
+          className="input-text"
+          style={{ maxWidth: '240px', padding: '6px 12px', fontSize: '0.85rem' }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Attachments Grid */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', background: '#1e293b', borderRadius: '10px', color: '#94a3b8' }}>
+          <FileText size={40} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+          <p>Nenhum anexo encontrado para esta obra.</p>
+          <button className="btn-secondary" style={{ marginTop: '12px' }} onClick={handleOpenCreate}>
+            Adicionar o primeiro anexo
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          {filtered.map((att) => {
+            const catStyle = getCategoryColor(att.category);
+            return (
+              <div
+                key={att.id}
+                style={{
+                  background: '#1e293b',
+                  borderRadius: '10px',
+                  border: '1px solid #334155',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'border-color 0.15s ease',
+                }}
+              >
+                {/* Image Section (if present) */}
+                {att.imageUrl && (
+                  <div
+                    style={{
+                      height: '180px',
+                      background: '#0f172a',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                    }}
+                    onClick={() => setLightboxImage({ url: att.imageUrl!, title: att.title })}
+                  >
+                    <img
+                      src={att.imageUrl}
+                      alt={att.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.2s ease',
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        bottom: '8px',
+                        background: 'rgba(0,0,0,0.6)',
+                        padding: '4px 6px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '0.75rem',
+                        color: '#fff',
+                      }}
+                    >
+                      <Maximize2 size={12} /> Ampliar
+                    </div>
+                  </div>
+                )}
+
+                {/* Card Body */}
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: catStyle.bg,
+                        color: catStyle.text,
+                        border: `1px solid ${catStyle.border}`,
+                      }}
+                    >
+                      {att.category}
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        className="btn-icon"
+                        title="Editar Anexo"
+                        style={{ padding: '4px' }}
+                        onClick={() => handleOpenEdit(att)}
+                      >
+                        <Edit2 size={14} color="#94a3b8" />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        title="Excluir Anexo"
+                        style={{ padding: '4px' }}
+                        onClick={() => handleDelete(att.id, att.title)}
+                      >
+                        <Trash2 size={14} color="#ef4444" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                    {att.title}
+                  </h3>
+
+                  {att.content && (
+                    <div
+                      style={{
+                        fontSize: '0.85rem',
+                        color: '#cbd5e1',
+                        lineHeight: 1.5,
+                        whiteSpace: 'pre-wrap',
+                        flex: 1,
+                        marginBottom: '10px',
+                        maxHeight: '140px',
+                        overflowY: 'auto',
+                        paddingRight: '4px',
+                      }}
+                    >
+                      {att.content}
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid #334155' }}>
+                    {att.updatedAt ? `Atualizado em ${new Date(att.updatedAt).toLocaleDateString()}` : `Adicionado em ${new Date(att.createdAt).toLocaleDateString()}`}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setLightboxImage(null)}
+          style={{ zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '8px', color: '#fff' }}>
+              <span style={{ fontWeight: 600 }}>{lightboxImage.title}</span>
+              <button className="btn-icon" onClick={() => setLightboxImage(null)}><X size={20} /></button>
+            </div>
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.title}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                border: '1px solid #334155',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit Modal */}
+      <AttachmentModal
+        isOpen={isModalOpen}
+        workId={work.id}
+        attachmentToEdit={editingAttachment}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingAttachment(null);
+        }}
+        onSaved={onAttachmentsUpdated}
+      />
+    </div>
+  );
+};

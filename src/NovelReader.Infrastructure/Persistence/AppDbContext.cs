@@ -11,6 +11,7 @@ namespace NovelReader.Infrastructure.Persistence
         public DbSet<Genre> Genres { get; set; }
         public DbSet<Character> Characters { get; set; }
         public DbSet<Progress> Progresses { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

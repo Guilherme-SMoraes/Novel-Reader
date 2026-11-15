@@ -116,3 +116,28 @@ export interface PagedResult<T> {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
+
+export interface Attachment {
+  id: string;
+  workId: string;
+  title: string;
+  category: string;
+  content: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CreateAttachmentRequest {
+  title: string;
+  category: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface UpdateAttachmentRequest {
+  title: string;
+  category: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}

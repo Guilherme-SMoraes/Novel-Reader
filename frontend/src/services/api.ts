@@ -1,5 +1,7 @@
 import type {
+  Attachment,
   Character,
+  CreateAttachmentRequest,
   CreateCharacterRequest,
   CreateProgressRequest,
   CreateWorkRequest,
@@ -7,6 +9,7 @@ import type {
   PagedResult,
   Progress,
   ReadingStatus,
+  UpdateAttachmentRequest,
   Work,
   WorkType
 } from '../types';
@@ -127,5 +130,27 @@ export const genresApi = {
     request<Genre>('/genres', {
       method: 'POST',
       body: JSON.stringify({ name, description }),
+    }),
+};
+
+export const attachmentsApi = {
+  getByWorkId: (workId: string) =>
+    request<Attachment[]>(`/works/${workId}/attachments`),
+
+  create: (workId: string, data: CreateAttachmentRequest) =>
+    request<Attachment>(`/works/${workId}/attachments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: UpdateAttachmentRequest) =>
+    request<Attachment>(`/attachments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    request<void>(`/attachments/${id}`, {
+      method: 'DELETE',
     }),
 };

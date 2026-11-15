@@ -22,6 +22,45 @@ namespace NovelReader.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("NovelReader.Domain.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkId");
+
+                    b.ToTable("Attachments", (string)null);
+                });
+
             modelBuilder.Entity("NovelReader.Domain.Entities.Character", b =>
                 {
                     b.Property<Guid>("Id")
@@ -154,6 +193,15 @@ namespace NovelReader.Infrastructure.Migrations
                     b.HasIndex("WorkId");
 
                     b.ToTable("WorkGenres");
+                });
+
+            modelBuilder.Entity("NovelReader.Domain.Entities.Attachment", b =>
+                {
+                    b.HasOne("NovelReader.Domain.Entities.Work", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("WorkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("NovelReader.Domain.Entities.Character", b =>
@@ -289,6 +337,8 @@ namespace NovelReader.Infrastructure.Migrations
 
             modelBuilder.Entity("NovelReader.Domain.Entities.Work", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Characters");
 
                     b.Navigation("Progresses");

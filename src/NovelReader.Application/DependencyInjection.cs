@@ -15,6 +15,7 @@ namespace NovelReader.Application
             services.AddScoped<IProgressService, ProgressService>();
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<IGenreService, GenreService>();
+            services.AddScoped<IAttachmentService, AttachmentService>();
 
             return services;
         }

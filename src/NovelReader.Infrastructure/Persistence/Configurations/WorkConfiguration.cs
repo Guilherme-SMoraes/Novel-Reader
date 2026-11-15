@@ -43,6 +43,10 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)
                     .OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(x => x.Attachments)
+                    .WithOne()
+                    .HasForeignKey(x => x.WorkId)
+                    .OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(x => x.Genres)
                     .WithMany()
                     .UsingEntity("WorkGenres");

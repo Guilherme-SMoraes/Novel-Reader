@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { Character, Genre, Progress, ReadingStatus, Work, WorkType } from './types';
-import { charactersApi, genresApi, progressApi, worksApi } from './services/api';
+import type { Attachment, Character, Genre, Progress, ReadingStatus, Work, WorkType } from './types';
+import { attachmentsApi, charactersApi, genresApi, progressApi, worksApi } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { WorkDetail } from './components/WorkDetail';
 import { CreateWorkModal } from './components/CreateWorkModal';
@@ -13,6 +13,7 @@ export function App() {
 
   const [progressList, setProgressList] = useState<Progress[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   // Filtros
   const [searchTitle, setSearchTitle] = useState('');
@@ -66,15 +67,17 @@ export function App() {
     return () => clearTimeout(timer);
   }, [searchTitle, selectedStatus, selectedType, selectedGenreId]);
 
-  // Carrega detalhes, progressos e personagens da obra selecionada
+  // Carrega detalhes, progressos, personagens e anexos da obra selecionada
   const fetchWorkDetails = async (workId: string) => {
     try {
-      const [progRes, charRes] = await Promise.all([
+      const [progRes, charRes, attRes] = await Promise.all([
         progressApi.getByWorkId(workId),
         charactersApi.getByWorkId(workId),
+        attachmentsApi.getByWorkId(workId),
       ]);
       setProgressList(progRes.items);
       setCharacters(charRes.items);
+      setAttachments(attRes);
     } catch (err) {
       console.error('Erro ao buscar detalhes da obra:', err);
     }
@@ -86,6 +89,7 @@ export function App() {
     } else {
       setProgressList([]);
       setCharacters([]);
+      setAttachments([]);
     }
   }, [selectedWorkId]);
 
@@ -129,6 +133,7 @@ export function App() {
             work={selectedWork}
             progressList={progressList}
             characters={characters}
+            attachments={attachments}
             onDataUpdated={() => fetchWorkDetails(selectedWork.id)}
             onWorkDeleted={fetchWorks}
           />

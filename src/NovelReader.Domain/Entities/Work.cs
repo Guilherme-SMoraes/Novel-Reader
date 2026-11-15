@@ -20,6 +20,7 @@ namespace NovelReader.Domain.Entities
         public Language? TranslatedLanguage { get; private set; }
         public List<Character> Characters { get; private set; }
         public List<Progress> Progresses { get; private set; }
+        public List<Attachment> Attachments { get; private set; }
 
 #pragma warning disable CS8618
         private Work(){ }
@@ -48,6 +49,7 @@ namespace NovelReader.Domain.Entities
             Genres = new();
             Characters = new();
             Progresses = new();
+            Attachments = new();
         }
 
         public void AddGenre(Genre genre)
@@ -81,6 +83,18 @@ namespace NovelReader.Domain.Entities
                 return;
             }
             Progresses.Add(progress);
+        }
+        public void AddAttachment(Attachment attachment)
+        {
+            if (Attachments.Any(x => x.Id == attachment.Id))
+            {
+                return;
+            }
+            Attachments.Add(attachment);
+        }
+        public void RemoveAttachment(Guid id)
+        {
+            Attachments.RemoveAll(x => x.Id == id);
         }
         public void UpdateTotalChapters(WorkChapter totalChapter)
         {
