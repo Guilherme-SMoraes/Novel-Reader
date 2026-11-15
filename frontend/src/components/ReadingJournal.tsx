@@ -3,6 +3,8 @@ import type { Progress, Work, WorkType } from '../types';
 import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { CreateProgressModal } from './CreateProgressModal';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 import { BookMarked, Plus, Trash2, ExternalLink } from 'lucide-react';
 
 interface Props {
@@ -17,6 +19,8 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingQuickAdd, setLoadingQuickAdd] = useState(false);
+  const [progressToDeleteId, setProgressToDeleteId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // Fallback se o formato selecionado não existir mais na obra
   const activeFormat =
@@ -39,7 +43,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
 
   const handleQuickAddChapter = async () => {
     if (currentChapter >= totalChapter) {
-      alert(`Você já atingiu o total de capítulos (${totalChapter}) deste formato.`);
+      showToast(`Você já atingiu o total de capítulos (${totalChapter}) deste formato.`, 'warning');
       return;
     }
 
@@ -57,20 +61,18 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
       });
       onProgressUpdated();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erro ao avançar capítulo.');
+      showToast(err instanceof Error ? err.message : 'Erro ao avançar capítulo.', 'error');
     } finally {
       setLoadingQuickAdd(false);
     }
   };
 
-  const handleDeleteProgress = async (id: string) => {
-    if (!confirm('Deseja excluir este registro de progresso?')) return;
-    try {
-      await progressApi.delete(work.id, id);
-      onProgressUpdated();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erro ao excluir progresso.');
-    }
+  const handleConfirmDeleteProgress = async () => {
+    if (!progressToDeleteId) return;
+    await progressApi.delete(work.id, progressToDeleteId);
+    showToast('Registro de progresso excluído.', 'info');
+    onProgressUpdated();
+    setProgressToDeleteId(null);
   };
 
   return (
@@ -244,7 +246,8 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                 </div>
 
                 <button
-                  onClick={() => handleDeleteProgress(p.id)}
+                  type="button"
+                  onClick={() => setProgressToDeleteId(p.id)}
                   style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                   title="Excluir anotação"
                 >
@@ -264,6 +267,17 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           lastChapter={currentChapter}
           onClose={() => setIsModalOpen(false)}
           onCreated={onProgressUpdated}
+        />
+      )}
+
+      {progressToDeleteId && (
+        <ConfirmModal
+          isOpen={!!progressToDeleteId}
+          title="Excluir Registro de Progresso"
+          message="Tem certeza que deseja apagar esta anotação e registro de progresso? Esta ação não pode ser desfeita."
+          confirmText="Excluir Registro"
+          onConfirm={handleConfirmDeleteProgress}
+          onCancel={() => setProgressToDeleteId(null)}
         />
       )}
     </section>

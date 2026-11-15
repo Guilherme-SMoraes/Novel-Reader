@@ -4,8 +4,8 @@ import { LanguageLabels, WorkTypeLabels } from '../types';
 import { ReadingJournal } from './ReadingJournal';
 import { CharacterList } from './CharacterList';
 import { AttachmentList } from './AttachmentList';
+import { DeleteWorkModal } from './DeleteWorkModal';
 import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map } from 'lucide-react';
-import { worksApi } from '../services/api';
 
 interface Props {
   work: Work;
@@ -27,16 +27,7 @@ export const WorkDetail: React.FC<Props> = ({
   onOpenEditWork,
 }) => {
   const [activeTab, setActiveTab] = useState<'journal' | 'characters' | 'attachments'>('journal');
-
-  const handleDeleteWork = async () => {
-    if (!confirm(`Deseja realmente excluir a obra "${work.title}" e todos os seus dados?`)) return;
-    try {
-      await worksApi.delete(work.id);
-      onWorkDeleted();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erro ao excluir obra.');
-    }
-  };
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: '#0f172a' }}>
@@ -96,7 +87,7 @@ export const WorkDetail: React.FC<Props> = ({
                 <Edit2 size={14} /> Editar Obra
               </button>
               <button
-                onClick={handleDeleteWork}
+                onClick={() => setIsDeleteModalOpen(true)}
                 style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}
                 title="Excluir obra"
               >
@@ -269,6 +260,15 @@ export const WorkDetail: React.FC<Props> = ({
           work={work}
           attachments={attachments}
           onAttachmentsUpdated={onDataUpdated}
+        />
+      )}
+
+      {isDeleteModalOpen && (
+        <DeleteWorkModal
+          isOpen={isDeleteModalOpen}
+          work={work}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onDeleted={onWorkDeleted}
         />
       )}
     </div>

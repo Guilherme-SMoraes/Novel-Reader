@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { Attachment, Work } from '../types';
 import { attachmentsApi } from '../services/api';
 import { AttachmentModal } from './AttachmentModal';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText } from 'lucide-react';
 
 interface Props {
@@ -16,6 +18,8 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+  const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
+  const { showToast } = useToast();
 
   const categories = ['TODAS', ...Array.from(new Set(attachments.map((a) => a.category)))];
 
@@ -29,14 +33,12 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
     return matchesCategory && matchesSearch;
   });
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Deseja excluir o anexo "${title}"?`)) return;
-    try {
-      await attachmentsApi.delete(id);
-      onAttachmentsUpdated();
-    } catch (err: any) {
-      alert(err.message || 'Erro ao excluir anexo.');
-    }
+  const handleConfirmDelete = async () => {
+    if (!attachmentToDelete) return;
+    await attachmentsApi.delete(attachmentToDelete.id);
+    showToast(`Anexo "${attachmentToDelete.title}" excluído com sucesso.`, 'info');
+    onAttachmentsUpdated();
+    setAttachmentToDelete(null);
   };
 
   const handleOpenCreate = () => {
@@ -215,10 +217,11 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
                         <Edit2 size={14} color="#94a3b8" />
                       </button>
                       <button
+                        type="button"
                         className="btn-icon"
                         title="Excluir Anexo"
                         style={{ padding: '4px' }}
-                        onClick={() => handleDelete(att.id, att.title)}
+                        onClick={() => setAttachmentToDelete(att)}
                       >
                         <Trash2 size={14} color="#ef4444" />
                       </button>
@@ -305,6 +308,17 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
         }}
         onSaved={onAttachmentsUpdated}
       />
+
+      {attachmentToDelete && (
+        <ConfirmModal
+          isOpen={!!attachmentToDelete}
+          title="Excluir Anexo"
+          message={`Deseja realmente excluir o anexo "${attachmentToDelete.title}"? Esta ação não pode ser desfeita.`}
+          confirmText="Excluir Anexo"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setAttachmentToDelete(null)}
+        />
+      )}
     </div>
   );
 };

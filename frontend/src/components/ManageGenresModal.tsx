@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { Genre } from '../types';
 import { genresApi } from '../services/api';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 import { X, Plus, Trash2, Tag } from 'lucide-react';
 
 interface Props {
@@ -20,6 +22,8 @@ export const ManageGenresModal: React.FC<Props> = ({
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [genreToDelete, setGenreToDelete] = useState<Genre | null>(null);
+  const { showToast } = useToast();
 
   if (!isOpen) return null;
 
@@ -31,6 +35,7 @@ export const ManageGenresModal: React.FC<Props> = ({
     setError(null);
     try {
       await genresApi.create(name.trim(), description.trim() || undefined);
+      showToast(`Gênero "${name.trim()}" criado com sucesso.`, 'success');
       setName('');
       setDescription('');
       onGenresUpdated();
@@ -41,15 +46,12 @@ export const ManageGenresModal: React.FC<Props> = ({
     }
   };
 
-  const handleDeleteGenre = async (id: string, genreName: string) => {
-    if (!confirm(`Deseja realmente apagar o gênero "${genreName}"? As obras vinculadas perderão esse gênero.`)) return;
-
-    try {
-      await genresApi.delete(id);
-      onGenresUpdated();
-    } catch (err: any) {
-      alert(err.message || 'Erro ao apagar gênero.');
-    }
+  const handleConfirmDeleteGenre = async () => {
+    if (!genreToDelete) return;
+    await genresApi.delete(genreToDelete.id);
+    showToast(`Gênero "${genreToDelete.name}" apagado.`, 'info');
+    onGenresUpdated();
+    setGenreToDelete(null);
   };
 
   return (
@@ -127,10 +129,11 @@ export const ManageGenresModal: React.FC<Props> = ({
                   )}
                 </div>
                 <button
+                  type="button"
                   className="btn-icon"
                   title="Apagar gênero"
                   style={{ color: '#f87171' }}
-                  onClick={() => handleDeleteGenre(g.id, g.name)}
+                  onClick={() => setGenreToDelete(g)}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -145,6 +148,17 @@ export const ManageGenresModal: React.FC<Props> = ({
           </button>
         </div>
       </div>
+
+      {genreToDelete && (
+        <ConfirmModal
+          isOpen={!!genreToDelete}
+          title="Apagar Gênero"
+          message={`Deseja realmente apagar o gênero "${genreToDelete.name}"? As obras vinculadas perderão a marcação desse gênero.`}
+          confirmText="Apagar Gênero"
+          onConfirm={handleConfirmDeleteGenre}
+          onCancel={() => setGenreToDelete(null)}
+        />
+      )}
     </div>
   );
 };

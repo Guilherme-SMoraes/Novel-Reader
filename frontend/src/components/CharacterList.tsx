@@ -3,6 +3,8 @@ import type { Character, Work } from '../types';
 import { CharacterTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { CharacterModal } from './CharacterModal';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 import { Users, Plus, Trash2, Edit2, User } from 'lucide-react';
 
 interface Props {
@@ -15,6 +17,8 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
   const [filterQuery, setFilterQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
+  const { showToast } = useToast();
 
   const filtered = characters.filter((c) => {
     const q = filterQuery.toLowerCase();
@@ -22,14 +26,12 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
     return c.name.toLowerCase().includes(q) || role.includes(q) || (c.description && c.description.toLowerCase().includes(q));
   });
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Deseja excluir o personagem "${name}"?`)) return;
-    try {
-      await charactersApi.delete(work.id, id);
-      onCharactersUpdated();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erro ao excluir personagem.');
-    }
+  const handleConfirmDelete = async () => {
+    if (!characterToDelete) return;
+    await charactersApi.delete(work.id, characterToDelete.id);
+    showToast(`Personagem "${characterToDelete.name}" excluído com sucesso.`, 'info');
+    onCharactersUpdated();
+    setCharacterToDelete(null);
   };
 
   const handleOpenCreate = () => {
@@ -128,7 +130,8 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                     <Edit2 size={13} />
                   </button>
                   <button
-                    onClick={() => handleDelete(c.id, c.name)}
+                    type="button"
+                    onClick={() => setCharacterToDelete(c)}
                     style={{
                       background: 'rgba(0,0,0,0.6)',
                       color: '#f87171',
@@ -177,6 +180,17 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
         }}
         onSaved={onCharactersUpdated}
       />
+
+      {characterToDelete && (
+        <ConfirmModal
+          isOpen={!!characterToDelete}
+          title="Excluir Personagem"
+          message={`Deseja realmente excluir o personagem "${characterToDelete.name}"? Esta ação não pode ser desfeita.`}
+          confirmText="Excluir Personagem"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setCharacterToDelete(null)}
+        />
+      )}
     </section>
   );
 };
