@@ -7,5 +7,6 @@ namespace NovelReader.Domain.Enums
         Manhwa = 3,
         Manhua = 4,
         Manga = 5,
+        Anime = 6
     }
 }

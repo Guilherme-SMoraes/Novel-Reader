@@ -24,7 +24,7 @@ interface FormatFormState {
   linkWhereToRead: string;
 }
 
-const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5];
+const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5, 6];
 
 export const WorkModal: React.FC<Props> = ({
   isOpen,
