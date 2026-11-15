@@ -16,5 +16,6 @@ namespace NovelReader.Domain.Interfaces.Repositories
         Task DeleteAsync(Guid id, CancellationToken cancellationToken);
         Task AddGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken);
         Task RemoveGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken);
+        Task SetGenresAsync(Guid workId, IEnumerable<Guid> genreIds, CancellationToken cancellationToken);
     }
 }

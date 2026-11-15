@@ -11,6 +11,7 @@ namespace NovelReader.Application.DTOs.Works
         string? CoverImageUrl,
         WorkChapterDto TotalChapter,
         WorkChapterDto? TranslatedUpTo,
-        Language? TranslatedLanguage
+        Language? TranslatedLanguage,
+        List<Guid>? GenreIds = null
     );
 }

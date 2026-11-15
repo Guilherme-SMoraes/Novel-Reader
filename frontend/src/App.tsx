@@ -3,7 +3,8 @@ import type { Attachment, Character, Genre, Progress, ReadingStatus, Work, WorkT
 import { attachmentsApi, charactersApi, genresApi, progressApi, worksApi } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { WorkDetail } from './components/WorkDetail';
-import { CreateWorkModal } from './components/CreateWorkModal';
+import { WorkModal } from './components/WorkModal';
+import { ManageGenresModal } from './components/ManageGenresModal';
 import { BookOpen } from 'lucide-react';
 
 export function App() {
@@ -21,17 +22,25 @@ export function App() {
   const [selectedType, setSelectedType] = useState<WorkType | null>(null);
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
 
-  const [isCreateWorkOpen, setIsCreateWorkOpen] = useState(false);
+  // Modais
+  const [isWorkModalOpen, setIsWorkModalOpen] = useState(false);
+  const [workToEdit, setWorkToEdit] = useState<Work | null>(null);
+  const [isManageGenresOpen, setIsManageGenresOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Carrega gêneros uma vez
+  const fetchGenres = async () => {
+    try {
+      const res = await genresApi.getAll();
+      setGenres(res.items);
+    } catch (err) {
+      console.error('Erro ao carregar gêneros:', err);
+    }
+  };
+
   useEffect(() => {
-    genresApi.getAll()
-      .then((res) => setGenres(res.items))
-      .catch((err) => console.error('Erro ao carregar gêneros:', err));
+    fetchGenres();
   }, []);
 
-  // Carrega obras sempre que os filtros mudarem
   const fetchWorks = async () => {
     try {
       setLoading(true);
@@ -44,7 +53,6 @@ export function App() {
 
       setWorks(res.items);
 
-      // Se a obra selecionada não estiver na lista ou não houver obra selecionada, seleciona a primeira
       if (res.items.length > 0) {
         if (!selectedWorkId || !res.items.some((w) => w.id === selectedWorkId)) {
           setSelectedWorkId(res.items[0].id);
@@ -67,7 +75,6 @@ export function App() {
     return () => clearTimeout(timer);
   }, [searchTitle, selectedStatus, selectedType, selectedGenreId]);
 
-  // Carrega detalhes, progressos, personagens e anexos da obra selecionada
   const fetchWorkDetails = async (workId: string) => {
     try {
       const [progRes, charRes, attRes] = await Promise.all([
@@ -102,6 +109,18 @@ export function App() {
     setSelectedGenreId(null);
   };
 
+  const handleOpenCreateWork = () => {
+    setWorkToEdit(null);
+    setIsWorkModalOpen(true);
+  };
+
+  const handleOpenEditWork = () => {
+    if (selectedWork) {
+      setWorkToEdit(selectedWork);
+      setIsWorkModalOpen(true);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
       {/* Sidebar com Lista e Filtros */}
@@ -109,7 +128,7 @@ export function App() {
         works={works}
         selectedWorkId={selectedWorkId}
         onSelectWork={setSelectedWorkId}
-        onOpenCreateWork={() => setIsCreateWorkOpen(true)}
+        onOpenCreateWork={handleOpenCreateWork}
         genres={genres}
         searchTitle={searchTitle}
         onSearchTitleChange={setSearchTitle}
@@ -120,6 +139,7 @@ export function App() {
         selectedGenreId={selectedGenreId}
         onGenreChange={setSelectedGenreId}
         onResetFilters={handleResetFilters}
+        onOpenManageGenres={() => setIsManageGenresOpen(true)}
       />
 
       {/* Painel Principal */}
@@ -134,8 +154,12 @@ export function App() {
             progressList={progressList}
             characters={characters}
             attachments={attachments}
-            onDataUpdated={() => fetchWorkDetails(selectedWork.id)}
+            onDataUpdated={() => {
+              fetchWorkDetails(selectedWork.id);
+              fetchWorks();
+            }}
             onWorkDeleted={fetchWorks}
+            onOpenEditWork={handleOpenEditWork}
           />
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 32 }}>
@@ -146,18 +170,35 @@ export function App() {
                 ? 'Você ainda não cadastrou nenhuma obra ou nenhuma corresponde aos filtros atuais.'
                 : 'Selecione uma obra na lista lateral para visualizar os detalhes, progresso e personagens.'}
             </p>
-            <button onClick={() => setIsCreateWorkOpen(true)} className="btn-primary">
+            <button onClick={handleOpenCreateWork} className="btn-primary">
               Cadastrar Primeira Obra
             </button>
           </div>
         )}
       </main>
 
-      {/* Modal para Cadastrar Obra */}
-      <CreateWorkModal
-        isOpen={isCreateWorkOpen}
-        onClose={() => setIsCreateWorkOpen(false)}
-        onCreated={fetchWorks}
+      {/* Modal para Cadastrar / Editar Obra */}
+      <WorkModal
+        isOpen={isWorkModalOpen}
+        workToEdit={workToEdit}
+        genres={genres}
+        onClose={() => {
+          setIsWorkModalOpen(false);
+          setWorkToEdit(null);
+        }}
+        onSaved={fetchWorks}
+        onOpenManageGenres={() => setIsManageGenresOpen(true)}
+      />
+
+      {/* Modal para Gerenciar Gêneros */}
+      <ManageGenresModal
+        isOpen={isManageGenresOpen}
+        genres={genres}
+        onClose={() => setIsManageGenresOpen(false)}
+        onGenresUpdated={() => {
+          fetchGenres();
+          fetchWorks();
+        }}
       />
     </div>
   );

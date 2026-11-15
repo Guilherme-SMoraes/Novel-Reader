@@ -192,5 +192,37 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             work.RemoveGenre(genreId);
             await _context.SaveChangesAsync(cancellationToken);
         }
+
+        public async Task SetGenresAsync(Guid workId, IEnumerable<Guid> genreIds, CancellationToken cancellationToken)
+        {
+            var work = await _context.Works
+                .Include(x => x.Genres)
+                .FirstOrDefaultAsync(x => x.Id == workId, cancellationToken);
+
+            if (work is null)
+            {
+                throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
+            }
+
+            var targetIds = genreIds.ToHashSet();
+            work.Genres.RemoveAll(g => !targetIds.Contains(g.Id));
+
+            var currentIds = work.Genres.Select(g => g.Id).ToHashSet();
+            var idsToAdd = targetIds.Where(id => !currentIds.Contains(id)).ToList();
+
+            if (idsToAdd.Any())
+            {
+                var genresToAdd = await _context.Genres
+                    .Where(g => idsToAdd.Contains(g.Id))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var genre in genresToAdd)
+                {
+                    work.AddGenre(genre);
+                }
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

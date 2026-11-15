@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import type { Character, Work } from '../types';
 import { CharacterTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
-import { CreateCharacterModal } from './CreateCharacterModal';
-import { Users, Plus, Trash2, User } from 'lucide-react';
+import { CharacterModal } from './CharacterModal';
+import { Users, Plus, Trash2, Edit2, User } from 'lucide-react';
 
 interface Props {
   work: Work;
@@ -14,6 +14,7 @@ interface Props {
 export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersUpdated }) => {
   const [filterQuery, setFilterQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
 
   const filtered = characters.filter((c) => {
     const q = filterQuery.toLowerCase();
@@ -21,14 +22,24 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
     return c.name.toLowerCase().includes(q) || role.includes(q) || (c.description && c.description.toLowerCase().includes(q));
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deseja excluir este personagem?')) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Deseja excluir o personagem "${name}"?`)) return;
     try {
       await charactersApi.delete(work.id, id);
       onCharactersUpdated();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Erro ao excluir personagem.');
     }
+  };
+
+  const handleOpenCreate = () => {
+    setEditingCharacter(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (character: Character) => {
+    setEditingCharacter(character);
+    setIsModalOpen(true);
   };
 
   return (
@@ -50,7 +61,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
             placeholder="🔍 Filtrar por nome ou papel..."
             style={{ width: 220, padding: '6px 10px', fontSize: '0.8rem' }}
           />
-          <button onClick={() => setIsModalOpen(true)} className="btn-primary" style={{ padding: '6px 12px' }}>
+          <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 12px' }}>
             <Plus size={14} /> Personagem
           </button>
         </div>
@@ -99,22 +110,38 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                 >
                   {CharacterTypeLabels[c.characterType]}
                 </span>
-                {/* Botão de Excluir */}
-                <button
-                  onClick={() => handleDelete(c.id)}
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    background: 'rgba(0,0,0,0.6)',
-                    color: '#f87171',
-                    borderRadius: 4,
-                    padding: 4,
-                  }}
-                  title="Excluir personagem"
-                >
-                  <Trash2 size={13} />
-                </button>
+
+                {/* Ações: Editar e Excluir */}
+                <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
+                  <button
+                    onClick={() => handleOpenEdit(c)}
+                    style={{
+                      background: 'rgba(0,0,0,0.6)',
+                      color: '#94a3b8',
+                      borderRadius: 4,
+                      padding: 4,
+                      cursor: 'pointer',
+                      border: 'none',
+                    }}
+                    title="Editar personagem"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c.id, c.name)}
+                    style={{
+                      background: 'rgba(0,0,0,0.6)',
+                      color: '#f87171',
+                      borderRadius: 4,
+                      padding: 4,
+                      cursor: 'pointer',
+                      border: 'none',
+                    }}
+                    title="Excluir personagem"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
 
               {/* Informações */}
@@ -140,11 +167,15 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
       )}
 
       {/* Modal */}
-      <CreateCharacterModal
+      <CharacterModal
         isOpen={isModalOpen}
         workId={work.id}
-        onClose={() => setIsModalOpen(false)}
-        onCreated={onCharactersUpdated}
+        characterToEdit={editingCharacter}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingCharacter(null);
+        }}
+        onSaved={onCharactersUpdated}
       />
     </section>
   );

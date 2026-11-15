@@ -53,6 +53,7 @@ export interface Work {
   isFullyTranslated: boolean | null;
   originalLanguage: Language;
   translatedLanguage: Language | null;
+  genres?: Genre[];
 }
 
 export interface CreateWorkRequest {
@@ -64,6 +65,19 @@ export interface CreateWorkRequest {
   coverImageUrl?: string | null;
   totalChapter: WorkChapter;
   originalLanguage: Language;
+  genreIds?: string[];
+}
+
+export interface UpdateWorkRequest {
+  title: string;
+  description?: string | null;
+  aggregatorLink: string;
+  linkWhereToRead?: string | null;
+  coverImageUrl?: string | null;
+  totalChapter: WorkChapter;
+  translatedUpTo?: WorkChapter | null;
+  translatedLanguage?: Language | null;
+  genreIds?: string[];
 }
 
 export interface Progress {
@@ -99,6 +113,13 @@ export interface CreateCharacterRequest {
   imageUrl?: string | null;
   characterType: CharacterType;
   firstAppearance: WorkChapter;
+}
+
+export interface UpdateCharacterRequest {
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  characterType: CharacterType;
 }
 
 export interface Genre {

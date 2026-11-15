@@ -10,6 +10,8 @@ import type {
   Progress,
   ReadingStatus,
   UpdateAttachmentRequest,
+  UpdateCharacterRequest,
+  UpdateWorkRequest,
   Work,
   WorkType
 } from '../types';
@@ -74,6 +76,12 @@ export const worksApi = {
       body: JSON.stringify(data),
     }),
 
+  update: (id: string, data: UpdateWorkRequest) =>
+    request<void>(`/works/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   delete: (id: string) =>
     request<void>(`/works/${id}`, {
       method: 'DELETE',
@@ -116,6 +124,12 @@ export const charactersApi = {
       body: JSON.stringify(data),
     }),
 
+  update: (workId: string, id: string, data: UpdateCharacterRequest) =>
+    request<void>(`/works/${workId}/characters/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   delete: (workId: string, id: string) =>
     request<void>(`/works/${workId}/characters/${id}`, {
       method: 'DELETE',
@@ -130,6 +144,11 @@ export const genresApi = {
     request<Genre>('/genres', {
       method: 'POST',
       body: JSON.stringify({ name, description }),
+    }),
+
+  delete: (id: string) =>
+    request<void>(`/genres/${id}`, {
+      method: 'DELETE',
     }),
 };
 

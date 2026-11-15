@@ -1,4 +1,5 @@
 using NovelReader.Application.DTOs.Common;
+using NovelReader.Application.DTOs.Genres;
 using NovelReader.Domain.Entities;
 using NovelReader.Domain.Enums;
 
@@ -16,7 +17,8 @@ namespace NovelReader.Application.DTOs.Works
         WorkChapterDto? TranslatedUpTo,
         bool? IsFullyTranslated,
         Language OriginalLanguage,
-        Language? TranslatedLanguage
+        Language? TranslatedLanguage,
+        IReadOnlyList<GenreResponse> Genres
     )
     {
         public static WorkResponse FromEntity(Work work) =>
@@ -32,7 +34,8 @@ namespace NovelReader.Application.DTOs.Works
                 work.TranslatedUpTo != null ? new WorkChapterDto(work.TranslatedUpTo.Volume, work.TranslatedUpTo.Chapter) : null,
                 work.IsFullyTranslated,
                 work.OriginalLanguage,
-                work.TranslatedLanguage
+                work.TranslatedLanguage,
+                work.Genres?.Select(GenreResponse.FromEntity).ToList() ?? new List<GenreResponse>()
             );
     }
 }

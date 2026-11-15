@@ -18,6 +18,7 @@ interface Props {
   selectedGenreId: string | null;
   onGenreChange: (g: string | null) => void;
   onResetFilters: () => void;
+  onOpenManageGenres?: () => void;
 }
 
 export const Sidebar: React.FC<Props> = ({
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<Props> = ({
   selectedGenreId,
   onGenreChange,
   onResetFilters,
+  onOpenManageGenres,
 }) => {
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
 
@@ -155,7 +157,18 @@ export const Sidebar: React.FC<Props> = ({
             </div>
 
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Gênero</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Gênero</label>
+                {onOpenManageGenres && (
+                  <button
+                    type="button"
+                    onClick={onOpenManageGenres}
+                    style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '0.68rem', cursor: 'pointer', padding: 0 }}
+                  >
+                    Gerenciar
+                  </button>
+                )}
+              </div>
               <select
                 value={selectedGenreId || ''}
                 onChange={(e) => onGenreChange(e.target.value || null)}

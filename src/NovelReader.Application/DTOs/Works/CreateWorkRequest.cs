@@ -11,6 +11,7 @@ namespace NovelReader.Application.DTOs.Works
         string? LinkWhereToRead,
         string? CoverImageUrl,
         WorkChapterDto TotalChapter,
-        Language OriginalLanguage
+        Language OriginalLanguage,
+        List<Guid>? GenreIds = null
     );
 }

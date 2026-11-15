@@ -4,7 +4,7 @@ import { LanguageLabels, WorkTypeLabels } from '../types';
 import { ReadingJournal } from './ReadingJournal';
 import { CharacterList } from './CharacterList';
 import { AttachmentList } from './AttachmentList';
-import { ExternalLink, Trash2, BookOpen, Users, Map } from 'lucide-react';
+import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map } from 'lucide-react';
 import { worksApi } from '../services/api';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
   attachments: Attachment[];
   onDataUpdated: () => void;
   onWorkDeleted: () => void;
+  onOpenEditWork: () => void;
 }
 
 export const WorkDetail: React.FC<Props> = ({
@@ -23,6 +24,7 @@ export const WorkDetail: React.FC<Props> = ({
   attachments,
   onDataUpdated,
   onWorkDeleted,
+  onOpenEditWork,
 }) => {
   const [activeTab, setActiveTab] = useState<'journal' | 'characters' | 'attachments'>('journal');
 
@@ -82,18 +84,47 @@ export const WorkDetail: React.FC<Props> = ({
                 Traduzido até cap. {work.translatedUpTo.chapter}
               </span>
             )}
-            <button
-              onClick={handleDeleteWork}
-              style={{ marginLeft: 'auto', color: '#f87171', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem' }}
-              title="Excluir obra"
-            >
-              <Trash2 size={14} /> Excluir Obra
-            </button>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                onClick={onOpenEditWork}
+                style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                title="Editar obra"
+              >
+                <Edit2 size={14} /> Editar Obra
+              </button>
+              <button
+                onClick={handleDeleteWork}
+                style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                title="Excluir obra"
+              >
+                <Trash2 size={14} /> Excluir Obra
+              </button>
+            </div>
           </div>
 
           <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: 8, wordBreak: 'break-word' }}>
             {work.title}
           </h1>
+
+          {work.genres && work.genres.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {work.genres.map((g) => (
+                <span
+                  key={g.id}
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    background: '#1e293b',
+                    color: '#38bdf8',
+                    border: '1px solid #334155',
+                  }}
+                >
+                  {g.name}
+                </span>
+              ))}
+            </div>
+          )}
 
           {work.description && (
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: 16 }}>
