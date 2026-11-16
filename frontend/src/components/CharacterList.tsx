@@ -143,21 +143,99 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   return (
     <section>
-      {/* Header com Título e Botão de Adicionar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+      {/* Header Desktop com Busca, Ordenação e Botão de Adicionar */}
+      <div className="desktop-only" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={18} color="#38bdf8" />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
             Personagens da Obra ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
           </h3>
         </div>
-        <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
-          <Plus size={14} /> Personagem
-        </button>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={filterQuery}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            placeholder="🔍 Filtrar por nome ou papel..."
+            style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
+          />
+
+          {allAffiliations.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Shield size={14} color="#c084fc" />
+              <select
+                value={selectedAffiliation}
+                onChange={(e) => {
+                  setSelectedAffiliation(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '6px 8px',
+                  fontSize: '0.8rem',
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  maxWidth: 160,
+                }}
+                title="Filtrar por grupo / afiliação"
+              >
+                <option value="all">Todas Afiliações</option>
+                {allAffiliations.map((aff) => (
+                  <option key={aff} value={aff}>
+                    {aff}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ArrowUpDown size={14} color="#94a3b8" />
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              style={{
+                padding: '6px 8px',
+                fontSize: '0.8rem',
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                cursor: 'pointer',
+              }}
+              title="Critério de ordenação"
+            >
+              <option value="role">Papel (Peso)</option>
+              <option value="name-asc">Nome (A - Z)</option>
+              <option value="name-desc">Nome (Z - A)</option>
+              <option value="appearance-asc">1ª Aparição (Crescente)</option>
+              <option value="appearance-desc">1ª Aparição (Decrescente)</option>
+            </select>
+          </div>
+
+          <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 12px' }}>
+            <Plus size={14} /> Personagem
+          </button>
+        </div>
       </div>
 
-      {/* Barra de Busca e Filtros Responsivos */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+      {/* Header Mobile com Busca, Filtros e Botão '+' compacto */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Users size={18} color="#38bdf8" />
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+              Personagens ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
+            </h3>
+          </div>
+          <button onClick={handleOpenCreate} className="btn-primary" title="Adicionar Personagem" style={{ padding: '6px 12px' }}>
+            <Plus size={16} />
+          </button>
+        </div>
+
         <input
           type="text"
           value={filterQuery}
@@ -166,7 +244,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? 'repeat(auto-fit, minmax(140px, 1fr))' : '1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? '1fr 1fr' : '1fr', gap: 8 }}>
           {allAffiliations.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Shield size={14} color="#c084fc" style={{ flexShrink: 0 }} />

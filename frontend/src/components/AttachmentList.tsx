@@ -90,8 +90,8 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
             {attachments.length} {attachments.length === 1 ? 'item' : 'itens'}
           </span>
         </div>
-        <button className="btn-primary" onClick={handleOpenCreate}>
-          <Plus size={16} /> Novo Anexo
+        <button className="btn-primary" onClick={handleOpenCreate} title="Novo Anexo" style={{ padding: '6px 12px' }}>
+          <Plus size={16} /> <span className="desktop-only" style={{ marginLeft: 4 }}>Novo Anexo</span>
         </button>
       </div>
 
