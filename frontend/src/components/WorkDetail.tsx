@@ -54,22 +54,13 @@ export const WorkDetail: React.FC<Props> = ({
       )}
 
       {/* Cabeçalho com Capa e Detalhes */}
-      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginBottom: 28, alignItems: 'flex-start' }}>
+      <div className="work-header-container">
         {work.coverImageUrl ? (
           <div
             onClick={() => setShowCoverLightbox(true)}
+            className="work-header-cover"
             style={{
-              width: 140,
-              height: 200,
-              borderRadius: 10,
               backgroundImage: `url('${work.coverImageUrl}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              flexShrink: 0,
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
             }}
             title="Clique para ampliar a capa"
           >
@@ -95,15 +86,12 @@ export const WorkDetail: React.FC<Props> = ({
           </div>
         ) : (
           <div
+            className="work-header-cover"
             style={{
-              width: 140,
-              height: 200,
-              borderRadius: 10,
               background: '#162032',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
               fontSize: '2.5rem',
               color: '#475569',
               border: '1px solid var(--border)',
@@ -113,8 +101,8 @@ export const WorkDetail: React.FC<Props> = ({
           </div>
         )}
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+        <div className="work-header-content">
+          <div className="work-header-badges" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
             {work.formats && work.formats.length > 0 ? (
               work.formats.map((f) => (
                 <span key={f.workType} className="badge badge-novel">
@@ -143,7 +131,7 @@ export const WorkDetail: React.FC<Props> = ({
             </div>
           </div>
 
-          <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: 4, wordBreak: 'break-word' }}>
+          <h1 className="work-header-title" style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: 4, wordBreak: 'break-word' }}>
             {work.title}
           </h1>
 

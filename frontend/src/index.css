@@ -240,3 +240,52 @@ html, body, #root {
     display: none !important;
   }
 }
+
+/* Work Header Responsive Layout */
+.work-header-container {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  margin-bottom: 28px;
+  align-items: flex-start;
+}
+
+.work-header-cover {
+  width: 140px;
+  height: 200px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.work-header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .work-header-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .work-header-cover {
+    width: 160px;
+    height: 230px;
+    margin: 0 auto;
+  }
+  .work-header-content {
+    width: 100%;
+  }
+  .work-header-badges {
+    justify-content: center;
+  }
+  .work-header-title {
+    text-align: center;
+  }
+}
