@@ -1,4 +1,3 @@
-using NovelReader.Application.DTOs.Common;
 using NovelReader.Domain.Entities;
 using NovelReader.Domain.Enums;
 
@@ -11,7 +10,7 @@ namespace NovelReader.Application.DTOs.Characters
         string? Description,
         string? ImageUrl,
         CharacterType CharacterType,
-        WorkChapterDto FirstAppearance,
+        List<CharacterAppearanceDto> FirstAppearances,
         List<string> AlternativeNames
     )
     {
@@ -23,7 +22,7 @@ namespace NovelReader.Application.DTOs.Characters
                 character.Description,
                 character.ImageUrl,
                 character.CharacterType,
-                new WorkChapterDto(character.FirstAppearance.Volume, character.FirstAppearance.Chapter),
+                character.FirstAppearances?.Select(CharacterAppearanceDto.FromEntity).ToList() ?? new List<CharacterAppearanceDto>(),
                 character.AlternativeNames ?? new List<string>()
             );
     }

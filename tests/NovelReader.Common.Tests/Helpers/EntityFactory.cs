@@ -16,7 +16,9 @@ public static class EntityFactory
     }
     public static Character CreateValidCharacter(Guid workId)
     {
-        return new Character("Greed", CharacterType.Protagonist, new(null, 1), workId);
+        var character = new Character("Greed", CharacterType.Protagonist, workId);
+        character.AddFirstAppearance(new CharacterAppearance(character.Id, WorkType.WebNovel, new WorkChapter(null, 1)));
+        return character;
     }
     public static Work CreateValidWork()
     {

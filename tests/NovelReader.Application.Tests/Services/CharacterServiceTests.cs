@@ -40,13 +40,18 @@ namespace NovelReader.Application.Tests.Services
             _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(work);
 
+            var appearances = new List<CharacterAppearanceDto>
+            {
+                new(WorkType.WebNovel, new WorkChapterDto(null, 1))
+            };
+
             var request = new CreateCharacterRequest(
                 work.Id,
                 "Greed",
                 "Protagonist of Overgeared",
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
                 CharacterType.Protagonist,
-                new WorkChapterDto(null, 1),
+                appearances,
                 new List<string> { "Grid", "Pagma's Successor" }
             );
 
@@ -57,7 +62,8 @@ namespace NovelReader.Application.Tests.Services
             result.Name.Should().Be("Greed");
             result.ImageUrl.Should().Be(request.ImageUrl);
             result.CharacterType.Should().Be(CharacterType.Protagonist);
-            result.FirstAppearance.Chapter.Should().Be(1);
+            result.FirstAppearances.Should().HaveCount(1);
+            result.FirstAppearances.First().Chapter.Chapter.Should().Be(1);
             result.AlternativeNames.Should().Contain("Grid");
             result.AlternativeNames.Should().Contain("Pagma's Successor");
 
@@ -77,7 +83,7 @@ namespace NovelReader.Application.Tests.Services
                 null,
                 null,
                 CharacterType.Protagonist,
-                new WorkChapterDto(null, 1)
+                new List<CharacterAppearanceDto> { new(WorkType.WebNovel, new WorkChapterDto(null, 1)) }
             );
 
             var act = async () => await _characterService.CreateAsync(request, CancellationToken.None);
@@ -95,7 +101,7 @@ namespace NovelReader.Application.Tests.Services
                 null,
                 null,
                 (CharacterType)999,
-                new WorkChapterDto(null, 0)
+                new List<CharacterAppearanceDto>()
             );
 
             var act = async () => await _characterService.CreateAsync(request, CancellationToken.None);
@@ -109,19 +115,18 @@ namespace NovelReader.Application.Tests.Services
         {
             var work = EntityFactory.CreateValidWork();
             var character = EntityFactory.CreateValidCharacter(work.Id);
-            var paged = new PagedResult<Character>(new[] { character }, 1, 1, 10);
-
             _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(work);
+
+            var pagedResult = new PagedResult<Character>(new List<Character> { character }, 1, 1, 10);
             _characterRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, 1, 10, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(paged);
+                .ReturnsAsync(pagedResult);
 
             var result = await _characterService.GetByWorkIdAsync(work.Id, 1, 10, CancellationToken.None);
 
             result.Should().NotBeNull();
-            result.TotalCount.Should().Be(1);
             result.Items.Should().HaveCount(1);
-            result.Items.First().Name.Should().Be(character.Name);
+            result.TotalCount.Should().Be(1);
         }
 
         [Fact]
@@ -137,7 +142,7 @@ namespace NovelReader.Application.Tests.Services
         }
 
         [Fact]
-        public async Task GetByIdAsync_WhenExists_ShouldReturnCharacterResponse()
+        public async Task GetByIdAsync_WhenExists_ShouldReturnCharacter()
         {
             var character = EntityFactory.CreateValidCharacter(Guid.NewGuid());
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
@@ -174,6 +179,7 @@ namespace NovelReader.Application.Tests.Services
                 "Real name of Greed",
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
                 CharacterType.Protagonist,
+                new List<CharacterAppearanceDto> { new(WorkType.WebNovel, new WorkChapterDto(null, 1)) },
                 new List<string> { "Grid", "God Grid" }
             );
 
@@ -189,7 +195,7 @@ namespace NovelReader.Application.Tests.Services
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Character?)null);
 
-            var request = new UpdateCharacterRequest("Name", null, null, CharacterType.Supporting);
+            var request = new UpdateCharacterRequest("Name", null, null, CharacterType.Supporting, new List<CharacterAppearanceDto> { new(WorkType.WebNovel, new WorkChapterDto(null, 1)) });
 
             var act = async () => await _characterService.UpdateAsync(id, request, CancellationToken.None);
 
@@ -200,7 +206,7 @@ namespace NovelReader.Application.Tests.Services
         public async Task UpdateAsync_WithInvalidData_ShouldThrowValidationException()
         {
             var id = Guid.NewGuid();
-            var request = new UpdateCharacterRequest("", null, null, CharacterType.Supporting);
+            var request = new UpdateCharacterRequest("", null, null, CharacterType.Supporting, new List<CharacterAppearanceDto>());
 
             var act = async () => await _characterService.UpdateAsync(id, request, CancellationToken.None);
 

@@ -102,6 +102,11 @@ export interface CreateProgressRequest {
   chapterLink?: string | null;
 }
 
+export interface CharacterAppearance {
+  workType: WorkType;
+  chapter: WorkChapter;
+}
+
 export interface Character {
   id: string;
   workId: string;
@@ -109,7 +114,7 @@ export interface Character {
   description: string | null;
   imageUrl: string | null;
   characterType: CharacterType;
-  firstAppearance: WorkChapter;
+  firstAppearances: CharacterAppearance[];
   alternativeNames: string[];
 }
 
@@ -119,7 +124,7 @@ export interface CreateCharacterRequest {
   description?: string | null;
   imageUrl?: string | null;
   characterType: CharacterType;
-  firstAppearance: WorkChapter;
+  firstAppearances: CharacterAppearance[];
   alternativeNames?: string[];
 }
 
@@ -128,6 +133,7 @@ export interface UpdateCharacterRequest {
   description?: string | null;
   imageUrl?: string | null;
   characterType: CharacterType;
+  firstAppearances: CharacterAppearance[];
   alternativeNames?: string[];
 }
 

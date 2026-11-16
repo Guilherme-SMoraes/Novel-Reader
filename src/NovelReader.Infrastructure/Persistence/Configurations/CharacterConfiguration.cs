@@ -19,12 +19,11 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.ImageUrl)
                 .HasMaxLength(2048);
             builder.Property(x => x.AlternativeNames);
-            
-            builder.OwnsOne(x => x.FirstAppearance, fa =>
-            {
-                fa.Property(w => w.Volume).HasColumnName("AppearanceVolume");
-                fa.Property(w => w.Chapter).HasColumnName("AppearanceChapter");
-            });
+
+            builder.HasMany(x => x.FirstAppearances)
+                .WithOne()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

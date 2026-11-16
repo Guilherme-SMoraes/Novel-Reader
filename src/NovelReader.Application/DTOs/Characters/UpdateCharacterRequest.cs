@@ -7,6 +7,7 @@ namespace NovelReader.Application.DTOs.Characters
         string? Description,
         string? ImageUrl,
         CharacterType CharacterType,
+        List<CharacterAppearanceDto> FirstAppearances,
         List<string>? AlternativeNames = null
     );
 }

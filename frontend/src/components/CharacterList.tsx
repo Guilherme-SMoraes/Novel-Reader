@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Character, Work } from '../types';
-import { CharacterTypeLabels } from '../types';
+import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { CharacterModal } from './CharacterModal';
 import { ConfirmModal } from './ConfirmModal';
@@ -173,10 +173,26 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                     ))}
                   </div>
                 )}
-                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginBottom: 6 }}>
-                  1ª Aparição: Cap. {c.firstAppearance.chapter}
-                  {c.firstAppearance.volume && ` (Vol. ${c.firstAppearance.volume})`}
-                </div>
+                {c.firstAppearances && c.firstAppearances.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                    {c.firstAppearances.map((app, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: '0.72rem',
+                          color: '#94a3b8',
+                          background: '#0f172a',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          border: '1px solid #1e293b',
+                        }}
+                      >
+                        <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> Cap. {app.chapter.chapter}
+                        {app.chapter.volume && ` (Vol. ${app.chapter.volume})`}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {c.description ? (
                   <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: '1.4', marginTop: 'auto' }}>
                     {c.description}
@@ -196,6 +212,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
       <CharacterModal
         isOpen={isModalOpen}
         workId={work.id}
+        formats={work.formats || []}
         characterToEdit={editingCharacter}
         onClose={() => {
           setIsModalOpen(false);

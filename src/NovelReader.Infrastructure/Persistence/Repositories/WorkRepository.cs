@@ -128,6 +128,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Include(x => x.Genres)
                 .Include(x => x.Formats)
                 .Include(x => x.Characters)
+                    .ThenInclude(c => c.FirstAppearances)
                 .Include(x => x.Progresses)
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }

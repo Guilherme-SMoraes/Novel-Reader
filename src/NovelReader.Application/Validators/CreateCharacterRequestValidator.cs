@@ -32,19 +32,31 @@ namespace NovelReader.Application.Validators
                 .MaximumLength(200).WithMessage("Cada nome alternativo deve ter no máximo 200 caracteres.")
                 .When(x => x.AlternativeNames != null);
 
-            RuleFor(x => x.FirstAppearance)
-                .NotNull().WithMessage("A primeira aparição é obrigatória.")
-                .DependentRules(() =>
+            RuleFor(x => x.FirstAppearances)
+                .NotEmpty().WithMessage("A primeira aparição deve ser preenchida em pelo menos um formato.")
+                .Must(HaveUniqueWorkTypes).WithMessage("Não é permitido repetir o mesmo formato de aparição.");
+
+            RuleForEach(x => x.FirstAppearances)
+                .ChildRules(app =>
                 {
-                    RuleFor(x => x.FirstAppearance.Chapter)
+                    app.RuleFor(a => a.WorkType)
+                        .IsInEnum().WithMessage("Tipo de obra inválido na primeira aparição.");
+
+                    app.RuleFor(a => a.Chapter)
+                        .NotNull().WithMessage("O capítulo de primeira aparição é obrigatório.");
+
+                    app.RuleFor(a => a.Chapter.Chapter)
                         .GreaterThan(0).WithMessage("O capítulo deve ser maior que zero.");
 
-                    RuleFor(x => x.FirstAppearance.Volume)
+                    app.RuleFor(a => a.Chapter.Volume)
                         .GreaterThan(0)
-                        .When(x => x.FirstAppearance.Volume.HasValue)
+                        .When(a => a.Chapter != null && a.Chapter.Volume.HasValue)
                         .WithMessage("O volume deve ser maior que zero.");
                 });
         }
+
+        private static bool HaveUniqueWorkTypes(List<CharacterAppearanceDto>? list) =>
+            list == null || list.Select(x => x.WorkType).Distinct().Count() == list.Count;
 
         private static bool BeAValidUrl(string? url) =>
             Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&

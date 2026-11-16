@@ -98,6 +98,25 @@ namespace NovelReader.Infrastructure.Migrations
                     b.ToTable("Characters", (string)null);
                 });
 
+            modelBuilder.Entity("NovelReader.Domain.Entities.CharacterAppearance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("WorkType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId", "WorkType")
+                        .IsUnique();
+
+                    b.ToTable("CharacterAppearances", (string)null);
+                });
+
             modelBuilder.Entity("NovelReader.Domain.Entities.Genre", b =>
                 {
                     b.Property<Guid>("Id")
@@ -239,10 +258,19 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasForeignKey("WorkId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
 
-                    b.OwnsOne("NovelReader.Domain.ValueObjects.WorkChapter", "FirstAppearance", b1 =>
+            modelBuilder.Entity("NovelReader.Domain.Entities.CharacterAppearance", b =>
+                {
+                    b.HasOne("NovelReader.Domain.Entities.Character", null)
+                        .WithMany("FirstAppearances")
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("NovelReader.Domain.ValueObjects.WorkChapter", "Chapter", b1 =>
                         {
-                            b1.Property<Guid>("CharacterId")
+                            b1.Property<Guid>("CharacterAppearanceId")
                                 .HasColumnType("uuid");
 
                             b1.Property<int>("Chapter")
@@ -253,15 +281,15 @@ namespace NovelReader.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("AppearanceVolume");
 
-                            b1.HasKey("CharacterId");
+                            b1.HasKey("CharacterAppearanceId");
 
-                            b1.ToTable("Characters");
+                            b1.ToTable("CharacterAppearances");
 
                             b1.WithOwner()
-                                .HasForeignKey("CharacterId");
+                                .HasForeignKey("CharacterAppearanceId");
                         });
 
-                    b.Navigation("FirstAppearance")
+                    b.Navigation("Chapter")
                         .IsRequired();
                 });
 
@@ -367,6 +395,11 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasForeignKey("WorkId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("NovelReader.Domain.Entities.Character", b =>
+                {
+                    b.Navigation("FirstAppearances");
                 });
 
             modelBuilder.Entity("NovelReader.Domain.Entities.Work", b =>

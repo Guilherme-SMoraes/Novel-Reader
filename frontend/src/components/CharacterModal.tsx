@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import type { Character, CharacterType, CreateCharacterRequest, UpdateCharacterRequest } from '../types';
-import { CharacterTypeLabels } from '../types';
+import type {
+  Character,
+  CharacterAppearance,
+  CharacterType,
+  CreateCharacterRequest,
+  UpdateCharacterRequest,
+  WorkFormat,
+} from '../types';
+import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { X, Plus } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   workId: string;
+  formats: WorkFormat[];
   characterToEdit?: Character | null;
   onClose: () => void;
   onSaved: () => void;
@@ -15,20 +23,23 @@ interface Props {
 export const CharacterModal: React.FC<Props> = ({
   isOpen,
   workId,
+  formats,
   characterToEdit,
   onClose,
   onSaved,
 }) => {
   const [name, setName] = useState('');
   const [characterType, setCharacterType] = useState<CharacterType>(1); // Protagonist default
-  const [chapter, setChapter] = useState('1');
-  const [volume, setVolume] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
   const [alternativeNames, setAlternativeNames] = useState<string[]>([]);
   const [altNameInput, setAltNameInput] = useState('');
+  const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Available formats: either from the work or fallback to WebNovel
+  const availableFormats = formats && formats.length > 0 ? formats : [{ workType: 2, totalChapter: { volume: null, chapter: 100 } } as WorkFormat];
 
   useEffect(() => {
     if (characterToEdit) {
@@ -36,17 +47,28 @@ export const CharacterModal: React.FC<Props> = ({
       setCharacterType(characterToEdit.characterType);
       setImageUrl(characterToEdit.imageUrl || '');
       setDescription(characterToEdit.description || '');
-      setChapter(characterToEdit.firstAppearance.chapter.toString());
-      setVolume(characterToEdit.firstAppearance.volume ? characterToEdit.firstAppearance.volume.toString() : '');
       setAlternativeNames(characterToEdit.alternativeNames || []);
+
+      const map: Record<number, { chapter: string; volume: string }> = {};
+      characterToEdit.firstAppearances?.forEach((app) => {
+        map[app.workType] = {
+          chapter: app.chapter.chapter.toString(),
+          volume: app.chapter.volume ? app.chapter.volume.toString() : '',
+        };
+      });
+      setAppearances(map);
     } else {
       setName('');
       setCharacterType(1);
       setImageUrl('');
       setDescription('');
-      setChapter('1');
-      setVolume('');
       setAlternativeNames([]);
+
+      const map: Record<number, { chapter: string; volume: string }> = {};
+      if (availableFormats.length > 0) {
+        map[availableFormats[0].workType] = { chapter: '1', volume: '' };
+      }
+      setAppearances(map);
     }
     setAltNameInput('');
     setError(null);
@@ -79,31 +101,42 @@ export const CharacterModal: React.FC<Props> = ({
     setError(null);
 
     try {
+      const validAppearances: CharacterAppearance[] = [];
+      Object.entries(appearances).forEach(([workTypeStr, val]) => {
+        const chNum = parseInt(val.chapter, 10);
+        if (!isNaN(chNum) && chNum > 0) {
+          validAppearances.push({
+            workType: Number(workTypeStr) as any,
+            chapter: {
+              volume: val.volume ? parseInt(val.volume, 10) : null,
+              chapter: chNum,
+            },
+          });
+        }
+      });
+
+      if (validAppearances.length === 0) {
+        throw new Error('Preencha a primeira aparição em pelo menos um formato.');
+      }
+
       if (characterToEdit) {
         const req: UpdateCharacterRequest = {
           name: name.trim(),
           characterType,
           imageUrl: imageUrl.trim() || null,
           description: description.trim() || null,
+          firstAppearances: validAppearances,
           alternativeNames,
         };
         await charactersApi.update(workId, characterToEdit.id, req);
       } else {
-        const chapterNum = parseInt(chapter, 10);
-        if (isNaN(chapterNum) || chapterNum <= 0) {
-          throw new Error('Capítulo de aparição deve ser maior que zero.');
-        }
-
         const req: CreateCharacterRequest = {
           workId,
           name: name.trim(),
           characterType,
           imageUrl: imageUrl.trim() || null,
           description: description.trim() || null,
-          firstAppearance: {
-            volume: volume ? parseInt(volume, 10) : null,
-            chapter: chapterNum,
-          },
+          firstAppearances: validAppearances,
           alternativeNames,
         };
         await charactersApi.create(req);
@@ -120,7 +153,7 @@ export const CharacterModal: React.FC<Props> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
             {characterToEdit ? 'Editar Personagem' : 'Cadastrar Personagem'}
@@ -241,36 +274,61 @@ export const CharacterModal: React.FC<Props> = ({
             />
           </div>
 
-          {!characterToEdit && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                  Capítulo de 1ª Aparição *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  className="input-text"
-                  value={chapter}
-                  onChange={(e) => setChapter(e.target.value)}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                  Volume (opcional)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  className="input-text"
-                  value={volume}
-                  onChange={(e) => setVolume(e.target.value)}
-                  placeholder="Ex: 1"
-                />
-              </div>
+          {/* Primeira Aparição por Formato */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                Primeira Aparição por Formato *
+              </label>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                Preencha pelo menos um formato
+              </span>
             </div>
-          )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#0b1120', padding: 12, borderRadius: 8, border: '1px solid #334155' }}>
+              {availableFormats.map((f) => {
+                const current = appearances[f.workType] || { chapter: '', volume: '' };
+                return (
+                  <div key={f.workType} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 1fr', gap: 10, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="badge badge-tag" style={{ fontSize: '0.74rem', width: '100%', textAlign: 'center' }}>
+                        {WorkTypeLabels[f.workType]}
+                      </span>
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Capítulo"
+                        className="input-text"
+                        value={current.chapter}
+                        onChange={(e) =>
+                          setAppearances({
+                            ...appearances,
+                            [f.workType]: { ...current, chapter: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Volume (opcional)"
+                        className="input-text"
+                        value={current.volume}
+                        onChange={(e) =>
+                          setAppearances({
+                            ...appearances,
+                            [f.workType]: { ...current, volume: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>

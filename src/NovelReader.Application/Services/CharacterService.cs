@@ -41,13 +41,16 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Obra com ID {request.WorkId} não encontrada.");
             }
 
-            var firstAppearance = new WorkChapter(request.FirstAppearance.Volume, request.FirstAppearance.Chapter);
-            var character = new Character(request.Name, request.CharacterType, firstAppearance, request.WorkId)
+            var character = new Character(request.Name, request.CharacterType, request.WorkId)
             {
                 Description = request.Description,
                 ImageUrl = request.ImageUrl
             };
             character.SetAlternativeNames(request.AlternativeNames);
+
+            var appearances = request.FirstAppearances.Select(a =>
+                new CharacterAppearance(character.Id, a.WorkType, new WorkChapter(a.Chapter.Volume, a.Chapter.Chapter)));
+            character.SetFirstAppearances(appearances);
 
             await _characterRepository.CreateAsync(character, cancellationToken);
 
@@ -93,6 +96,10 @@ namespace NovelReader.Application.Services
             character.ImageUrl = request.ImageUrl;
             character.CharacterType = request.CharacterType;
             character.SetAlternativeNames(request.AlternativeNames);
+
+            var appearances = request.FirstAppearances.Select(a =>
+                new CharacterAppearance(character.Id, a.WorkType, new WorkChapter(a.Chapter.Volume, a.Chapter.Chapter)));
+            character.SetFirstAppearances(appearances);
 
             await _characterRepository.UpdateAsync(character, cancellationToken);
         }
