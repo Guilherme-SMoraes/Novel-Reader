@@ -188,7 +188,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  height: 380,
+                  height: 330,
                   cursor: 'pointer',
                   transform: isHovered ? 'translateY(-2px)' : 'none',
                   boxShadow: isHovered ? '0 8px 20px rgba(0, 0, 0, 0.35)' : 'none',
@@ -196,7 +196,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                 }}
               >
                 {/* Foto ou Avatar Placeholder */}
-                <div style={{ height: 160, position: 'relative', background: '#0c121e', flexShrink: 0 }}>
+                <div style={{ height: 145, position: 'relative', background: '#0c121e', flexShrink: 0 }}>
                   {c.imageUrl ? (
                     <div style={{ width: '100%', height: '100%', backgroundImage: `url('${c.imageUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
                   ) : (
@@ -260,89 +260,129 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
                 </div>
 
                 {/* Informações */}
-                <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.name}
                   </div>
 
+                  {/* Apelidos (linha única) */}
                   {c.alternativeNames && c.alternativeNames.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '4px 0 6px 0', maxHeight: 42, overflow: 'hidden' }}>
-                      {c.alternativeNames.map((alt, i) => (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        margin: '2px 0 4px 0',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {c.alternativeNames.slice(0, 2).map((alt, i) => (
                         <span
                           key={i}
                           style={{
-                            fontSize: '0.68rem',
+                            fontSize: '0.66rem',
                             background: 'rgba(56, 189, 248, 0.1)',
                             color: '#38bdf8',
                             border: '1px solid rgba(56, 189, 248, 0.25)',
                             borderRadius: 4,
                             padding: '1px 5px',
                             whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: 80,
                           }}
+                          title={alt}
                         >
                           {alt}
                         </span>
                       ))}
+                      {c.alternativeNames.length > 2 && (
+                        <span
+                          style={{
+                            fontSize: '0.64rem',
+                            color: '#64748b',
+                            padding: '1px 3px',
+                          }}
+                          title={c.alternativeNames.slice(2).join(', ')}
+                        >
+                          +{c.alternativeNames.length - 2}
+                        </span>
+                      )}
                     </div>
                   )}
 
+                  {/* Primeira Aparição (linha única compacta com separador bullet) */}
                   {c.firstAppearances && c.firstAppearances.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6, maxHeight: 40, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        fontSize: '0.72rem',
+                        color: '#94a3b8',
+                        background: '#0f172a',
+                        padding: '3px 6px',
+                        borderRadius: 4,
+                        border: '1px solid #1e293b',
+                        margin: '2px 0 6px 0',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        flexShrink: 0,
+                      }}
+                      title={c.firstAppearances
+                        .map((app) => `${WorkTypeLabels[app.workType]}: Cap. ${app.chapter.chapter}${app.chapter.volume ? ` (Vol. ${app.chapter.volume})` : ''}`)
+                        .join(' • ')}
+                    >
                       {c.firstAppearances.map((app, idx) => (
-                        <span
-                          key={idx}
-                          style={{
-                            fontSize: '0.72rem',
-                            color: '#94a3b8',
-                            background: '#0f172a',
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            border: '1px solid #1e293b',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> Cap. {app.chapter.chapter}
-                          {app.chapter.volume && ` (Vol. ${app.chapter.volume})`}
+                        <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                          {idx > 0 && <span style={{ color: '#475569', margin: '0 2px' }}>•</span>}
+                          <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong>
+                          <span>Cap. {app.chapter.chapter}</span>
                         </span>
                       ))}
                     </div>
                   )}
 
+                  {/* Descrição logo após os metadados */}
                   {c.description ? (
-                    <div style={{ marginTop: 'auto' }}>
-                      <div
-                        style={{
-                          fontSize: '0.78rem',
-                          color: '#cbd5e1',
-                          lineHeight: '1.4',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {c.description}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '0.72rem',
-                          color: '#38bdf8',
-                          fontWeight: 600,
-                          marginTop: 4,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                        }}
-                      >
-                        Ver ficha completa &rarr;
-                      </div>
+                    <div
+                      style={{
+                        fontSize: '0.78rem',
+                        color: '#cbd5e1',
+                        lineHeight: '1.4',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        marginTop: 2,
+                      }}
+                    >
+                      {c.description}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 'auto' }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>
                       Sem descrição cadastrada.
                     </div>
                   )}
+
+                  {/* Link no rodapé do card */}
+                  <div
+                    style={{
+                      marginTop: 'auto',
+                      paddingTop: 4,
+                      fontSize: '0.72rem',
+                      color: '#38bdf8',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}
+                  >
+                    Ver ficha completa &rarr;
+                  </div>
                 </div>
               </div>
             );
