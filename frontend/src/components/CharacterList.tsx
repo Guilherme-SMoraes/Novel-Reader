@@ -57,57 +57,61 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
     setCurrentPage(1);
   };
 
-  const filtered = characters.filter((c) => {
-    if (selectedAffiliation !== 'all' && (!c.affiliations || !c.affiliations.includes(selectedAffiliation))) {
-      return false;
-    }
-    if (!filterQuery) return true;
-    const q = filterQuery.toLowerCase();
-    const role = CharacterTypeLabels[c.characterType].toLowerCase();
-    const matchesName = c.name.toLowerCase().includes(q);
-    const matchesRole = role.includes(q);
-    const matchesDesc = c.description ? c.description.toLowerCase().includes(q) : false;
-    const matchesAlt = c.alternativeNames ? c.alternativeNames.some((alt) => alt.toLowerCase().includes(q)) : false;
-    const matchesAff = c.affiliations ? c.affiliations.some((aff) => aff.toLowerCase().includes(q)) : false;
-    return matchesName || matchesRole || matchesDesc || matchesAlt || matchesAff;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === 'role') {
-      if (a.characterType !== b.characterType) {
-        return a.characterType - b.characterType;
+  const filtered = useMemo(() => {
+    return characters.filter((c) => {
+      if (selectedAffiliation !== 'all' && (!c.affiliations || !c.affiliations.includes(selectedAffiliation))) {
+        return false;
       }
-      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    }
+      if (!filterQuery) return true;
+      const q = filterQuery.toLowerCase();
+      const role = CharacterTypeLabels[c.characterType].toLowerCase();
+      const matchesName = c.name.toLowerCase().includes(q);
+      const matchesRole = role.includes(q);
+      const matchesDesc = c.description ? c.description.toLowerCase().includes(q) : false;
+      const matchesAlt = c.alternativeNames ? c.alternativeNames.some((alt) => alt.toLowerCase().includes(q)) : false;
+      const matchesAff = c.affiliations ? c.affiliations.some((aff) => aff.toLowerCase().includes(q)) : false;
+      return matchesName || matchesRole || matchesDesc || matchesAlt || matchesAff;
+    });
+  }, [characters, selectedAffiliation, filterQuery]);
 
-    if (sortBy === 'name-asc') {
-      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    }
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'role') {
+        if (a.characterType !== b.characterType) {
+          return a.characterType - b.characterType;
+        }
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      }
 
-    if (sortBy === 'name-desc') {
-      return b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
-    }
+      if (sortBy === 'name-asc') {
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      }
 
-    if (sortBy === 'appearance-asc') {
-      const getMinChapter = (c: Character) => {
-        if (!c.firstAppearances || c.firstAppearances.length === 0) return 999999;
-        return Math.min(...c.firstAppearances.map((app) => app.chapter.chapter));
-      };
-      const diff = getMinChapter(a) - getMinChapter(b);
-      return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    }
+      if (sortBy === 'name-desc') {
+        return b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+      }
 
-    if (sortBy === 'appearance-desc') {
-      const getMaxChapter = (c: Character) => {
-        if (!c.firstAppearances || c.firstAppearances.length === 0) return -1;
-        return Math.max(...c.firstAppearances.map((app) => app.chapter.chapter));
-      };
-      const diff = getMaxChapter(b) - getMaxChapter(a);
-      return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    }
+      if (sortBy === 'appearance-asc') {
+        const getMinChapter = (c: Character) => {
+          if (!c.firstAppearances || c.firstAppearances.length === 0) return 999999;
+          return Math.min(...c.firstAppearances.map((app) => app.chapter.chapter));
+        };
+        const diff = getMinChapter(a) - getMinChapter(b);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      }
 
-    return 0;
-  });
+      if (sortBy === 'appearance-desc') {
+        const getMaxChapter = (c: Character) => {
+          if (!c.firstAppearances || c.firstAppearances.length === 0) return -1;
+          return Math.max(...c.firstAppearances.map((app) => app.chapter.chapter));
+        };
+        const diff = getMaxChapter(b) - getMaxChapter(a);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      }
+
+      return 0;
+    });
+  }, [filtered, sortBy]);
 
   const totalItems = sorted.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;

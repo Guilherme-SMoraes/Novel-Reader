@@ -59,8 +59,8 @@ namespace NovelReader.Application.Services
 
         public async Task<PagedResult<ProgressResponse>> GetByWorkIdAsync(Guid workId, WorkType? workType, int page, int pageSize, CancellationToken cancellationToken = default)
         {
-            var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
-            if (work is null)
+            var workExists = await _workRepository.ExistsAsync(workId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }

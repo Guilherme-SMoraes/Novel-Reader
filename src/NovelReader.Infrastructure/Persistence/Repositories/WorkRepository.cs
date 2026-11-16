@@ -15,8 +15,21 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             _context = appDbContext;
         }
 
-        public async Task CreateAsync(Work work, CancellationToken cancellationToken)
+        public async Task CreateAsync(Work work, CancellationToken cancellationToken, IEnumerable<Guid>? genreIds = null)
         {
+            if (genreIds != null && genreIds.Any())
+            {
+                var targetIds = genreIds.ToHashSet();
+                var genres = await _context.Genres
+                    .Where(g => targetIds.Contains(g.Id))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var genre in genres)
+                {
+                    work.AddGenre(genre);
+                }
+            }
+
             _context.Works.Add(work);
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -74,7 +87,6 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Include(x => x.Genres)
                 .Include(x => x.Formats)
-                .Include(x => x.Progresses)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -120,6 +132,11 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             return new PagedResult<Work>(items, total, page, pageSize);
         }
 
+        public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return await _context.Works.AnyAsync(x => x.Id == id, cancellationToken);
+        }
+
         public async Task<Work?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
         {
             return await _context.Works
@@ -127,9 +144,6 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .AsSplitQuery()
                 .Include(x => x.Genres)
                 .Include(x => x.Formats)
-                .Include(x => x.Characters)
-                    .ThenInclude(c => c.FirstAppearances)
-                .Include(x => x.Progresses)
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
@@ -151,10 +165,11 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             return new PagedResult<Work>(items, total, page, pageSize);
         }
 
-        public async Task UpdateAsync(Work work, CancellationToken cancellationToken)
+        public async Task UpdateAsync(Work work, CancellationToken cancellationToken, IEnumerable<Guid>? genreIds = null)
         {
             var existingWork = await _context.Works
                 .Include(x => x.Formats)
+                .Include(x => x.Genres)
                 .FirstOrDefaultAsync(x => x.Id == work.Id, cancellationToken);
 
             if (existingWork is null)
@@ -201,6 +216,27 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                     }
                     existingWork.AddFormat(newFormat);
                     _context.WorkFormats.Add(newFormat);
+                }
+            }
+
+            if (genreIds != null)
+            {
+                var targetGenreIds = genreIds.ToHashSet();
+                existingWork.Genres.RemoveAll(g => !targetGenreIds.Contains(g.Id));
+
+                var currentGenreIds = existingWork.Genres.Select(g => g.Id).ToHashSet();
+                var idsToAdd = targetGenreIds.Where(id => !currentGenreIds.Contains(id)).ToList();
+
+                if (idsToAdd.Any())
+                {
+                    var genresToAdd = await _context.Genres
+                        .Where(g => idsToAdd.Contains(g.Id))
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var genre in genresToAdd)
+                    {
+                        existingWork.AddGenre(genre);
+                    }
                 }
             }
 

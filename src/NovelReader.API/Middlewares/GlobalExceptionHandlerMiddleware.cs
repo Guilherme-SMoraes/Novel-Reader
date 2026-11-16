@@ -70,6 +70,21 @@ namespace NovelReader.API.Middlewares
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Database update violation occurred.");
+                context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+                context.Response.ContentType = "application/json";
+
+                var response = new
+                {
+                    title = "Database Conflict",
+                    status = (int)HttpStatusCode.Conflict,
+                    message = "A data conflict or constraint violation occurred. Please check for duplicate records or invalid references."
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled server exception occurred.");

@@ -6,13 +6,14 @@ namespace NovelReader.Domain.Interfaces.Repositories
 {
     public interface IWorkRepository
     {
-        Task CreateAsync(Work work, CancellationToken cancellationToken);
+        Task CreateAsync(Work work, CancellationToken cancellationToken, IEnumerable<Guid>? genreIds = null);
+        Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken);
         Task<Work?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
         Task<PagedResult<Work>> FindByNameAsync(string name, int page, int pageSize, CancellationToken cancellationToken);
         Task<PagedResult<Work>> ListByGenreAsync(Guid genreId, int page, int pageSize, CancellationToken cancellationToken);
         Task<PagedResult<Work>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken);
         Task<PagedResult<Work>> GetAllAsync(string? title, WorkType? workType, Guid? genreId, ReadingStatus? readingStatus, int page, int pageSize, CancellationToken cancellationToken);
-        Task UpdateAsync(Work work, CancellationToken cancellationToken);
+        Task UpdateAsync(Work work, CancellationToken cancellationToken, IEnumerable<Guid>? genreIds = null);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken);
         Task AddGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken);
         Task RemoveGenreAsync(Guid workId, Guid genreId, CancellationToken cancellationToken);

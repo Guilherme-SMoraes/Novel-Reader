@@ -30,6 +30,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                    .IsRequired();
 
             builder.Property(x => x.UpdatedAt);
+
+            builder.HasIndex(x => new { x.WorkId, x.CreatedAt });
         }
     }
 }

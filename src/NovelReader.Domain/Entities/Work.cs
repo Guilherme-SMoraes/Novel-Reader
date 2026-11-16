@@ -8,15 +8,15 @@ namespace NovelReader.Domain.Entities
         public Guid Id { get; private set; }
         public string Title { get; set; }
         public string? Description { get; set; }
-        public List<Genre> Genres { get; private set; }
+        public List<Genre> Genres { get; private set; } = new();
         public string AggregatorLink { get; set; }
         public string? CoverImageUrl { get; set; }
         public Language OriginalLanguage { get; init; }
         public List<string> AlternativeTitles { get; private set; } = new();
-        public List<WorkFormat> Formats { get; private set; }
-        public List<Character> Characters { get; private set; }
-        public List<Progress> Progresses { get; private set; }
-        public List<Attachment> Attachments { get; private set; }
+        public List<WorkFormat> Formats { get; private set; } = new();
+        public List<Character> Characters { get; private set; } = new();
+        public List<Progress> Progresses { get; private set; } = new();
+        public List<Attachment> Attachments { get; private set; } = new();
 
 #pragma warning disable CS8618
         private Work() { }

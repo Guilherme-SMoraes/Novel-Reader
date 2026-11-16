@@ -126,8 +126,8 @@ namespace NovelReader.Application.Tests.Services
             var progress = EntityFactory.CreateValidProgress(work.Id, WorkType.WebNovel);
             var paged = new PagedResult<Progress>(new[] { progress }, 1, 1, 10);
 
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
             _progressRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, null, 1, 10, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(paged);
 
@@ -147,8 +147,8 @@ namespace NovelReader.Application.Tests.Services
             var progress = EntityFactory.CreateValidProgress(work.Id, WorkType.WebNovel);
             var paged = new PagedResult<Progress>(new[] { progress }, 1, 1, 10);
 
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
             _progressRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, WorkType.WebNovel, 1, 10, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(paged);
 
@@ -163,8 +163,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task GetByWorkIdAsync_WhenWorkDoesNotExist_ShouldThrowKeyNotFoundException()
         {
             var workId = Guid.NewGuid();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(workId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Work?)null);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             var act = async () => await _progressService.GetByWorkIdAsync(workId, null, 1, 10, CancellationToken.None);
 

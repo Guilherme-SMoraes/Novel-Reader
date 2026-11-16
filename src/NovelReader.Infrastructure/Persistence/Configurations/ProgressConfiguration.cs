@@ -22,7 +22,7 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                sc.Property(w => w.Chapter).HasColumnName("StoppedChapter");
             });
 
-            builder.HasIndex(x => new { x.WorkId, x.WorkType });
+            builder.HasIndex(x => new { x.WorkId, x.WorkType, x.StoppedAt });
         }
     }
 }

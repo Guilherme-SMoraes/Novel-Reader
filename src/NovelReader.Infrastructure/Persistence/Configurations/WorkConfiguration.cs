@@ -23,6 +23,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.AlternativeTitles)
                     .HasDefaultValueSql("'{}'");
 
+            builder.HasIndex(x => x.Title);
+
             builder.HasMany(x => x.Formats)
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)

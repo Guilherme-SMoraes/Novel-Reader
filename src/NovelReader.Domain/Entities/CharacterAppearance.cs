@@ -26,10 +26,5 @@ namespace NovelReader.Domain.Entities
             WorkType = workType;
             Chapter = chapter ?? throw new ArgumentNullException(nameof(chapter));
         }
-
-        public CharacterAppearance(WorkType workType, WorkChapter chapter)
-            : this(Guid.NewGuid(), workType, chapter)
-        {
-        }
     }
 }

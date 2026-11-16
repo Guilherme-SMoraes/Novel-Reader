@@ -37,8 +37,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task CreateAsync_WithValidDataAndExistingWork_ShouldCreateAndReturnCharacterResponse()
         {
             var work = EntityFactory.CreateValidWork();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var appearances = new List<CharacterAppearanceDto>
             {
@@ -74,8 +74,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task CreateAsync_WhenWorkDoesNotExist_ShouldThrowKeyNotFoundException()
         {
             var workId = Guid.NewGuid();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(workId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Work?)null);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             var request = new CreateCharacterRequest(
                 workId,
@@ -115,8 +115,8 @@ namespace NovelReader.Application.Tests.Services
         {
             var work = EntityFactory.CreateValidWork();
             var character = EntityFactory.CreateValidCharacter(work.Id);
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var pagedResult = new PagedResult<Character>(new List<Character> { character }, 1, 1, 10);
             _characterRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, 1, 10, It.IsAny<CancellationToken>(), It.IsAny<string?>()))
@@ -133,8 +133,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task GetByWorkIdAsync_WhenWorkDoesNotExist_ShouldThrowKeyNotFoundException()
         {
             var workId = Guid.NewGuid();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(workId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Work?)null);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             var act = async () => await _characterService.GetByWorkIdAsync(workId, 1, 10, CancellationToken.None);
 
@@ -227,8 +227,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task CreateAsync_WithAffiliations_ShouldPersistAndReturnAffiliations()
         {
             var work = EntityFactory.CreateValidWork();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var appearances = new List<CharacterAppearanceDto>
             {

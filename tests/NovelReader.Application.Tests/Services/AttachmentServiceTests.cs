@@ -33,8 +33,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task CreateAsync_WithValidData_ShouldCreateAndReturnResponse()
         {
             var work = EntityFactory.CreateValidWork();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(work);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var request = new CreateAttachmentRequest
             {
@@ -59,8 +59,8 @@ namespace NovelReader.Application.Tests.Services
         public async Task CreateAsync_WhenWorkNotFound_ShouldThrowKeyNotFoundException()
         {
             var workId = Guid.NewGuid();
-            _workRepositoryMock.Setup(x => x.GetByIdAsync(workId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Work?)null);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             var request = new CreateAttachmentRequest
             {

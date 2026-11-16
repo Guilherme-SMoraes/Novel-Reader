@@ -30,10 +30,11 @@ namespace NovelReader.Infrastructure.Services
             }
 
             using var content = new MultipartFormDataContent();
+            content.Add(new StringContent(apiKey), "key");
             using var streamContent = new StreamContent(imageStream);
             content.Add(streamContent, "image", fileName);
 
-            var endpoint = $"https://api.imgbb.com/1/upload?key={Uri.EscapeDataString(apiKey)}";
+            var endpoint = "https://api.imgbb.com/1/upload";
             
             HttpResponseMessage response;
             try

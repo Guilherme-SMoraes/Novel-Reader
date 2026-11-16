@@ -56,17 +56,7 @@ namespace NovelReader.Application.Services
                 work.AddFormat(format);
             }
 
-            await _workRepository.CreateAsync(work, cancellationToken);
-
-            if (request.GenreIds != null && request.GenreIds.Any())
-            {
-                await _workRepository.SetGenresAsync(work.Id, request.GenreIds, cancellationToken);
-                var createdWithGenres = await _workRepository.GetByIdAsync(work.Id, cancellationToken);
-                if (createdWithGenres != null)
-                {
-                    return WorkResponse.FromEntity(createdWithGenres);
-                }
-            }
+            await _workRepository.CreateAsync(work, cancellationToken, request.GenreIds);
 
             return WorkResponse.FromEntity(work);
         }
@@ -135,12 +125,7 @@ namespace NovelReader.Application.Services
                 updatedWork.AddFormat(format);
             }
 
-            await _workRepository.UpdateAsync(updatedWork, cancellationToken);
-
-            if (request.GenreIds != null)
-            {
-                await _workRepository.SetGenresAsync(id, request.GenreIds, cancellationToken);
-            }
+            await _workRepository.UpdateAsync(updatedWork, cancellationToken, request.GenreIds);
         }
 
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)

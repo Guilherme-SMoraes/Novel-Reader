@@ -57,7 +57,7 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkId");
+                    b.HasIndex("WorkId", "CreatedAt");
 
                     b.ToTable("Attachments", (string)null);
                 });
@@ -99,7 +99,7 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkId");
+                    b.HasIndex("WorkId", "CharacterType", "Name");
 
                     b.ToTable("Characters", (string)null);
                 });
@@ -140,6 +140,9 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Genres", (string)null);
                 });
 
@@ -170,7 +173,7 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkId", "WorkType");
+                    b.HasIndex("WorkId", "WorkType", "StoppedAt");
 
                     b.ToTable("Progresses", (string)null);
                 });
@@ -209,6 +212,8 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Title");
 
                     b.ToTable("Works", (string)null);
                 });

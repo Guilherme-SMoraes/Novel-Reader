@@ -16,6 +16,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                 .HasMaxLength(200);
             builder.Property(x => x.Description)
                 .HasMaxLength(1500);
+
+            builder.HasIndex(x => x.Name).IsUnique();
         }
     }
 }

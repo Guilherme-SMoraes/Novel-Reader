@@ -273,7 +273,7 @@ namespace NovelReader.Application.Tests.Services
 
             await _workService.UpdateAsync(work.Id, request, CancellationToken.None);
 
-            _workRepositoryMock.Verify(x => x.SetGenresAsync(work.Id, It.Is<IEnumerable<Guid>>(g => g.Contains(genreId)), It.IsAny<CancellationToken>()), Times.Once);
+            _workRepositoryMock.Verify(x => x.UpdateAsync(It.Is<Work>(w => w.Id == work.Id), It.IsAny<CancellationToken>(), It.Is<IEnumerable<Guid>>(g => g.Contains(genreId))), Times.Once);
         }
 
         [Fact]

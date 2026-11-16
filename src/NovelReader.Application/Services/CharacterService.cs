@@ -35,8 +35,8 @@ namespace NovelReader.Application.Services
                 throw new ValidationException(validationResult.Errors);
             }
 
-            var work = await _workRepository.GetByIdAsync(request.WorkId, cancellationToken);
-            if (work is null)
+            var workExists = await _workRepository.ExistsAsync(request.WorkId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Obra com ID {request.WorkId} não encontrada.");
             }
@@ -60,8 +60,8 @@ namespace NovelReader.Application.Services
 
         public async Task<PagedResult<CharacterResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default, string? affiliation = null)
         {
-            var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
-            if (work is null)
+            var workExists = await _workRepository.ExistsAsync(workId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }

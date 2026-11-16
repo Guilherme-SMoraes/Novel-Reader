@@ -26,6 +26,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                 .WithOne()
                 .HasForeignKey(x => x.CharacterId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(x => new { x.WorkId, x.CharacterType, x.Name });
         }
     }
 }

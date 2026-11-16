@@ -33,8 +33,8 @@ namespace NovelReader.Application.Services
                 throw new ValidationException(validationResult.Errors);
             }
 
-            var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
-            if (work is null)
+            var workExists = await _workRepository.ExistsAsync(workId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }
@@ -47,8 +47,8 @@ namespace NovelReader.Application.Services
 
         public async Task<IReadOnlyList<AttachmentResponse>> GetByWorkIdAsync(Guid workId, CancellationToken cancellationToken = default)
         {
-            var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
-            if (work is null)
+            var workExists = await _workRepository.ExistsAsync(workId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }
