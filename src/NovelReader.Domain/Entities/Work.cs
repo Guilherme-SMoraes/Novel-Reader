@@ -12,6 +12,7 @@ namespace NovelReader.Domain.Entities
         public string AggregatorLink { get; set; }
         public string? CoverImageUrl { get; set; }
         public Language OriginalLanguage { get; init; }
+        public List<string> AlternativeTitles { get; private set; } = new();
         public List<WorkFormat> Formats { get; private set; }
         public List<Character> Characters { get; private set; }
         public List<Progress> Progresses { get; private set; }
@@ -50,6 +51,7 @@ namespace NovelReader.Domain.Entities
             Title = title;
             AggregatorLink = aggregatorLink;
             OriginalLanguage = originalLanguage;
+            AlternativeTitles = new();
             Formats = new();
             Genres = new();
             Characters = new();
@@ -124,6 +126,15 @@ namespace NovelReader.Domain.Entities
         public void RemoveAttachment(Guid id)
         {
             Attachments.RemoveAll(x => x.Id == id);
+        }
+
+        public void SetAlternativeTitles(IEnumerable<string>? titles)
+        {
+            AlternativeTitles = titles?
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
         }
     }
 }

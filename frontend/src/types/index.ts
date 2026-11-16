@@ -61,6 +61,7 @@ export interface Work {
   originalLanguage: Language;
   formats: WorkFormat[];
   genres?: Genre[];
+  alternativeTitles: string[];
 }
 
 export interface CreateWorkRequest {
@@ -71,6 +72,7 @@ export interface CreateWorkRequest {
   originalLanguage: Language;
   formats: WorkFormat[];
   genreIds?: string[];
+  alternativeTitles?: string[];
 }
 
 export interface UpdateWorkRequest {
@@ -80,6 +82,7 @@ export interface UpdateWorkRequest {
   coverImageUrl?: string | null;
   formats: WorkFormat[];
   genreIds?: string[];
+  alternativeTitles?: string[];
 }
 
 export interface Progress {

@@ -3,7 +3,7 @@ import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkF
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { GenreMultiSelect } from './GenreMultiSelect';
-import { X, Layers } from 'lucide-react';
+import { X, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 
 interface Props {
@@ -36,6 +36,8 @@ export const WorkModal: React.FC<Props> = ({
   onOpenManageGenres,
 }) => {
   const [title, setTitle] = useState('');
+  const [alternativeTitles, setAlternativeTitles] = useState<string[]>([]);
+  const [altTitleInput, setAltTitleInput] = useState('');
   const [description, setDescription] = useState('');
   const [originalLanguage, setOriginalLanguage] = useState<Language>(3); // Coreano default
   const [aggregatorLink, setAggregatorLink] = useState('');
@@ -52,6 +54,8 @@ export const WorkModal: React.FC<Props> = ({
   useEffect(() => {
     if (workToEdit) {
       setTitle(workToEdit.title);
+      setAlternativeTitles(workToEdit.alternativeTitles || []);
+      setAltTitleInput('');
       setDescription(workToEdit.description || '');
       setOriginalLanguage(workToEdit.originalLanguage);
       setAggregatorLink(workToEdit.aggregatorLink);
@@ -87,6 +91,8 @@ export const WorkModal: React.FC<Props> = ({
       }
     } else {
       setTitle('');
+      setAlternativeTitles([]);
+      setAltTitleInput('');
       setDescription('');
       setOriginalLanguage(3);
       setAggregatorLink('');
@@ -109,6 +115,25 @@ export const WorkModal: React.FC<Props> = ({
   }, [workToEdit, isOpen]);
 
   if (!isOpen) return null;
+
+  const handleAddAltTitle = () => {
+    const trimmed = altTitleInput.trim();
+    if (trimmed && !alternativeTitles.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+      setAlternativeTitles([...alternativeTitles, trimmed]);
+      setAltTitleInput('');
+    }
+  };
+
+  const handleRemoveAltTitle = (indexToRemove: number) => {
+    setAlternativeTitles(alternativeTitles.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleAltTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      handleAddAltTitle();
+    }
+  };
 
   const toggleFormat = (wt: WorkType) => {
     const exists = formats.some((f) => f.workType === wt);
@@ -202,6 +227,7 @@ export const WorkModal: React.FC<Props> = ({
           coverImageUrl: coverImageUrl.trim() || null,
           formats: formattedList,
           genreIds: selectedGenreIds,
+          alternativeTitles,
         };
         await worksApi.update(workToEdit.id, req);
       } else {
@@ -213,6 +239,7 @@ export const WorkModal: React.FC<Props> = ({
           coverImageUrl: coverImageUrl.trim() || null,
           formats: formattedList,
           genreIds: selectedGenreIds,
+          alternativeTitles,
         };
         await worksApi.create(req);
       }
@@ -260,6 +287,69 @@ export const WorkModal: React.FC<Props> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+          </div>
+
+          {/* Outros Títulos / Títulos Alternativos */}
+          <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+              Outros Títulos / Títulos Alternativos / Traduções / Abreviações (opcional)
+            </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                className="input-text"
+                style={{ flex: 1 }}
+                value={altTitleInput}
+                onChange={(e) => setAltTitleInput(e.target.value)}
+                onKeyDown={handleAltTitleKeyDown}
+                placeholder="Ex: Shadow Slave, SS, Escravo das Sombras (pressione Enter ou clique em +)"
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleAddAltTitle}
+                style={{ whiteSpace: 'nowrap', padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Plus size={14} /> Adicionar
+              </button>
+            </div>
+            {alternativeTitles.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {alternativeTitles.map((altTitle, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: '#1e293b',
+                      border: '1px solid #334155',
+                      color: '#38bdf8',
+                      fontSize: '0.78rem',
+                      padding: '2px 8px',
+                      borderRadius: 14,
+                    }}
+                  >
+                    {altTitle}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAltTitle(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '0 2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title="Remover título alternativo"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Sinopse */}

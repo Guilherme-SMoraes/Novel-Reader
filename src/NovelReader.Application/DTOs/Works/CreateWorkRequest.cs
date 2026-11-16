@@ -9,6 +9,7 @@ namespace NovelReader.Application.DTOs.Works
         string? CoverImageUrl,
         Language OriginalLanguage,
         List<CreateWorkFormatRequest> Formats,
-        List<Guid>? GenreIds = null
+        List<Guid>? GenreIds = null,
+        List<string>? AlternativeTitles = null
     );
 }

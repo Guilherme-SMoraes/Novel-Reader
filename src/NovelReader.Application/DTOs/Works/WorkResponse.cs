@@ -13,7 +13,8 @@ namespace NovelReader.Application.DTOs.Works
         string? CoverImageUrl,
         Language OriginalLanguage,
         IReadOnlyList<WorkFormatDto> Formats,
-        IReadOnlyList<GenreResponse> Genres
+        IReadOnlyList<GenreResponse> Genres,
+        IReadOnlyList<string> AlternativeTitles
     )
     {
         public static WorkResponse FromEntity(Work work) =>
@@ -25,7 +26,8 @@ namespace NovelReader.Application.DTOs.Works
                 work.CoverImageUrl,
                 work.OriginalLanguage,
                 work.Formats?.Select(WorkFormatDto.FromEntity).ToList() ?? new List<WorkFormatDto>(),
-                work.Genres?.Select(GenreResponse.FromEntity).ToList() ?? new List<GenreResponse>()
+                work.Genres?.Select(GenreResponse.FromEntity).ToList() ?? new List<GenreResponse>(),
+                work.AlternativeTitles ?? new List<string>()
             );
     }
 }

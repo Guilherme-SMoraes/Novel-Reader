@@ -99,9 +99,16 @@ export const WorkDetail: React.FC<Props> = ({
             </div>
           </div>
 
-          <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: 8, wordBreak: 'break-word' }}>
+          <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: 4, wordBreak: 'break-word' }}>
             {work.title}
           </h1>
+
+          {work.alternativeTitles && work.alternativeTitles.length > 0 && (
+            <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: 10, fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ color: '#64748b', fontStyle: 'normal' }}>Também conhecido como:</span>
+              <span>{work.alternativeTitles.join(' • ')}</span>
+            </div>
+          )}
 
           {work.genres && work.genres.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>

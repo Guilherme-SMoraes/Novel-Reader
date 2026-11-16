@@ -30,6 +30,10 @@ namespace NovelReader.Application.Validators
             RuleFor(x => x.OriginalLanguage)
                 .IsInEnum().WithMessage("Idioma original inválido.");
 
+            RuleForEach(x => x.AlternativeTitles)
+                .MaximumLength(200).WithMessage("Cada título alternativo deve ter no máximo 200 caracteres.")
+                .When(x => x.AlternativeTitles != null);
+
             RuleFor(x => x.Formats)
                 .NotEmpty().WithMessage("A obra deve conter pelo menos um formato.")
                 .Must(formats => formats != null && formats.Select(f => f.WorkType).Distinct().Count() == formats.Count)

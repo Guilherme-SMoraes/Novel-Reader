@@ -189,4 +189,15 @@ public class WorkTests
 
         Assert.Single(work.Progresses);
     }
+
+    [Fact]
+    public void Should_SetAlternativeTitles_TrimmingAndRemovingDuplicates()
+    {
+        var work = EntityFactory.CreateValidWork();
+
+        work.SetAlternativeTitles(new[] { "  Shadow Slave  ", "SS", "shadow slave", "", "   ", "Escravo das Sombras" });
+
+        Assert.Equal(3, work.AlternativeTitles.Count);
+        Assert.Equal(new[] { "Shadow Slave", "SS", "Escravo das Sombras" }, work.AlternativeTitles);
+    }
 }

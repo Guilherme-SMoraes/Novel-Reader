@@ -7,6 +7,7 @@ Personal reading tracker and knowledge base for novels, web novels, manga, and m
 ## Features
 
 - **Multi-Format Work Tracking:** Manage works across formats (Novel, Web Novel, Manga, Manhwa, Manhua) with separate total chapters, translated status, and reading links.
+- **Alternative Titles & Multilingual Search:** Support for multiple titles, abbreviations, and language translations per work. Search filters match both main and alternative titles seamlessly.
 - **Reading Progress History:** Track reading sessions per format with chapter, optional volume, notes, status, and direct links to where you stopped.
 - **Character Management:**
   - First appearance tracking specific to each format of the work (e.g., Web Novel vs. Manhwa).

@@ -275,5 +275,31 @@ namespace NovelReader.Application.Tests.Services
 
             _workRepositoryMock.Verify(x => x.SetGenresAsync(work.Id, It.Is<IEnumerable<Guid>>(g => g.Contains(genreId)), It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact]
+        public async Task CreateAsync_WithAlternativeTitles_ShouldPersistAndReturnAlternativeTitles()
+        {
+            var formats = new List<CreateWorkFormatRequest>
+            {
+                new(WorkType.WebNovel, new WorkChapterDto(null, 100))
+            };
+
+            var request = new CreateWorkRequest(
+                "Shadow Slave",
+                "Sunny story",
+                "https://webnovel.com/book/shadow-slave",
+                null,
+                Language.English,
+                formats,
+                null,
+                new List<string> { "SS", "Escravo das Sombras" }
+            );
+
+            var result = await _workService.CreateAsync(request, CancellationToken.None);
+
+            result.Should().NotBeNull();
+            result.AlternativeTitles.Should().Contain(new[] { "SS", "Escravo das Sombras" });
+            _workRepositoryMock.Verify(x => x.CreateAsync(It.Is<Work>(w => w.AlternativeTitles.Count == 2), It.IsAny<CancellationToken>()), Times.Once);
+        }
     }
 }

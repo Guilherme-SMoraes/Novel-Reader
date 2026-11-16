@@ -42,6 +42,7 @@ namespace NovelReader.Application.Services
                 Description = request.Description,
                 CoverImageUrl = request.CoverImageUrl
             };
+            work.SetAlternativeTitles(request.AlternativeTitles);
 
             foreach (var formatReq in request.Formats)
             {
@@ -120,6 +121,7 @@ namespace NovelReader.Application.Services
                 Description = request.Description,
                 CoverImageUrl = request.CoverImageUrl
             };
+            updatedWork.SetAlternativeTitles(request.AlternativeTitles);
 
             foreach (var formatReq in request.Formats)
             {

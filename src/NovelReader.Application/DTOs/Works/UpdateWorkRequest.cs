@@ -6,6 +6,7 @@ namespace NovelReader.Application.DTOs.Works
         string AggregatorLink,
         string? CoverImageUrl,
         List<UpdateWorkFormatRequest> Formats,
-        List<Guid>? GenreIds = null
+        List<Guid>? GenreIds = null,
+        List<string>? AlternativeTitles = null
     );
 }

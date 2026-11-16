@@ -44,7 +44,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Include(x => x.Genres)
                 .Include(x => x.Formats)
-                .Where(x => EF.Functions.ILike(x.Title, $"%{name}%"));
+                .Where(x => EF.Functions.ILike(x.Title, $"%{name}%") || x.AlternativeTitles.Any(t => EF.Functions.ILike(t, $"%{name}%")));
 
             var total = await query.CountAsync(cancellationToken);
 
@@ -79,7 +79,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
             if (!string.IsNullOrWhiteSpace(title))
             {
-                query = query.Where(x => EF.Functions.ILike(x.Title, $"%{title}%"));
+                query = query.Where(x => EF.Functions.ILike(x.Title, $"%{title}%") || x.AlternativeTitles.Any(t => EF.Functions.ILike(t, $"%{title}%")));
             }
 
             if (workType.HasValue)
@@ -166,6 +166,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             existingWork.Description = work.Description;
             existingWork.AggregatorLink = work.AggregatorLink;
             existingWork.CoverImageUrl = work.CoverImageUrl;
+            existingWork.SetAlternativeTitles(work.AlternativeTitles);
 
             var targetTypes = work.Formats.Select(f => f.WorkType).ToHashSet();
             var formatsToRemove = existingWork.Formats.Where(f => !targetTypes.Contains(f.WorkType)).ToList();
