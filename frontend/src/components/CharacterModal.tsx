@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type {
   Character,
   CharacterAppearance,
@@ -9,8 +9,21 @@ import type {
 } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
-import { X, Plus } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Bold,
+  Italic,
+  Heading3,
+  List,
+  Table as TableIcon,
+  Quote,
+  Code,
+  Eye,
+  Edit3,
+} from 'lucide-react';
 import { ImageInput } from './ImageInput';
+import { MarkdownViewer } from './MarkdownViewer';
 
 interface Props {
   isOpen: boolean;
@@ -36,6 +49,8 @@ export const CharacterModal: React.FC<Props> = ({
   const [alternativeNames, setAlternativeNames] = useState<string[]>([]);
   const [altNameInput, setAltNameInput] = useState('');
   const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
+  const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +87,7 @@ export const CharacterModal: React.FC<Props> = ({
       setAppearances(map);
     }
     setAltNameInput('');
+    setActiveTab('write');
     setError(null);
   }, [characterToEdit, isOpen]);
 
@@ -94,6 +110,29 @@ export const CharacterModal: React.FC<Props> = ({
       e.preventDefault();
       handleAddAltName();
     }
+  };
+
+  const insertAtCursor = (prefix: string, suffix = '', defaultText = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setDescription((prev) => prev + prefix + defaultText + suffix);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = description.substring(start, end) || defaultText;
+    const replacement = prefix + selectedText + suffix;
+    const newContent = description.substring(0, start) + replacement + description.substring(end);
+    setDescription(newContent);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+    }, 0);
+  };
+
+  const handleInsertTable = () => {
+    const sampleTable = `\n| Característica | Detalhe |\n| :--- | :--- |\n| Raça / Espécie | Humano |\n| Ocupação / Cargo | Alquimista |\n`;
+    insertAtCursor('', sampleTable);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -326,18 +365,174 @@ export const CharacterModal: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Descrição / Biografia com Tabs e Toolbar */}
           <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Descrição / Biografia (opcional)
-            </label>
-            <textarea
-              rows={3}
-              className="input-text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Aparência, histórico, papel na trama..."
-              style={{ resize: 'vertical' }}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Descrição / Biografia e Notas (Markdown)
+              </label>
+
+              {/* Write / Preview Tab Toggles */}
+              <div style={{ display: 'flex', background: '#0f172a', borderRadius: 6, padding: 2, border: '1px solid #334155' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('write')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 10px',
+                    fontSize: '0.75rem',
+                    borderRadius: 4,
+                    background: activeTab === 'write' ? '#1e293b' : 'transparent',
+                    color: activeTab === 'write' ? '#38bdf8' : '#94a3b8',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: activeTab === 'write' ? 600 : 400,
+                  }}
+                >
+                  <Edit3 size={13} /> Escrever
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('preview')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 10px',
+                    fontSize: '0.75rem',
+                    borderRadius: 4,
+                    background: activeTab === 'preview' ? '#1e293b' : 'transparent',
+                    color: activeTab === 'preview' ? '#38bdf8' : '#94a3b8',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: activeTab === 'preview' ? 600 : 400,
+                  }}
+                >
+                  <Eye size={13} /> Pré-visualizar
+                </button>
+              </div>
+            </div>
+
+            {/* Formatting Toolbar */}
+            {activeTab === 'write' && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 4,
+                  padding: '5px 8px',
+                  background: '#1e293b',
+                  borderRadius: '6px 6px 0 0',
+                  border: '1px solid #334155',
+                  borderBottom: 'none',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Negrito (**texto**)"
+                  onClick={() => insertAtCursor('**', '**', 'texto')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <Bold size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Itálico (*texto*)"
+                  onClick={() => insertAtCursor('*', '*', 'texto')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <Italic size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Título / Seção (### Título)"
+                  onClick={() => insertAtCursor('\n### ', '\n', 'Título da Seção')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <Heading3 size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Lista (- Item)"
+                  onClick={() => insertAtCursor('\n- ', '\n', 'Item da lista')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <List size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Inserir Tabela"
+                  onClick={handleInsertTable}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <TableIcon size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Citação (> texto)"
+                  onClick={() => insertAtCursor('\n> ', '\n', 'Citação')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <Quote size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Código (`código`)"
+                  onClick={() => insertAtCursor('`', '`', 'código')}
+                  style={{ padding: '3px 5px', color: '#cbd5e1' }}
+                >
+                  <Code size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Textarea or Preview */}
+            {activeTab === 'write' ? (
+              <textarea
+                ref={textareaRef}
+                rows={5}
+                className="input-text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Aparência, histórico, personalidade, poderes, papel na trama... (suporta Markdown e tabelas)"
+                style={{
+                  resize: 'vertical',
+                  borderRadius: activeTab === 'write' ? '0 0 6px 6px' : 6,
+                  fontFamily: 'inherit',
+                  lineHeight: 1.5,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  background: '#090e17',
+                  border: '1px solid #334155',
+                  borderRadius: 6,
+                  padding: 12,
+                  minHeight: 120,
+                  maxHeight: 280,
+                  overflowY: 'auto',
+                }}
+              >
+                {description.trim() ? (
+                  <MarkdownViewer content={description} compact />
+                ) : (
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
+                    Nada para pré-visualizar. Digite algo na aba 'Escrever'.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>

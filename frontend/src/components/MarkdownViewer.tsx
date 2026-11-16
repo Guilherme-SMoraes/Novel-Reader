@@ -78,7 +78,7 @@ export const MarkdownViewer: React.FC<Props> = ({ content, className = '', compa
             </h4>
           ),
           p: ({ children }) => (
-            <p style={{ margin: '6px 0' }}>
+            <p style={{ margin: '6px 0', whiteSpace: 'pre-line' }}>
               {children}
             </p>
           ),
