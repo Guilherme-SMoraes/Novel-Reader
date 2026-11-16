@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Attachment } from '../types';
 import { attachmentsApi } from '../services/api';
 import { MarkdownViewer } from './MarkdownViewer';
+import { ImageInput } from './ImageInput';
 import {
   X,
   Bold,
@@ -270,18 +271,13 @@ export const AttachmentModal: React.FC<Props> = ({
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
-              URL da Imagem / Mapa (opcional)
-            </label>
-            <input
-              type="url"
-              placeholder="https://exemplo.com/imagem.png"
-              className="input-text"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-            />
-          </div>
+          <ImageInput
+            label="URL da Imagem / Mapa (opcional)"
+            value={imageUrl}
+            onChange={setImageUrl}
+            placeholder="https://exemplo.com/imagem.png ou envie um arquivo"
+            disabled={loading}
+          />
 
           {/* Markdown Content Section with Toolbar & Tabs */}
           <div>

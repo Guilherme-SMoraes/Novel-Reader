@@ -19,6 +19,7 @@ Personal reading tracker and knowledge base for novels, web novels, manga, and m
 - **Smooth UX:** Animated skeleton loaders across sidebar, character cards, journal, and attachments.
 - **Obsidian Migration Script:** Automated script to import characters and notes directly from an Obsidian vault folder.
 - **Automated Cloud Backup & Disaster Recovery:** Portable Rclone integration to automatically back up PostgreSQL dumps directly to Google Drive, retaining only the 3 latest backups.
+- **Integrated Image Upload (ImgBB):** Seamlessly upload images for Work covers, Character avatars, and Markdown attachments with file picker, drag & drop, and clipboard paste (`Ctrl + V`), or paste existing URLs. API keys are safely managed via server-side environment variables and excluded from source control.
 
 ---
 
@@ -61,11 +62,20 @@ tests/
 ### Option A: Running with Docker Compose (Recommended)
 
 1. Make sure **Docker** is installed and running.
-2. Build and start the entire stack:
+2. (Optional) Configure ImgBB for automatic image uploads:
+   - Copy `.env.example` to `.env`:
+     ```bash
+     copy .env.example .env
+     ```
+   - Get a free API key at [api.imgbb.com](https://api.imgbb.com) and add it to `.env`:
+     ```env
+     IMGBB_API_KEY=your_imgbb_api_key_here
+     ```
+3. Build and start the entire stack:
    ```bash
    docker compose up --build -d
    ```
-3. Open your browser:
+4. Open your browser:
    - **Frontend UI:** [http://localhost:5173](http://localhost:5173)
    - **Backend API:** [http://localhost:5092/swagger](http://localhost:5092/swagger)
 

@@ -26,6 +26,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=novelreader;Username=postgres;Password=postgrespassword
+      ImgBB__ApiKey: ${IMGBB_API_KEY:-}
     ports:
       - "5092:8080"
     depends_on:

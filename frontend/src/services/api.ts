@@ -178,3 +178,31 @@ export const attachmentsApi = {
       method: 'DELETE',
     }),
 };
+
+export const imagesApi = {
+  upload: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE}/images/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      let errorMsg = `Erro no upload da imagem: ${res.statusText}`;
+      try {
+        const errData = await res.json();
+        if (errData.message) errorMsg = errData.message;
+        else if (errData.errors) {
+          errorMsg = Object.values(errData.errors).flat().join(', ');
+        }
+      } catch {
+        // Ignore body parsing errors on non-json error responses
+      }
+      throw new Error(errorMsg);
+    }
+
+    return res.json();
+  },
+};

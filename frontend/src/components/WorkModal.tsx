@@ -3,7 +3,8 @@ import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkF
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { GenreMultiSelect } from './GenreMultiSelect';
-import { X, Image as ImageIcon, Layers } from 'lucide-react';
+import { X, Layers } from 'lucide-react';
+import { ImageInput } from './ImageInput';
 
 interface Props {
   isOpen: boolean;
@@ -325,53 +326,13 @@ export const WorkModal: React.FC<Props> = ({
           </div>
 
           {/* Capa com Prévia */}
-          <div style={{ width: '100%' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-              URL da Imagem da Capa (opcional)
-            </label>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <input
-                type="url"
-                className="input-text"
-                style={{ flex: 1 }}
-                placeholder="https://exemplo.com/capa.jpg"
-                value={coverImageUrl}
-                onChange={(e) => setCoverImageUrl(e.target.value)}
-              />
-              {coverImageUrl ? (
-                <div
-                  style={{
-                    width: 44,
-                    height: 58,
-                    borderRadius: 6,
-                    backgroundImage: `url('${coverImageUrl}')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    border: '1px solid #334155',
-                    flexShrink: 0,
-                  }}
-                  title="Prévia da capa"
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 44,
-                    height: 58,
-                    borderRadius: 6,
-                    background: '#0f172a',
-                    border: '1px dashed #334155',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#475569',
-                    flexShrink: 0,
-                  }}
-                >
-                  <ImageIcon size={18} />
-                </div>
-              )}
-            </div>
-          </div>
+          <ImageInput
+            label="URL da Imagem da Capa (opcional)"
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            placeholder="https://exemplo.com/capa.jpg ou envie um arquivo"
+            disabled={loading}
+          />
 
           {/* SEÇÃO MULTIFORMATO */}
           <div style={{ background: '#0b1120', border: '1px solid #334155', borderRadius: 10, padding: 16 }}>

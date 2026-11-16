@@ -10,6 +10,7 @@ import type {
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { X, Plus } from 'lucide-react';
+import { ImageInput } from './ImageInput';
 
 interface Props {
   isOpen: boolean;
@@ -261,18 +262,13 @@ export const CharacterModal: React.FC<Props> = ({
             </select>
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              URL da Foto / Avatar (opcional)
-            </label>
-            <input
-              type="url"
-              className="input-text"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://exemplo.com/avatar.jpg"
-            />
-          </div>
+          <ImageInput
+            label="Foto / Avatar do Personagem (opcional)"
+            value={imageUrl}
+            onChange={setImageUrl}
+            placeholder="https://exemplo.com/avatar.jpg ou envie um arquivo"
+            disabled={loading}
+          />
 
           {/* Primeira Aparição por Formato */}
           <div>

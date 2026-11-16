@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NovelReader.Application\NovelReader.Application.csproj" />
+    <ProjectReference Include="..\..\src\NovelReader.Infrastructure\NovelReader.Infrastructure.csproj" />
     <ProjectReference Include="..\NovelReader.Common.Tests\NovelReader.Common.Tests.csproj" />
   </ItemGroup>
 

@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NovelReader.Application.Interfaces;
 using NovelReader.Domain.Interfaces.Repositories;
 using NovelReader.Infrastructure.Persistence;
 using NovelReader.Infrastructure.Persistence.Repositories;
+using NovelReader.Infrastructure.Services;
 
 namespace NovelReader.Infrastructure
 {
@@ -21,6 +23,8 @@ namespace NovelReader.Infrastructure
             services.AddScoped<IProgressRepository, ProgressRepository>();
             services.AddScoped<ICharacterRepository, CharacterRepository>();
             services.AddScoped<IAttachmentRepository, AttachmentRepository>();
+
+            services.AddHttpClient<IImageUploadService, ImgBbUploadService>();
 
             return services;
         }
