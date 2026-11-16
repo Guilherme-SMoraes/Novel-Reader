@@ -21,6 +21,7 @@ interface Props {
   isOpen: boolean;
   workId: string;
   attachmentToEdit?: Attachment | null;
+  existingCategories?: string[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -85,6 +86,7 @@ export const AttachmentModal: React.FC<Props> = ({
   isOpen,
   workId,
   attachmentToEdit,
+  existingCategories = [],
   onClose,
   onSaved,
 }) => {
@@ -251,8 +253,16 @@ export const AttachmentModal: React.FC<Props> = ({
                   className="input-text"
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
+                  list="custom-category-suggestions"
                   required
                 />
+                <datalist id="custom-category-suggestions">
+                  {existingCategories
+                    .filter((c) => !PRESET_CATEGORIES.includes(c))
+                    .map((c, i) => (
+                      <option key={i} value={c} />
+                    ))}
+                </datalist>
               </div>
             )}
           </div>

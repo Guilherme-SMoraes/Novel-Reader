@@ -32,6 +32,7 @@ interface Props {
   workId: string;
   formats: WorkFormat[];
   characterToEdit?: Character | null;
+  existingAffiliations?: string[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -41,6 +42,7 @@ export const CharacterModal: React.FC<Props> = ({
   workId,
   formats,
   characterToEdit,
+  existingAffiliations = [],
   onClose,
   onSaved,
 }) => {
@@ -52,6 +54,7 @@ export const CharacterModal: React.FC<Props> = ({
   const [altNameInput, setAltNameInput] = useState('');
   const [affiliations, setAffiliations] = useState<string[]>([]);
   const [affiliationInput, setAffiliationInput] = useState('');
+  const [showAffiliationSuggestions, setShowAffiliationSuggestions] = useState(false);
   const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -100,16 +103,64 @@ export const CharacterModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleAddAltName = () => {
-    const trimmed = altNameInput.trim();
-    if (trimmed && !alternativeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
-      setAlternativeNames([...alternativeNames, trimmed]);
-      setAltNameInput('');
+  const filteredAffiliationSuggestions = (existingAffiliations || []).filter(
+    (aff) =>
+      aff.toLowerCase().includes(affiliationInput.toLowerCase().trim()) &&
+      !affiliations.some((a) => a.toLowerCase() === aff.toLowerCase())
+  );
+
+  const autoSaveCharacter = async (updatedAltNames: string[], updatedAffiliations: string[]) => {
+    if (!characterToEdit) return;
+    try {
+      const validAppearances: CharacterAppearance[] = [];
+      Object.entries(appearances).forEach(([workTypeStr, val]) => {
+        const chNum = parseInt(val.chapter, 10);
+        if (!isNaN(chNum) && chNum > 0) {
+          validAppearances.push({
+            workType: Number(workTypeStr) as any,
+            chapter: {
+              volume: val.volume ? parseInt(val.volume, 10) : null,
+              chapter: chNum,
+            },
+          });
+        }
+      });
+
+      const req: UpdateCharacterRequest = {
+        name: name.trim() || characterToEdit.name,
+        characterType,
+        imageUrl: imageUrl.trim() || null,
+        description: description.trim() || null,
+        firstAppearances: validAppearances.length > 0 ? validAppearances : (characterToEdit.firstAppearances || []),
+        alternativeNames: updatedAltNames,
+        affiliations: updatedAffiliations,
+      };
+
+      await charactersApi.update(workId, characterToEdit.id, req);
+      onSaved();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar dados do personagem.');
     }
   };
 
-  const handleRemoveAltName = (indexToRemove: number) => {
-    setAlternativeNames(alternativeNames.filter((_, idx) => idx !== indexToRemove));
+  const handleAddAltName = async () => {
+    const trimmed = altNameInput.trim();
+    if (trimmed && !alternativeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
+      const updated = [...alternativeNames, trimmed];
+      setAlternativeNames(updated);
+      setAltNameInput('');
+      if (characterToEdit) {
+        await autoSaveCharacter(updated, affiliations);
+      }
+    }
+  };
+
+  const handleRemoveAltName = async (indexToRemove: number) => {
+    const updated = alternativeNames.filter((_, idx) => idx !== indexToRemove);
+    setAlternativeNames(updated);
+    if (characterToEdit) {
+      await autoSaveCharacter(updated, affiliations);
+    }
   };
 
   const handleAltKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -119,22 +170,34 @@ export const CharacterModal: React.FC<Props> = ({
     }
   };
 
-  const handleAddAffiliation = () => {
-    const trimmed = affiliationInput.trim();
+  const handleAddAffiliation = async (val?: string) => {
+    const target = val !== undefined ? val : affiliationInput;
+    const trimmed = target.trim();
     if (trimmed && !affiliations.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
-      setAffiliations([...affiliations, trimmed]);
+      const updated = [...affiliations, trimmed];
+      setAffiliations(updated);
       setAffiliationInput('');
+      setShowAffiliationSuggestions(false);
+      if (characterToEdit) {
+        await autoSaveCharacter(alternativeNames, updated);
+      }
     }
   };
 
-  const handleRemoveAffiliation = (indexToRemove: number) => {
-    setAffiliations(affiliations.filter((_, idx) => idx !== indexToRemove));
+  const handleRemoveAffiliation = async (indexToRemove: number) => {
+    const updated = affiliations.filter((_, idx) => idx !== indexToRemove);
+    setAffiliations(updated);
+    if (characterToEdit) {
+      await autoSaveCharacter(alternativeNames, updated);
+    }
   };
 
   const handleAffiliationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       handleAddAffiliation();
+    } else if (e.key === 'Escape') {
+      setShowAffiliationSuggestions(false);
     }
   };
 
@@ -316,22 +379,81 @@ export const CharacterModal: React.FC<Props> = ({
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
               Grupos / Facções / Afiliações (opcional)
             </label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                className="input-text"
-                value={affiliationInput}
-                onChange={(e) => setAffiliationInput(e.target.value)}
-                onKeyDown={handleAffiliationKeyDown}
-                placeholder="Ex: Tarot Club, Nighthawks, Ahjin Guild (pressione Enter ou +)"
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleAddAffiliation}
-                style={{ whiteSpace: 'nowrap', padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4 }}
-              >
-                <Plus size={14} /> Adicionar
-              </button>
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  className="input-text"
+                  value={affiliationInput}
+                  onChange={(e) => {
+                    setAffiliationInput(e.target.value);
+                    setShowAffiliationSuggestions(true);
+                  }}
+                  onFocus={() => setShowAffiliationSuggestions(true)}
+                  onBlur={() => {
+                    // Small delay so onMouseDown on suggestions can trigger first
+                    setTimeout(() => setShowAffiliationSuggestions(false), 200);
+                  }}
+                  onKeyDown={handleAffiliationKeyDown}
+                  placeholder="Ex: Tarot Club, Nighthawks, Ahjin Guild (pressione Enter ou +)"
+                />
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => handleAddAffiliation()}
+                  style={{ whiteSpace: 'nowrap', padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <Plus size={14} /> Adicionar
+                </button>
+              </div>
+
+              {/* Menu de Autocomplete de Afiliações da Obra */}
+              {showAffiliationSuggestions && filteredAffiliationSuggestions.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 86,
+                    background: '#131b2e',
+                    border: '1px solid #334155',
+                    borderRadius: 6,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                    zIndex: 40,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                    marginTop: 4,
+                  }}
+                >
+                  {filteredAffiliationSuggestions.map((suggestion, idx) => (
+                    <div
+                      key={idx}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleAddAffiliation(suggestion);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#f8fafc',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderBottom: idx < filteredAffiliationSuggestions.length - 1 ? '1px solid #1e293b' : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = '#1e293b';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }}
+                    >
+                      <Shield size={12} color="#c084fc" />
+                      <span>{suggestion}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {affiliations.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>

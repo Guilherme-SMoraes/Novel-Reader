@@ -631,6 +631,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         workId={work.id}
         formats={work.formats || []}
         characterToEdit={editingCharacter}
+        existingAffiliations={allAffiliations}
         onClose={() => {
           setIsModalOpen(false);
           setEditingCharacter(null);

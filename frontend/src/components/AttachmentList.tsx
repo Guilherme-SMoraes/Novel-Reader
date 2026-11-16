@@ -300,6 +300,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
         isOpen={isModalOpen}
         workId={work.id}
         attachmentToEdit={editingAttachment}
+        existingCategories={categories.filter((c) => c !== 'TODAS')}
         onClose={() => {
           setIsModalOpen(false);
           setEditingAttachment(null);

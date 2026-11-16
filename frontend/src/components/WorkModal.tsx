@@ -122,16 +122,64 @@ export const WorkModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleAddAltTitle = () => {
-    const trimmed = altTitleInput.trim();
-    if (trimmed && !alternativeTitles.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
-      setAlternativeTitles([...alternativeTitles, trimmed]);
-      setAltTitleInput('');
+  const autoSaveAlternativeTitles = async (updatedTitles: string[]) => {
+    if (!workToEdit) return;
+    try {
+      const formattedList: WorkFormat[] = formats.map((f) => {
+        const chNum = parseInt(f.chapter, 10);
+        const transNum = f.transChapter ? parseInt(f.transChapter, 10) : null;
+        return {
+          workType: f.workType,
+          totalChapter: {
+            volume: f.volume ? parseInt(f.volume, 10) : null,
+            chapter: isNaN(chNum) || chNum <= 0 ? 1 : chNum,
+          },
+          translatedUpTo: transNum && !isNaN(transNum) && transNum > 0
+            ? {
+                volume: f.transVolume ? parseInt(f.transVolume, 10) : null,
+                chapter: transNum,
+              }
+            : null,
+          translatedLanguage: f.transLanguage ? (Number(f.transLanguage) as Language) : null,
+          linkWhereToRead: f.linkWhereToRead.trim() || null,
+        };
+      });
+
+      const req: UpdateWorkRequest = {
+        title: title.trim() || workToEdit.title,
+        description: description.trim() || null,
+        aggregatorLink: aggregatorLink.trim() || workToEdit.aggregatorLink,
+        coverImageUrl: coverImageUrl.trim() || null,
+        formats: formattedList.length > 0 ? formattedList : workToEdit.formats,
+        genreIds: selectedGenreIds,
+        alternativeTitles: updatedTitles,
+      };
+
+      await worksApi.update(workToEdit.id, req);
+      onSaved();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar títulos alternativos da obra.');
     }
   };
 
-  const handleRemoveAltTitle = (indexToRemove: number) => {
-    setAlternativeTitles(alternativeTitles.filter((_, idx) => idx !== indexToRemove));
+  const handleAddAltTitle = async () => {
+    const trimmed = altTitleInput.trim();
+    if (trimmed && !alternativeTitles.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+      const updated = [...alternativeTitles, trimmed];
+      setAlternativeTitles(updated);
+      setAltTitleInput('');
+      if (workToEdit) {
+        await autoSaveAlternativeTitles(updated);
+      }
+    }
+  };
+
+  const handleRemoveAltTitle = async (indexToRemove: number) => {
+    const updated = alternativeTitles.filter((_, idx) => idx !== indexToRemove);
+    setAlternativeTitles(updated);
+    if (workToEdit) {
+      await autoSaveAlternativeTitles(updated);
+    }
   };
 
   const handleAltTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
