@@ -47,5 +47,18 @@ public class CharacterTests
         Assert.Throws<ArgumentException>(act);
     }
 
-    
+    [Fact]
+    public void Should_SetAlternativeNames_Correctly_And_Sanitize()
+    {
+        var firstAppearance = new WorkChapter(null, 1);
+        var work = EntityFactory.CreateValidWork();
+        var character = new Character("Sunny", CharacterType.Protagonist, firstAppearance, work.Id);
+
+        character.SetAlternativeNames(new[] { "Sunless", "  Mongrel  ", "SUNLESS", "", "   ", "Lord Shadow" });
+
+        Assert.Equal(3, character.AlternativeNames.Count);
+        Assert.Contains("Sunless", character.AlternativeNames);
+        Assert.Contains("Mongrel", character.AlternativeNames);
+        Assert.Contains("Lord Shadow", character.AlternativeNames);
+    }
 }

@@ -108,6 +108,7 @@ export interface Character {
   imageUrl: string | null;
   characterType: CharacterType;
   firstAppearance: WorkChapter;
+  alternativeNames: string[];
 }
 
 export interface CreateCharacterRequest {
@@ -117,6 +118,7 @@ export interface CreateCharacterRequest {
   imageUrl?: string | null;
   characterType: CharacterType;
   firstAppearance: WorkChapter;
+  alternativeNames?: string[];
 }
 
 export interface UpdateCharacterRequest {
@@ -124,6 +126,7 @@ export interface UpdateCharacterRequest {
   description?: string | null;
   imageUrl?: string | null;
   characterType: CharacterType;
+  alternativeNames?: string[];
 }
 
 export interface Genre {

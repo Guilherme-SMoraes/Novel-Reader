@@ -46,7 +46,8 @@ namespace NovelReader.Application.Tests.Services
                 "Protagonist of Overgeared",
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
                 CharacterType.Protagonist,
-                new WorkChapterDto(null, 1)
+                new WorkChapterDto(null, 1),
+                new List<string> { "Grid", "Pagma's Successor" }
             );
 
             var result = await _characterService.CreateAsync(request, CancellationToken.None);
@@ -57,6 +58,8 @@ namespace NovelReader.Application.Tests.Services
             result.ImageUrl.Should().Be(request.ImageUrl);
             result.CharacterType.Should().Be(CharacterType.Protagonist);
             result.FirstAppearance.Chapter.Should().Be(1);
+            result.AlternativeNames.Should().Contain("Grid");
+            result.AlternativeNames.Should().Contain("Pagma's Successor");
 
             _characterRepositoryMock.Verify(x => x.CreateAsync(It.Is<Character>(c => c.Name == "Greed" && c.WorkId == work.Id), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -166,11 +169,17 @@ namespace NovelReader.Application.Tests.Services
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(character);
 
-            var request = new UpdateCharacterRequest("Shin Youngwoo", "Real name of Greed", "https://images.unsplash.com/photo-1534528741775-53994a69daeb", CharacterType.Protagonist);
+            var request = new UpdateCharacterRequest(
+                "Shin Youngwoo",
+                "Real name of Greed",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
+                CharacterType.Protagonist,
+                new List<string> { "Grid", "God Grid" }
+            );
 
             await _characterService.UpdateAsync(character.Id, request, CancellationToken.None);
 
-            _characterRepositoryMock.Verify(x => x.UpdateAsync(It.Is<Character>(c => c.Name == "Shin Youngwoo"), It.IsAny<CancellationToken>()), Times.Once);
+            _characterRepositoryMock.Verify(x => x.UpdateAsync(It.Is<Character>(c => c.Name == "Shin Youngwoo" && c.AlternativeNames.Contains("God Grid")), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

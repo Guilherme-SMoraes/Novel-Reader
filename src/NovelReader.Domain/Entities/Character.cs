@@ -12,6 +12,7 @@ namespace NovelReader.Domain.Entities
         public CharacterType CharacterType { get; set; }
         public WorkChapter FirstAppearance { get; init; }
         public Guid WorkId { get; init; }
+        public List<string> AlternativeNames { get; set; } = new();
 
 #pragma warning disable CS8618
         private Character(){ }
@@ -33,6 +34,15 @@ namespace NovelReader.Domain.Entities
             CharacterType = characterType;
             FirstAppearance = firstAppearance;
             WorkId = workId;
+        }
+
+        public void SetAlternativeNames(IEnumerable<string>? names)
+        {
+            AlternativeNames = names?
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Select(n => n.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
         }
     }
 }

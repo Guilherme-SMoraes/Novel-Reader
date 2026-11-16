@@ -28,6 +28,10 @@ namespace NovelReader.Application.Validators
             RuleFor(x => x.CharacterType)
                 .IsInEnum().WithMessage("Tipo de personagem inválido.");
 
+            RuleForEach(x => x.AlternativeNames)
+                .MaximumLength(200).WithMessage("Cada nome alternativo deve ter no máximo 200 caracteres.")
+                .When(x => x.AlternativeNames != null);
+
             RuleFor(x => x.FirstAppearance)
                 .NotNull().WithMessage("A primeira aparição é obrigatória.")
                 .DependentRules(() =>

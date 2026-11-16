@@ -47,6 +47,7 @@ namespace NovelReader.Application.Services
                 Description = request.Description,
                 ImageUrl = request.ImageUrl
             };
+            character.SetAlternativeNames(request.AlternativeNames);
 
             await _characterRepository.CreateAsync(character, cancellationToken);
 
@@ -91,6 +92,7 @@ namespace NovelReader.Application.Services
             character.Description = request.Description;
             character.ImageUrl = request.ImageUrl;
             character.CharacterType = request.CharacterType;
+            character.SetAlternativeNames(request.AlternativeNames);
 
             await _characterRepository.UpdateAsync(character, cancellationToken);
         }

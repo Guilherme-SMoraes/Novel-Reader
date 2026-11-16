@@ -18,6 +18,7 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                 .HasMaxLength(2500);
             builder.Property(x => x.ImageUrl)
                 .HasMaxLength(2048);
+            builder.Property(x => x.AlternativeNames);
             
             builder.OwnsOne(x => x.FirstAppearance, fa =>
             {

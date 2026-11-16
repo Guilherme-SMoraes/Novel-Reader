@@ -23,7 +23,11 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
   const filtered = characters.filter((c) => {
     const q = filterQuery.toLowerCase();
     const role = CharacterTypeLabels[c.characterType].toLowerCase();
-    return c.name.toLowerCase().includes(q) || role.includes(q) || (c.description && c.description.toLowerCase().includes(q));
+    const matchesName = c.name.toLowerCase().includes(q);
+    const matchesRole = role.includes(q);
+    const matchesDesc = c.description ? c.description.toLowerCase().includes(q) : false;
+    const matchesAlt = c.alternativeNames ? c.alternativeNames.some((alt) => alt.toLowerCase().includes(q)) : false;
+    return matchesName || matchesRole || matchesDesc || matchesAlt;
   });
 
   const handleConfirmDelete = async () => {
@@ -150,7 +154,26 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
               {/* Informações */}
               <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 2 }}>{c.name}</div>
-                <div style={{ fontSize: '0.74rem', color: '#38bdf8', marginBottom: 6 }}>
+                {c.alternativeNames && c.alternativeNames.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '4px 0 6px 0' }}>
+                    {c.alternativeNames.map((alt, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: '0.68rem',
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.25)',
+                          borderRadius: 4,
+                          padding: '1px 5px',
+                        }}
+                      >
+                        {alt}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginBottom: 6 }}>
                   1ª Aparição: Cap. {c.firstAppearance.chapter}
                   {c.firstAppearance.volume && ` (Vol. ${c.firstAppearance.volume})`}
                 </div>
