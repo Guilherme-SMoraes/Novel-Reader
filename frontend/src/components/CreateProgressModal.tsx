@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { CreateProgressRequest, ReadingStatus, WorkFormat } from '../types';
 import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
-import { X } from 'lucide-react';
+import { useModalDock } from '../context/ModalDockContext';
+import { X, Minus } from 'lucide-react';
 import { getUnitLabel, getStatusLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
+  sessionId?: string;
   isOpen: boolean;
   workId: string;
   currentFormat: WorkFormat;
@@ -15,6 +18,7 @@ interface Props {
 }
 
 export const CreateProgressModal: React.FC<Props> = ({
+  sessionId,
   isOpen,
   workId,
   currentFormat,
@@ -29,8 +33,37 @@ export const CreateProgressModal: React.FC<Props> = ({
   const [chapterLink, setChapterLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
-  if (!isOpen) return null;
+  const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
+  const effectiveSessionId = sessionId || `progress-${workId}-${currentFormat.workType}`;
+
+  useEffect(() => {
+    if (isMinimized) {
+      updateModalTitle(
+        effectiveSessionId,
+        `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`
+      );
+    }
+  }, [chapter, isMinimized, effectiveSessionId, currentFormat.workType]);
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
+    minimizeModal({
+      id: effectiveSessionId,
+      title: `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`,
+      type: 'progress',
+      onRestore: () => setIsMinimized(false),
+      onClose: handleClose,
+    });
+  };
+
+  const handleClose = () => {
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  if (!isOpen || isMinimized) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +93,7 @@ export const CreateProgressModal: React.FC<Props> = ({
       };
 
       await progressApi.create(req);
+      closeModal(effectiveSessionId);
       onCreated();
       onClose();
     } catch (err: unknown) {
@@ -69,7 +103,7 @@ export const CreateProgressModal: React.FC<Props> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -79,9 +113,26 @@ export const CreateProgressModal: React.FC<Props> = ({
               {WorkTypeLabels[currentFormat.workType]}
             </span>
           </div>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleMinimize}
+              title="Minimizar formulário"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleClose}
+              title="Fechar"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -167,7 +218,7 @@ export const CreateProgressModal: React.FC<Props> = ({
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+            <button type="button" onClick={handleClose} className="btn-secondary" disabled={loading}>
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>
@@ -176,6 +227,7 @@ export const CreateProgressModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

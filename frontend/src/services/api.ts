@@ -113,6 +113,12 @@ export const progressApi = {
       body: JSON.stringify(data),
     }),
 
+  updateDescription: (workId: string, id: string, description: string | null) =>
+    request<void>(`/works/${workId}/progress/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ description }),
+    }),
+
   delete: (workId: string, id: string) =>
     request<void>(`/works/${workId}/progress/${id}`, {
       method: 'DELETE',

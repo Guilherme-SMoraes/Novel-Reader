@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type {
   Character,
   CharacterAppearance,
@@ -9,8 +10,10 @@ import type {
 } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
+import { useModalDock } from '../context/ModalDockContext';
 import {
   X,
+  Minus,
   Plus,
   Bold,
   Italic,
@@ -28,6 +31,7 @@ import { MarkdownViewer } from './MarkdownViewer';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
+  sessionId?: string;
   isOpen: boolean;
   workId: string;
   formats: WorkFormat[];
@@ -38,6 +42,7 @@ interface Props {
 }
 
 export const CharacterModal: React.FC<Props> = ({
+  sessionId,
   isOpen,
   workId,
   formats,
@@ -57,9 +62,13 @@ export const CharacterModal: React.FC<Props> = ({
   const [showAffiliationSuggestions, setShowAffiliationSuggestions] = useState(false);
   const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const [isMinimized, setIsMinimized] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
+  const effectiveSessionId = sessionId || (characterToEdit ? `char-edit-${characterToEdit.id}` : 'char-create');
 
   // Available formats: either from the work or fallback to WebNovel
   const availableFormats = formats && formats.length > 0 ? formats : [{ workType: 2, totalChapter: { volume: null, chapter: 100 } } as WorkFormat];
@@ -101,7 +110,32 @@ export const CharacterModal: React.FC<Props> = ({
     setError(null);
   }, [characterToEdit, isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isMinimized) {
+      updateModalTitle(
+        effectiveSessionId,
+        name.trim() || (characterToEdit ? characterToEdit.name : 'Novo Personagem')
+      );
+    }
+  }, [name, isMinimized, effectiveSessionId, characterToEdit]);
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
+    minimizeModal({
+      id: effectiveSessionId,
+      title: name.trim() || (characterToEdit ? characterToEdit.name : 'Novo Personagem'),
+      type: 'character',
+      onRestore: () => setIsMinimized(false),
+      onClose: handleClose,
+    });
+  };
+
+  const handleClose = () => {
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  if (!isOpen || isMinimized) return null;
 
   const filteredAffiliationSuggestions = (existingAffiliations || []).filter(
     (aff) =>
@@ -273,6 +307,7 @@ export const CharacterModal: React.FC<Props> = ({
         await charactersApi.create(req);
       }
 
+      closeModal(effectiveSessionId);
       onSaved();
       onClose();
     } catch (err: unknown) {
@@ -282,16 +317,33 @@ export const CharacterModal: React.FC<Props> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
             {characterToEdit ? 'Editar Personagem' : 'Cadastrar Personagem'}
           </h2>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleMinimize}
+              title="Minimizar formulário"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleClose}
+              title="Fechar"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -750,7 +802,7 @@ export const CharacterModal: React.FC<Props> = ({
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
               className="btn-secondary"
             >
@@ -766,6 +818,7 @@ export const CharacterModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

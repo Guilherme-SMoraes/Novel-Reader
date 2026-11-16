@@ -17,8 +17,7 @@ interface Props {
 export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmentsUpdated }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
+  const [attachmentSessions, setAttachmentSessions] = useState<Array<{ id: string; attachment: Attachment | null }>>([]);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [selectedAttachmentForView, setSelectedAttachmentForView] = useState<Attachment | null>(null);
@@ -45,13 +44,20 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   };
 
   const handleOpenCreate = () => {
-    setEditingAttachment(null);
-    setIsModalOpen(true);
+    const sessionId = `att-create-${Date.now()}`;
+    setAttachmentSessions((prev) => [...prev, { id: sessionId, attachment: null }]);
   };
 
   const handleOpenEdit = (attachment: Attachment) => {
-    setEditingAttachment(attachment);
-    setIsModalOpen(true);
+    const sessionId = `att-edit-${attachment.id}`;
+    setAttachmentSessions((prev) => {
+      if (prev.some((s) => s.id === sessionId)) return prev;
+      return [...prev, { id: sessionId, attachment }];
+    });
+  };
+
+  const handleCloseAttachmentSession = (sessionId: string) => {
+    setAttachmentSessions((prev) => prev.filter((s) => s.id !== sessionId));
   };
 
   const getCategoryColor = (cat: string) => {
@@ -295,18 +301,22 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
         />
       )}
 
-      {/* Create / Edit Modal */}
-      <AttachmentModal
-        isOpen={isModalOpen}
-        workId={work.id}
-        attachmentToEdit={editingAttachment}
-        existingCategories={categories.filter((c) => c !== 'TODAS')}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingAttachment(null);
-        }}
-        onSaved={onAttachmentsUpdated}
-      />
+      {/* Sessões de Criação / Edição de Anexos (Suporte Multi-Sessão & Minimização) */}
+      {attachmentSessions.map((session) => (
+        <AttachmentModal
+          key={session.id}
+          sessionId={session.id}
+          isOpen={true}
+          workId={work.id}
+          attachmentToEdit={session.attachment}
+          existingCategories={categories.filter((c) => c !== 'TODAS')}
+          onClose={() => handleCloseAttachmentSession(session.id)}
+          onSaved={() => {
+            onAttachmentsUpdated();
+            handleCloseAttachmentSession(session.id);
+          }}
+        />
+      ))}
 
       {attachmentToDelete && (
         <ConfirmModal

@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { Attachment } from '../types';
 import { attachmentsApi } from '../services/api';
+import { useModalDock } from '../context/ModalDockContext';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
 import {
   X,
+  Minus,
   Bold,
   Italic,
   Heading3,
@@ -18,6 +21,7 @@ import {
 } from 'lucide-react';
 
 interface Props {
+  sessionId?: string;
   isOpen: boolean;
   workId: string;
   attachmentToEdit?: Attachment | null;
@@ -83,6 +87,7 @@ const TEMPLATES = [
 ];
 
 export const AttachmentModal: React.FC<Props> = ({
+  sessionId,
   isOpen,
   workId,
   attachmentToEdit,
@@ -98,8 +103,11 @@ export const AttachmentModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
+  const effectiveSessionId = sessionId || (attachmentToEdit ? `att-edit-${attachmentToEdit.id}` : 'att-create');
 
   useEffect(() => {
     if (attachmentToEdit) {
@@ -124,7 +132,32 @@ export const AttachmentModal: React.FC<Props> = ({
     setActiveTab('write');
   }, [attachmentToEdit, isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isMinimized) {
+      updateModalTitle(
+        effectiveSessionId,
+        title.trim() || (attachmentToEdit ? attachmentToEdit.title : 'Novo Anexo')
+      );
+    }
+  }, [title, isMinimized, effectiveSessionId, attachmentToEdit]);
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
+    minimizeModal({
+      id: effectiveSessionId,
+      title: title.trim() || (attachmentToEdit ? attachmentToEdit.title : 'Novo Anexo'),
+      type: 'attachment',
+      onRestore: () => setIsMinimized(false),
+      onClose: handleClose,
+    });
+  };
+
+  const handleClose = () => {
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  if (!isOpen || isMinimized) return null;
 
   const insertAtCursor = (prefix: string, suffix = '', defaultText = '') => {
     const textarea = textareaRef.current;
@@ -190,6 +223,7 @@ export const AttachmentModal: React.FC<Props> = ({
           content: content.trim() || null,
         });
       }
+      closeModal(effectiveSessionId);
       onSaved();
       onClose();
     } catch (err: any) {
@@ -199,14 +233,33 @@ export const AttachmentModal: React.FC<Props> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: '760px', width: '95%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
             {attachmentToEdit ? 'Editar Anexo' : 'Novo Anexo da Obra'}
           </h2>
-          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleMinimize}
+              title="Minimizar formulário"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleClose}
+              title="Fechar"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -490,7 +543,7 @@ export const AttachmentModal: React.FC<Props> = ({
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+            <button type="button" className="btn-secondary" onClick={handleClose} disabled={loading}>
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>
@@ -499,6 +552,7 @@ export const AttachmentModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

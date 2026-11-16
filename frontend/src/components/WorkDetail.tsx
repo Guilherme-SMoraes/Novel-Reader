@@ -276,9 +276,9 @@ export const WorkDetail: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Conteúdo da Aba Ativa */}
-      {activeTab === 'journal' && (
-        loading ? (
+      {/* Conteúdo das Abas */}
+      <div style={{ display: activeTab === 'journal' ? 'block' : 'none' }}>
+        {loading ? (
           <JournalSkeleton />
         ) : (
           <ReadingJournal
@@ -286,20 +286,20 @@ export const WorkDetail: React.FC<Props> = ({
             progressList={progressList}
             onProgressUpdated={onDataUpdated}
           />
-        )
-      )}
+        )}
+      </div>
 
-      {activeTab === 'characters' && (
+      <div style={{ display: activeTab === 'characters' ? 'block' : 'none' }}>
         <CharacterList
           work={work}
           characters={characters}
           loading={loading}
           onCharactersUpdated={onDataUpdated}
         />
-      )}
+      </div>
 
-      {activeTab === 'attachments' && (
-        loading ? (
+      <div style={{ display: activeTab === 'attachments' ? 'block' : 'none' }}>
+        {loading ? (
           <AttachmentGridSkeleton count={4} />
         ) : (
           <AttachmentList
@@ -307,8 +307,8 @@ export const WorkDetail: React.FC<Props> = ({
             attachments={attachments}
             onAttachmentsUpdated={onDataUpdated}
           />
-        )
-      )}
+        )}
+      </div>
 
       {isDeleteModalOpen && (
         <DeleteWorkModal

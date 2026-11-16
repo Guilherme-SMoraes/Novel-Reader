@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkFormat, WorkType } from '../types';
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
+import { useModalDock } from '../context/ModalDockContext';
 import { GenreMultiSelect } from './GenreMultiSelect';
-import { X, Layers, Plus } from 'lucide-react';
+import { X, Minus, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 import {
   getUnitLabel,
@@ -13,6 +15,7 @@ import {
 } from '../utils/formatLabels';
 
 interface Props {
+  sessionId?: string;
   isOpen: boolean;
   workToEdit?: Work | null;
   genres: Genre[];
@@ -34,6 +37,7 @@ interface FormatFormState {
 const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 export const WorkModal: React.FC<Props> = ({
+  sessionId,
   isOpen,
   workToEdit,
   genres,
@@ -56,6 +60,10 @@ export const WorkModal: React.FC<Props> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
+  const effectiveSessionId = sessionId || (workToEdit ? `work-${workToEdit.id}` : 'work-create');
 
   useEffect(() => {
     if (workToEdit) {
@@ -120,7 +128,32 @@ export const WorkModal: React.FC<Props> = ({
     setError(null);
   }, [workToEdit, isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isMinimized) {
+      updateModalTitle(
+        effectiveSessionId,
+        title.trim() || (workToEdit ? workToEdit.title : 'Nova Obra')
+      );
+    }
+  }, [title, isMinimized, effectiveSessionId, workToEdit]);
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
+    minimizeModal({
+      id: effectiveSessionId,
+      title: title.trim() || (workToEdit ? workToEdit.title : 'Nova Obra'),
+      type: 'work',
+      onRestore: () => setIsMinimized(false),
+      onClose: handleClose,
+    });
+  };
+
+  const handleClose = () => {
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  if (!isOpen || isMinimized) return null;
 
   const autoSaveAlternativeTitles = async (updatedTitles: string[]) => {
     if (!workToEdit) return;
@@ -299,6 +332,7 @@ export const WorkModal: React.FC<Props> = ({
         await worksApi.create(req);
       }
 
+      closeModal(effectiveSessionId);
       onSaved();
       onClose();
     } catch (err: unknown) {
@@ -308,7 +342,7 @@ export const WorkModal: React.FC<Props> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: '680px', width: '100%', padding: '24px 28px' }}>
         {/* Cabeçalho */}
@@ -316,9 +350,26 @@ export const WorkModal: React.FC<Props> = ({
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>
             {workToEdit ? 'Editar Obra' : 'Cadastrar Nova Obra'}
           </h2>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleMinimize}
+              title="Minimizar formulário"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleClose}
+              title="Fechar"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -645,7 +696,7 @@ export const WorkModal: React.FC<Props> = ({
 
           {/* Rodapé com Ações */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14, borderTop: '1px solid #1e293b', paddingTop: 14 }}>
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+            <button type="button" onClick={handleClose} className="btn-secondary" disabled={loading}>
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>
@@ -654,6 +705,7 @@ export const WorkModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

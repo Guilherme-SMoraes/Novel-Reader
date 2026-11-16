@@ -5,7 +5,7 @@ import { progressApi } from '../services/api';
 import { CreateProgressModal } from './CreateProgressModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
-import { BookMarked, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { BookMarked, Plus, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import {
   getUnitLabel,
   getActionLabel,
@@ -26,6 +26,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingQuickAdd, setLoadingQuickAdd] = useState(false);
   const [progressToDeleteId, setProgressToDeleteId] = useState<string | null>(null);
+  const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
+  const [editDescriptionText, setEditDescriptionText] = useState('');
+  const [loadingSaveEdit, setLoadingSaveEdit] = useState(false);
   const { showToast } = useToast();
 
   // Fallback se o formato selecionado não existir mais na obra
@@ -81,6 +84,21 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
     showToast('Registro de progresso excluído.', 'info');
     onProgressUpdated();
     setProgressToDeleteId(null);
+  };
+
+  const handleSaveDescription = async (progressId: string) => {
+    setLoadingSaveEdit(true);
+    try {
+      const trimmed = editDescriptionText.trim();
+      await progressApi.updateDescription(work.id, progressId, trimmed || null);
+      showToast('Anotação do progresso atualizada com sucesso!', 'success');
+      setEditingProgressId(null);
+      onProgressUpdated();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Erro ao atualizar anotação.', 'error');
+    } finally {
+      setLoadingSaveEdit(false);
+    }
   };
 
   return (
@@ -289,21 +307,80 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                     </span>
                   </div>
 
-                  {p.readingDescription && (
-                    <p style={{ color: '#cbd5e1', fontSize: '0.84rem', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
-                      {p.readingDescription}
-                    </p>
+                  {editingProgressId === p.id ? (
+                    <div style={{ marginTop: 8 }}>
+                      <textarea
+                        className="input-text"
+                        rows={3}
+                        value={editDescriptionText}
+                        onChange={(e) => setEditDescriptionText(e.target.value)}
+                        placeholder="Escreva sua anotação ou reflexão sobre este capítulo..."
+                        style={{ resize: 'vertical', width: '100%', fontSize: '0.85rem' }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                          onClick={() => setEditingProgressId(null)}
+                          disabled={loadingSaveEdit}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{ padding: '4px 12px', fontSize: '0.78rem' }}
+                          onClick={() => handleSaveDescription(p.id)}
+                          disabled={loadingSaveEdit}
+                        >
+                          {loadingSaveEdit ? 'Salvando...' : 'Salvar Anotação'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {p.readingDescription ? (
+                        <p style={{ color: '#cbd5e1', fontSize: '0.84rem', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+                          {p.readingDescription}
+                        </p>
+                      ) : (
+                        <span
+                          onClick={() => {
+                            setEditingProgressId(p.id);
+                            setEditDescriptionText('');
+                          }}
+                          style={{ color: '#64748b', fontSize: '0.78rem', fontStyle: 'italic', cursor: 'pointer' }}
+                        >
+                          + Adicionar anotação...
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setProgressToDeleteId(p.id)}
-                  style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                  title="Excluir anotação"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProgressId(p.id);
+                      setEditDescriptionText(p.readingDescription || '');
+                    }}
+                    style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                    title="Editar anotação"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProgressToDeleteId(p.id)}
+                    style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                    title="Excluir anotação"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

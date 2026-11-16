@@ -27,8 +27,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [characterSessions, setCharacterSessions] = useState<Array<{ id: string; character: Character | null }>>([]);
   const [detailCharacter, setDetailCharacter] = useState<Character | null>(null);
   const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
@@ -126,13 +125,20 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   };
 
   const handleOpenCreate = () => {
-    setEditingCharacter(null);
-    setIsModalOpen(true);
+    const sessionId = `char-create-${Date.now()}`;
+    setCharacterSessions((prev) => [...prev, { id: sessionId, character: null }]);
   };
 
   const handleOpenEdit = (character: Character) => {
-    setEditingCharacter(character);
-    setIsModalOpen(true);
+    const sessionId = `char-edit-${character.id}`;
+    setCharacterSessions((prev) => {
+      if (prev.some((s) => s.id === sessionId)) return prev;
+      return [...prev, { id: sessionId, character }];
+    });
+  };
+
+  const handleCloseSession = (sessionId: string) => {
+    setCharacterSessions((prev) => prev.filter((s) => s.id !== sessionId));
   };
 
   return (
@@ -625,19 +631,23 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         </div>
       )}
 
-      {/* Modal de Criação / Edição */}
-      <CharacterModal
-        isOpen={isModalOpen}
-        workId={work.id}
-        formats={work.formats || []}
-        characterToEdit={editingCharacter}
-        existingAffiliations={allAffiliations}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingCharacter(null);
-        }}
-        onSaved={onCharactersUpdated}
-      />
+      {/* Sessões de Criação / Edição de Personagens (Suporte Multi-Sessão & Minimização) */}
+      {characterSessions.map((session) => (
+        <CharacterModal
+          key={session.id}
+          sessionId={session.id}
+          isOpen={true}
+          workId={work.id}
+          formats={work.formats || []}
+          characterToEdit={session.character}
+          existingAffiliations={allAffiliations}
+          onClose={() => handleCloseSession(session.id)}
+          onSaved={() => {
+            onCharactersUpdated();
+            handleCloseSession(session.id);
+          }}
+        />
+      ))}
 
       {/* Modal de Detalhes / Leitura do Personagem */}
       <CharacterDetailModal
