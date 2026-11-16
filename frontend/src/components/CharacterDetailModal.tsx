@@ -3,6 +3,7 @@ import type { Character } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Edit2, User, BookOpen, Shield, Maximize2 } from 'lucide-react';
+import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
   character: Character | null;
@@ -258,8 +259,8 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
                         border: '1px solid #334155',
                       }}
                     >
-                      <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> Cap. {app.chapter.chapter}
-                      {app.chapter.volume && ` (Vol. ${app.chapter.volume})`}
+                      <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> {getUnitLabel(app.workType, { short: true })} {app.chapter.chapter}
+                      {app.chapter.volume && ` (${isWatchable(app.workType) ? 'Temp.' : 'Vol.'} ${app.chapter.volume})`}
                     </span>
                   ))}
                 </div>

@@ -200,4 +200,20 @@ public class WorkTests
         Assert.Equal(3, work.AlternativeTitles.Count);
         Assert.Equal(new[] { "Shadow Slave", "SS", "Escravo das Sombras" }, work.AlternativeTitles);
     }
+
+    [Theory]
+    [InlineData(WorkType.Donghua)]
+    [InlineData(WorkType.LiveAction)]
+    [InlineData(WorkType.Dorama)]
+    [InlineData(WorkType.Series)]
+    [InlineData(WorkType.Movie)]
+    public void Should_Support_New_Watchable_WorkTypes(WorkType workType)
+    {
+        var work = EntityFactory.CreateValidWork();
+        var format = new WorkFormat(work.Id, workType, new WorkChapter(null, 24));
+
+        work.AddFormat(format);
+
+        Assert.Contains(work.Formats, f => f.WorkType == workType && f.TotalChapter.Chapter == 24);
+    }
 }

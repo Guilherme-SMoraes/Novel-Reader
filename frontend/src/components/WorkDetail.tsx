@@ -7,6 +7,7 @@ import { AttachmentList } from './AttachmentList';
 import { DeleteWorkModal } from './DeleteWorkModal';
 import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map } from 'lucide-react';
 import { JournalSkeleton, AttachmentGridSkeleton } from './Skeletons';
+import { getActionLabel, getUnitLabel } from '../utils/formatLabels';
 
 interface Props {
   work: Work;
@@ -74,7 +75,7 @@ export const WorkDetail: React.FC<Props> = ({
             {work.formats && work.formats.length > 0 ? (
               work.formats.map((f) => (
                 <span key={f.workType} className="badge badge-novel">
-                  {WorkTypeLabels[f.workType]} ({f.totalChapter.chapter} caps)
+                  {WorkTypeLabels[f.workType]} ({f.totalChapter.chapter} {getUnitLabel(f.workType, { plural: true, short: true }).toLowerCase()})
                 </span>
               ))
             ) : (
@@ -161,7 +162,7 @@ export const WorkDetail: React.FC<Props> = ({
                     className="btn-primary"
                     style={{ textDecoration: 'none', fontSize: '0.8rem' }}
                   >
-                    Ler {WorkTypeLabels[f.workType]} <ExternalLink size={13} />
+                    {getActionLabel(f.workType)} {WorkTypeLabels[f.workType]} <ExternalLink size={13} />
                   </a>
                 ))}
           </div>
@@ -195,7 +196,7 @@ export const WorkDetail: React.FC<Props> = ({
             transition: 'all 0.15s ease',
           }}
         >
-          <BookOpen size={18} /> Diário de Leitura
+          <BookOpen size={18} /> Diário de Acompanhamento
           <span style={{ fontSize: '0.75rem', background: '#1e293b', padding: '2px 8px', borderRadius: '10px', color: '#cbd5e1' }}>
             {progressList.length}
           </span>

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 import { MarkdownViewer } from './MarkdownViewer';
+import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
   isOpen: boolean;
@@ -422,7 +423,7 @@ export const CharacterModal: React.FC<Props> = ({
                       <input
                         type="number"
                         min="1"
-                        placeholder="Capítulo"
+                        placeholder={getUnitLabel(f.workType)}
                         className="input-text"
                         value={current.chapter}
                         onChange={(e) =>
@@ -437,7 +438,7 @@ export const CharacterModal: React.FC<Props> = ({
                       <input
                         type="number"
                         min="1"
-                        placeholder="Volume (opcional)"
+                        placeholder={isWatchable(f.workType) ? "Temporada (opcional)" : "Volume (opcional)"}
                         className="input-text"
                         value={current.volume}
                         onChange={(e) =>

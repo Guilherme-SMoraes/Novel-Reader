@@ -8,6 +8,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield } from 'lucide-react';
 import { CharacterGridSkeleton } from './Skeletons';
+import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
   work: Work;
@@ -429,14 +430,14 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
                         flexShrink: 0,
                       }}
                       title={c.firstAppearances
-                        .map((app) => `${WorkTypeLabels[app.workType]}: Cap. ${app.chapter.chapter}${app.chapter.volume ? ` (Vol. ${app.chapter.volume})` : ''}`)
+                        .map((app) => `${WorkTypeLabels[app.workType]}: ${getUnitLabel(app.workType, { short: true })} ${app.chapter.chapter}${app.chapter.volume ? ` (${isWatchable(app.workType) ? 'Temp.' : 'Vol.'} ${app.chapter.volume})` : ''}`)
                         .join(' • ')}
                     >
                       {c.firstAppearances.map((app, idx) => (
                         <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
                           {idx > 0 && <span style={{ color: '#475569', margin: '0 2px' }}>•</span>}
                           <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong>
-                          <span>Cap. {app.chapter.chapter}</span>
+                          <span>{getUnitLabel(app.workType, { short: true })} {app.chapter.chapter}</span>
                         </span>
                       ))}
                     </div>

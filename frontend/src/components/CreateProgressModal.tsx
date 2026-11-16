@@ -3,6 +3,7 @@ import type { CreateProgressRequest, ReadingStatus, WorkFormat } from '../types'
 import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { X } from 'lucide-react';
+import { getUnitLabel, getStatusLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
   isOpen: boolean;
@@ -37,12 +38,13 @@ export const CreateProgressModal: React.FC<Props> = ({
     setError(null);
 
     try {
+      const unit = getUnitLabel(currentFormat.workType);
       const chapterNum = parseInt(chapter, 10);
       if (isNaN(chapterNum) || chapterNum <= 0) {
-        throw new Error('Capítulo deve ser maior que zero.');
+        throw new Error(`${unit} deve ser maior que zero.`);
       }
       if (chapterNum > currentFormat.totalChapter.chapter) {
-        throw new Error(`Capítulo não pode ser maior que o total do formato (${currentFormat.totalChapter.chapter}).`);
+        throw new Error(`${unit} não pode ser maior que o total do formato (${currentFormat.totalChapter.chapter}).`);
       }
 
       const req: CreateProgressRequest = {
@@ -92,7 +94,7 @@ export const CreateProgressModal: React.FC<Props> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                Capítulo Onde Parou * (Máx: {currentFormat.totalChapter.chapter})
+                {getUnitLabel(currentFormat.workType)} Onde Parou * (Máx: {currentFormat.totalChapter.chapter})
               </label>
               <input
                 type="number"
@@ -107,7 +109,7 @@ export const CreateProgressModal: React.FC<Props> = ({
 
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                Volume (opcional)
+                {isWatchable(currentFormat.workType) ? 'Temporada (opcional)' : 'Volume (opcional)'}
               </label>
               <input
                 type="number"
@@ -122,42 +124,44 @@ export const CreateProgressModal: React.FC<Props> = ({
 
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Status da Leitura
+              Status de {isWatchable(currentFormat.workType) ? 'Acompanhamento' : 'Leitura'}
             </label>
             <select
               value={readingStatus}
               onChange={(e) => setReadingStatus(Number(e.target.value) as ReadingStatus)}
               style={{ width: '100%' }}
             >
-              {Object.entries(ReadingStatusLabels).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
+              {Object.keys(ReadingStatusLabels).map((val) => (
+                <option key={val} value={val}>
+                  {getStatusLabel(Number(val) as ReadingStatus, currentFormat.workType)}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Link do Último Capítulo Lido (opcional)
+              Link do Último {getUnitLabel(currentFormat.workType)} {isWatchable(currentFormat.workType) ? 'Assistido' : 'Lido'} (opcional)
             </label>
             <input
               type="url"
               className="input-text"
               value={chapterLink}
               onChange={(e) => setChapterLink(e.target.value)}
-              placeholder="https://exemplo.com/capitulo-123"
+              placeholder="https://exemplo.com/episodio-123"
               style={{ width: '100%' }}
             />
           </div>
 
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Diário de Leitura / Reflexão (opcional)
+              Diário de Acompanhamento / Reflexão (opcional)
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ex: Neste capítulo o protagonista usou a habilidade X para derrotar o boss..."
+              placeholder={`Ex: Neste ${getUnitLabel(currentFormat.workType).toLowerCase()} o protagonista usou a habilidade X...`}
               style={{ width: '100%', resize: 'vertical' }}
             />
           </div>

@@ -1,4 +1,4 @@
-export type WorkType = 1 | 2 | 3 | 4 | 5 | 6;
+export type WorkType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const WorkTypeLabels: Record<WorkType, string> = {
   1: 'Novel',
   2: 'Web Novel',
@@ -6,6 +6,11 @@ export const WorkTypeLabels: Record<WorkType, string> = {
   4: 'Manhua',
   5: 'Manga',
   6: 'Anime',
+  7: 'Donghua',
+  8: 'Live Action',
+  9: 'Dorama',
+  10: 'Série',
+  11: 'Filme',
 };
 
 export type Language = 1 | 2 | 3 | 4 | 5 | 6 | 7;

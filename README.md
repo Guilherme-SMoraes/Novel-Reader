@@ -6,7 +6,10 @@ Personal reading tracker and knowledge base for novels, web novels, manga, and m
 
 ## Features
 
-- **Multi-Format Work Tracking:** Manage works across formats (Novel, Web Novel, Manga, Manhwa, Manhua) with separate total chapters, translated status, and reading links.
+- **Multi-Format Work Tracking & Adaptive Vocabulary:** Manage works across 11 formats:
+  - **Reading Formats:** Novel, Web Novel, Manga, Manhwa, Manhua.
+  - **Watching Formats:** Anime, Donghua, Live Action, Dorama, Série, Filme.
+  - The UI dynamically adapts its terminology based on consumption mode: chapters vs. episodes (`Cap. 10` vs `Ep. 10`, `+1 Capítulo` vs `+1 Episódio`), reading vs. watching (`Lendo` vs `Assistindo`, `Ler` vs `Assistir`), translated vs. available (`Disponível até Episódio`), with a unified **Diário de Acompanhamento**.
 - **Alternative Titles & Multilingual Search:** Support for multiple titles, abbreviations, and language translations per work. Search filters match both main and alternative titles seamlessly.
 - **Reading Progress History:** Track reading sessions per format with chapter, optional volume, notes, status, and direct links to where you stopped.
 - **Character Management:**

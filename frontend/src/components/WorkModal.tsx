@@ -5,6 +5,12 @@ import { worksApi } from '../services/api';
 import { GenreMultiSelect } from './GenreMultiSelect';
 import { X, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
+import {
+  getUnitLabel,
+  getAvailableUpToLabel,
+  getWhereToConsumePlaceholder,
+  isWatchable,
+} from '../utils/formatLabels';
 
 interface Props {
   isOpen: boolean;
@@ -25,7 +31,7 @@ interface FormatFormState {
   linkWhereToRead: string;
 }
 
-const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5, 6];
+const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 export const WorkModal: React.FC<Props> = ({
   isOpen,
@@ -192,14 +198,15 @@ export const WorkModal: React.FC<Props> = ({
       // Validar cada formato
       const formattedList: WorkFormat[] = formats.map((f) => {
         const chapterNum = parseInt(f.chapter, 10);
+        const unitPlural = getUnitLabel(f.workType, { plural: true }).toLowerCase();
         if (isNaN(chapterNum) || chapterNum <= 0) {
-          throw new Error(`O total de capítulos para o formato "${WorkTypeLabels[f.workType]}" deve ser maior que zero.`);
+          throw new Error(`O total de ${unitPlural} para o formato "${WorkTypeLabels[f.workType]}" deve ser maior que zero.`);
         }
 
         const hasTranslation = f.transChapter.trim() !== '';
         const transNum = hasTranslation ? parseInt(f.transChapter, 10) : null;
         if (transNum !== null && transNum > chapterNum) {
-          throw new Error(`Capítulos traduzidos de "${WorkTypeLabels[f.workType]}" não podem ultrapassar o total de capítulos.`);
+          throw new Error(`${getUnitLabel(f.workType, { plural: true })} disponíveis de "${WorkTypeLabels[f.workType]}" não podem ultrapassar o total.`);
         }
 
         return {
@@ -496,14 +503,14 @@ export const WorkModal: React.FC<Props> = ({
             {activeFormat && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#38bdf8' }}>
-                  Capítulos & Links para {WorkTypeLabels[activeFormat.workType]}:
+                  {getUnitLabel(activeFormat.workType, { plural: true })} & Links para {WorkTypeLabels[activeFormat.workType]}:
                 </div>
 
                 {/* Capítulos Totais do Formato */}
                 <div style={{ display: 'flex', gap: 14, width: '100%' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Capítulo Total * ({WorkTypeLabels[activeFormat.workType]})
+                      {getUnitLabel(activeFormat.workType)} Total * ({WorkTypeLabels[activeFormat.workType]})
                     </label>
                     <input
                       type="number"
@@ -518,7 +525,7 @@ export const WorkModal: React.FC<Props> = ({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Volume Total (opcional)
+                      {isWatchable(activeFormat.workType) ? 'Temporada Total (opcional)' : 'Volume Total (opcional)'}
                     </label>
                     <input
                       type="number"
@@ -536,7 +543,7 @@ export const WorkModal: React.FC<Props> = ({
                 <div style={{ display: 'flex', gap: 14, width: '100%' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Traduzido até Capítulo (opcional)
+                      {getAvailableUpToLabel(activeFormat.workType)} (opcional)
                     </label>
                     <input
                       type="number"
@@ -550,7 +557,7 @@ export const WorkModal: React.FC<Props> = ({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Idioma da Tradução
+                      {isWatchable(activeFormat.workType) ? 'Idioma da Legenda / Dublagem' : 'Idioma da Tradução'}
                     </label>
                     <select
                       className="input-text"
@@ -573,13 +580,13 @@ export const WorkModal: React.FC<Props> = ({
                 {/* Link de Leitura do Formato */}
                 <div style={{ width: '100%' }}>
                   <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Link de Onde Você Lê {WorkTypeLabels[activeFormat.workType]} (opcional)
+                    Link de Onde Você {isWatchable(activeFormat.workType) ? 'Assiste' : 'Lê'} {WorkTypeLabels[activeFormat.workType]} (opcional)
                   </label>
                   <input
                     type="url"
                     className="input-text"
                     style={{ width: '100%' }}
-                    placeholder={`Ex: https://site-leitura-${WorkTypeLabels[activeFormat.workType].toLowerCase()}.com`}
+                    placeholder={getWhereToConsumePlaceholder(activeFormat.workType)}
                     value={activeFormat.linkWhereToRead}
                     onChange={(e) => updateActiveFormatField('linkWhereToRead', e.target.value)}
                   />

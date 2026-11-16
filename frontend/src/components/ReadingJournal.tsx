@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import type { Progress, Work, WorkType } from '../types';
-import { ReadingStatusLabels, WorkTypeLabels } from '../types';
+import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { CreateProgressModal } from './CreateProgressModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Plus, Trash2, ExternalLink } from 'lucide-react';
+import {
+  getUnitLabel,
+  getActionLabel,
+  getStatusLabel,
+  isWatchable,
+} from '../utils/formatLabels';
 
 interface Props {
   work: Work;
@@ -42,8 +48,10 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
   const pct = totalChapter > 0 ? ((currentChapter / totalChapter) * 100).toFixed(1) : '0';
 
   const handleQuickAddChapter = async () => {
+    const unitPlural = getUnitLabel(activeFormat.workType, { plural: true }).toLowerCase();
+    const unitSingular = getUnitLabel(activeFormat.workType).toLowerCase();
     if (currentChapter >= totalChapter) {
-      showToast(`Você já atingiu o total de capítulos (${totalChapter}) deste formato.`, 'warning');
+      showToast(`Você já atingiu o total de ${unitPlural} (${totalChapter}) deste formato.`, 'warning');
       return;
     }
 
@@ -61,7 +69,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
       });
       onProgressUpdated();
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Erro ao avançar capítulo.', 'error');
+      showToast(err instanceof Error ? err.message : `Erro ao avançar ${unitSingular}.`, 'error');
     } finally {
       setLoadingQuickAdd(false);
     }
@@ -119,7 +127,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                     color: isSelected ? '#c084fc' : '#64748b',
                   }}
                 >
-                  Cap. {fCurrent}/{f.totalChapter.chapter} ({fPct}%)
+                  {getUnitLabel(f.workType, { short: true })} {fCurrent}/{f.totalChapter.chapter} ({fPct}%)
                 </span>
               </button>
             );
@@ -148,13 +156,13 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                   textDecoration: 'none',
                 }}
               >
-                Ler online <ExternalLink size={11} />
+                {getActionLabel(activeFormat.workType)} online <ExternalLink size={11} />
               </a>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
             <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>
-              Capítulo {currentChapter}{' '}
+              {getUnitLabel(activeFormat.workType)} {currentChapter}{' '}
               <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>
                 / {totalChapter} ({pct}%)
               </span>
@@ -177,9 +185,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                   textDecoration: 'none',
                   fontWeight: 600,
                 }}
-                title="Acessar o link do último capítulo registrado"
+                title={`Acessar o link do último ${getUnitLabel(activeFormat.workType).toLowerCase()} registrado`}
               >
-                Acessar Cap. {currentChapter} <ExternalLink size={12} />
+                Acessar {getUnitLabel(activeFormat.workType, { short: true })} {currentChapter} <ExternalLink size={12} />
               </a>
             )}
           </div>
@@ -191,9 +199,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
             disabled={loadingQuickAdd || currentChapter >= totalChapter}
             className="btn-secondary"
             style={{ padding: '8px 14px' }}
-            title="Avança 1 capítulo imediatamente neste formato"
+            title={`Avança 1 ${getUnitLabel(activeFormat.workType).toLowerCase()} imediatamente neste formato`}
           >
-            +1 Capítulo
+            +1 {getUnitLabel(activeFormat.workType)}
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -210,12 +218,12 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
         <div style={{ width: `${Math.min(parseFloat(pct), 100)}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #38bdf8)', borderRadius: 99 }} />
       </div>
 
-      {/* Diário de Leitura & Reflexões Exclusivo deste Formato */}
+      {/* Diário de Acompanhamento & Reflexões Exclusivo deste Formato */}
       <div style={{ marginTop: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <BookMarked size={16} color="#c084fc" />
           <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#e2e8f0' }}>
-            Diário & Reflexões ({WorkTypeLabels[activeFormat.workType]}) ({formatProgressList.length})
+            Diário de Acompanhamento ({WorkTypeLabels[activeFormat.workType]}) ({formatProgressList.length})
           </h3>
         </div>
 
@@ -242,15 +250,15 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
-                      Capítulo {p.stoppedAtChapter.chapter}
+                      {getUnitLabel(p.workType)} {p.stoppedAtChapter.chapter}
                     </span>
                     {p.stoppedAtChapter.volume && (
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        (Vol. {p.stoppedAtChapter.volume})
+                        ({isWatchable(p.workType) ? 'Temp.' : 'Vol.'} {p.stoppedAtChapter.volume})
                       </span>
                     )}
                     <span className="badge badge-tag" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                      {ReadingStatusLabels[p.readingStatus]}
+                      {getStatusLabel(p.readingStatus, p.workType)}
                     </span>
                     {p.chapterLink && (
                       <a
@@ -265,9 +273,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                           color: '#38bdf8',
                           textDecoration: 'none',
                         }}
-                        title="Abrir link deste capítulo"
+                        title={`Abrir link deste ${getUnitLabel(p.workType).toLowerCase()}`}
                       >
-                        <ExternalLink size={12} /> Acessar Capítulo
+                        <ExternalLink size={12} /> Acessar {getUnitLabel(p.workType)}
                       </a>
                     )}
                     <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: 'auto' }}>

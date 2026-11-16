@@ -3,6 +3,7 @@ import type { Genre, ReadingStatus, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
 import { SlidersHorizontal, Plus, BookOpen } from 'lucide-react';
 import { SidebarWorksSkeleton } from './Skeletons';
+import { getUnitLabel } from '../utils/formatLabels';
 
 interface Props {
   works: Work[];
@@ -239,7 +240,7 @@ export const Sidebar: React.FC<Props> = ({
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     {w.formats && w.formats.length > 0 ? (
-                      w.formats.map((f) => `${WorkTypeLabels[f.workType]}: ${f.totalChapter.chapter} caps`).join(' • ')
+                      w.formats.map((f) => `${WorkTypeLabels[f.workType]}: ${f.totalChapter.chapter} ${getUnitLabel(f.workType, { plural: true, short: true }).toLowerCase()}`).join(' • ')
                     ) : (
                       'Sem formatos'
                     )}
