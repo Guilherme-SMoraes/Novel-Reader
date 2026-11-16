@@ -185,7 +185,9 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.PrimitiveCollection<List<string>>("AlternativeTitles")
                         .IsRequired()
-                        .HasColumnType("text[]");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("'{}'");
 
                     b.Property<string>("CoverImageUrl")
                         .HasMaxLength(2048)

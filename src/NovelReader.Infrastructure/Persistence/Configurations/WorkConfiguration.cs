@@ -20,7 +20,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                     .HasMaxLength(2048);
             builder.Property(x => x.CoverImageUrl)
                     .HasMaxLength(2048);
-            builder.Property(x => x.AlternativeTitles);
+            builder.Property(x => x.AlternativeTitles)
+                    .HasDefaultValueSql("'{}'");
 
             builder.HasMany(x => x.Formats)
                     .WithOne()

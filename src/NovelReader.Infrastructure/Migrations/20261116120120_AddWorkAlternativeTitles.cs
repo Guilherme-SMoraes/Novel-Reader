@@ -15,7 +15,8 @@ namespace NovelReader.Infrastructure.Migrations
                 name: "AlternativeTitles",
                 table: "Works",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "'{}'");
         }
 
         /// <inheritdoc />
