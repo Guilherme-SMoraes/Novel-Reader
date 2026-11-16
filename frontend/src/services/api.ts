@@ -120,7 +120,7 @@ export const progressApi = {
 };
 
 export const charactersApi = {
-  getByWorkId: (workId: string, page = 1, pageSize = 50) =>
+  getByWorkId: (workId: string, page = 1, pageSize = 500) =>
     request<PagedResult<Character>>(`/works/${workId}/characters?page=${page}&pageSize=${pageSize}`),
 
   create: (data: CreateCharacterRequest) =>

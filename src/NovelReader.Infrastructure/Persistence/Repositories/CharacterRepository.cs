@@ -49,7 +49,8 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .Include(x => x.FirstAppearances)
                 .AsNoTracking()
                 .Where(x => x.WorkId == workId)
-                .OrderBy(x => x.Name);
+                .OrderBy(x => x.CharacterType)
+                .ThenBy(x => x.Name);
 
             var total = await query.CountAsync(cancellationToken);
 

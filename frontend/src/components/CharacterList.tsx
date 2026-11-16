@@ -5,7 +5,7 @@ import { charactersApi } from '../services/api';
 import { CharacterModal } from './CharacterModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
-import { Users, Plus, Trash2, Edit2, User } from 'lucide-react';
+import { Users, Plus, Trash2, Edit2, User, ArrowUpDown } from 'lucide-react';
 
 interface Props {
   work: Work;
@@ -13,12 +13,33 @@ interface Props {
   onCharactersUpdated: () => void;
 }
 
+type SortOption = 'role' | 'name-asc' | 'name-desc' | 'appearance-asc' | 'appearance-desc';
+
 export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersUpdated }) => {
   const [filterQuery, setFilterQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('role');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
   const { showToast } = useToast();
+
+  const handleFilterChange = (val: string) => {
+    setFilterQuery(val);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (val: SortOption) => {
+    setSortBy(val);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (val: number) => {
+    setPageSize(val);
+    setCurrentPage(1);
+  };
 
   const filtered = characters.filter((c) => {
     const q = filterQuery.toLowerCase();
@@ -29,6 +50,50 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
     const matchesAlt = c.alternativeNames ? c.alternativeNames.some((alt) => alt.toLowerCase().includes(q)) : false;
     return matchesName || matchesRole || matchesDesc || matchesAlt;
   });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'role') {
+      if (a.characterType !== b.characterType) {
+        return a.characterType - b.characterType;
+      }
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    }
+
+    if (sortBy === 'name-asc') {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    }
+
+    if (sortBy === 'name-desc') {
+      return b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+    }
+
+    if (sortBy === 'appearance-asc') {
+      const getMinChapter = (c: Character) => {
+        if (!c.firstAppearances || c.firstAppearances.length === 0) return 999999;
+        return Math.min(...c.firstAppearances.map((app) => app.chapter.chapter));
+      };
+      const diff = getMinChapter(a) - getMinChapter(b);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    }
+
+    if (sortBy === 'appearance-desc') {
+      const getMaxChapter = (c: Character) => {
+        if (!c.firstAppearances || c.firstAppearances.length === 0) return -1;
+        return Math.max(...c.firstAppearances.map((app) => app.chapter.chapter));
+      };
+      const diff = getMaxChapter(b) - getMaxChapter(a);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    }
+
+    return 0;
+  });
+
+  const totalItems = sorted.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedCharacters = sorted.slice(startIndex, endIndex);
 
   const handleConfirmDelete = async () => {
     if (!characterToDelete) return;
@@ -50,23 +115,48 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
 
   return (
     <section>
-      {/* Header com Busca e Botão de Adicionar */}
+      {/* Header com Busca, Ordenação e Botão de Adicionar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={18} color="#38bdf8" />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-            Personagens da Obra ({characters.length})
+            Personagens da Obra ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
           </h3>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
+            onChange={(e) => handleFilterChange(e.target.value)}
             placeholder="🔍 Filtrar por nome ou papel..."
-            style={{ width: 220, padding: '6px 10px', fontSize: '0.8rem' }}
+            style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
           />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ArrowUpDown size={14} color="#94a3b8" />
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              style={{
+                padding: '6px 8px',
+                fontSize: '0.8rem',
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                cursor: 'pointer',
+              }}
+              title="Critério de ordenação"
+            >
+              <option value="role">Papel (Peso)</option>
+              <option value="name-asc">Nome (A - Z)</option>
+              <option value="name-desc">Nome (Z - A)</option>
+              <option value="appearance-asc">1ª Aparição (Crescente)</option>
+              <option value="appearance-desc">1ª Aparição (Decrescente)</option>
+            </select>
+          </div>
+
           <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 12px' }}>
             <Plus size={14} /> Personagem
           </button>
@@ -74,13 +164,13 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
       </div>
 
       {/* Grid de Personagens */}
-      {filtered.length === 0 ? (
+      {paginatedCharacters.length === 0 ? (
         <div style={{ background: '#121927', border: '1px dashed var(--border)', borderRadius: 10, padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           {characters.length === 0 ? 'Nenhum personagem cadastrado para esta obra.' : 'Nenhum personagem corresponde ao filtro informado.'}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
-          {filtered.map((c) => (
+          {paginatedCharacters.map((c) => (
             <div
               key={c.id}
               style={{
@@ -205,6 +295,118 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Controles de Paginação */}
+      {totalItems > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginTop: 20,
+            paddingTop: 16,
+            borderTop: '1px solid #1e293b',
+            fontSize: '0.85rem',
+            color: '#94a3b8',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>
+              Exibindo <strong>{startIndex + 1}–{endIndex}</strong> de <strong>{totalItems}</strong> personagens
+            </span>
+            <span style={{ color: '#475569' }}>|</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Por página:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                style={{
+                  padding: '3px 8px',
+                  fontSize: '0.8rem',
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </label>
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={validCurrentPage === 1}
+                className="btn-secondary"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.8rem',
+                  opacity: validCurrentPage === 1 ? 0.4 : 1,
+                  cursor: validCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                }}
+                title="Primeira Página"
+              >
+                &laquo;
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={validCurrentPage === 1}
+                className="btn-secondary"
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.8rem',
+                  opacity: validCurrentPage === 1 ? 0.4 : 1,
+                  cursor: validCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                }}
+                title="Página Anterior"
+              >
+                &lsaquo;
+              </button>
+
+              <span style={{ padding: '0 8px', fontWeight: 600, color: '#f8fafc' }}>
+                Página {validCurrentPage} de {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={validCurrentPage === totalPages}
+                className="btn-secondary"
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.8rem',
+                  opacity: validCurrentPage === totalPages ? 0.4 : 1,
+                  cursor: validCurrentPage === totalPages ? 'not-allowed' : 'pointer',
+                }}
+                title="Próxima Página"
+              >
+                &rsaquo;
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={validCurrentPage === totalPages}
+                className="btn-secondary"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.8rem',
+                  opacity: validCurrentPage === totalPages ? 0.4 : 1,
+                  cursor: validCurrentPage === totalPages ? 'not-allowed' : 'pointer',
+                }}
+                title="Última Página"
+              >
+                &raquo;
+              </button>
+            </div>
+          )}
         </div>
       )}
 
