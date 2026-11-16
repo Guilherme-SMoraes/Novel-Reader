@@ -5,9 +5,10 @@ import { ReadingJournal } from './ReadingJournal';
 import { CharacterList } from './CharacterList';
 import { AttachmentList } from './AttachmentList';
 import { DeleteWorkModal } from './DeleteWorkModal';
-import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map } from 'lucide-react';
+import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map, Maximize2 } from 'lucide-react';
 import { JournalSkeleton, AttachmentGridSkeleton } from './Skeletons';
 import { getActionLabel, getUnitLabel } from '../utils/formatLabels';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   work: Work;
@@ -32,6 +33,7 @@ export const WorkDetail: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'journal' | 'characters' | 'attachments'>('journal');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [showCoverLightbox, setShowCoverLightbox] = useState(false);
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: '#0f172a' }}>
@@ -39,6 +41,7 @@ export const WorkDetail: React.FC<Props> = ({
       <div style={{ display: 'flex', gap: 24, marginBottom: 28, alignItems: 'flex-start' }}>
         {work.coverImageUrl ? (
           <div
+            onClick={() => setShowCoverLightbox(true)}
             style={{
               width: 140,
               height: 200,
@@ -48,8 +51,32 @@ export const WorkDetail: React.FC<Props> = ({
               backgroundPosition: 'center',
               flexShrink: 0,
               boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
             }}
-          />
+            title="Clique para ampliar a capa"
+          >
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 6,
+                right: 6,
+                background: 'rgba(15, 23, 42, 0.8)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: 4,
+                padding: '3px 6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                color: '#f8fafc',
+                fontSize: '0.68rem',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <Maximize2 size={11} /> Ampliar
+            </div>
+          </div>
         ) : (
           <div
             style={{
@@ -289,6 +316,14 @@ export const WorkDetail: React.FC<Props> = ({
           work={work}
           onClose={() => setIsDeleteModalOpen(false)}
           onDeleted={onWorkDeleted}
+        />
+      )}
+
+      {showCoverLightbox && work.coverImageUrl && (
+        <ImageLightbox
+          imageUrl={work.coverImageUrl}
+          title={work.title}
+          onClose={() => setShowCoverLightbox(false)}
         />
       )}
     </div>

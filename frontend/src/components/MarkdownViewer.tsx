@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   content: string;
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export const MarkdownViewer: React.FC<Props> = ({ content, className = '', compact = false }) => {
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+
   return (
     <div className={`markdown-content ${className}`} style={{ color: '#cbd5e1', lineHeight: 1.6, fontSize: compact ? '0.85rem' : '0.95rem' }}>
       <ReactMarkdown
@@ -125,10 +128,45 @@ export const MarkdownViewer: React.FC<Props> = ({ content, className = '', compa
               {children}
             </a>
           ),
+          img: ({ src, alt }) => {
+            if (!src) return null;
+            return (
+              <span style={{ display: 'block', margin: '12px 0', textAlign: 'center' }}>
+                <img
+                  src={src}
+                  alt={alt || 'Imagem do conteúdo'}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '420px',
+                    borderRadius: '8px',
+                    border: '1px solid #334155',
+                    cursor: 'zoom-in',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                  }}
+                  onClick={() => setLightboxImage({ url: src, title: alt || '' })}
+                  title={alt ? `${alt} (Clique para ampliar)` : 'Clique para ampliar'}
+                />
+                {alt && (
+                  <span style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginTop: 4, fontStyle: 'italic' }}>
+                    {alt}
+                  </span>
+                )}
+              </span>
+            );
+          },
         }}
       >
         {content}
       </ReactMarkdown>
+
+      {lightboxImage && (
+        <ImageLightbox
+          imageUrl={lightboxImage.url}
+          title={lightboxImage.title}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
     </div>
   );
 };

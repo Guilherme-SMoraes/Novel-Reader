@@ -6,9 +6,10 @@ import { CharacterModal } from './CharacterModal';
 import { CharacterDetailModal } from './CharacterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
-import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield } from 'lucide-react';
+import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield, Maximize2 } from 'lucide-react';
 import { CharacterGridSkeleton } from './Skeletons';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   work: Work;
@@ -31,6 +32,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [detailCharacter, setDetailCharacter] = useState<Character | null>(null);
   const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
   const { showToast } = useToast();
 
   const allAffiliations = useMemo(() => {
@@ -271,6 +273,29 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
                   {/* Ações: Editar e Excluir */}
                   <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
+                    {c.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLightboxImage({ url: c.imageUrl!, title: c.name });
+                        }}
+                        style={{
+                          background: 'rgba(0,0,0,0.6)',
+                          color: '#38bdf8',
+                          borderRadius: 4,
+                          padding: 4,
+                          cursor: 'pointer',
+                          border: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Ampliar foto do personagem"
+                      >
+                        <Maximize2 size={13} />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -632,6 +657,14 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           confirmText="Excluir Personagem"
           onConfirm={handleConfirmDelete}
           onCancel={() => setCharacterToDelete(null)}
+        />
+      )}
+
+      {lightboxImage && (
+        <ImageLightbox
+          imageUrl={lightboxImage.url}
+          title={lightboxImage.title}
+          onClose={() => setLightboxImage(null)}
         />
       )}
     </section>

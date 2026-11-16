@@ -4,6 +4,7 @@ import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Edit2, User, BookOpen, Shield, Maximize2 } from 'lucide-react';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   character: Character | null;
@@ -313,72 +314,11 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
 
       {/* Lightbox da Imagem Completa */}
       {showFullImage && character.imageUrl && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 60,
-            padding: 24,
-            cursor: 'zoom-out',
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowFullImage(false);
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowFullImage(false)}
-              style={{
-                position: 'absolute',
-                top: -38,
-                right: 0,
-                background: 'rgba(15, 23, 42, 0.85)',
-                border: '1px solid #334155',
-                color: '#f8fafc',
-                cursor: 'pointer',
-                borderRadius: '50%',
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              title="Fechar visualização"
-            >
-              <X size={18} />
-            </button>
-            <img
-              src={character.imageUrl}
-              alt={character.name}
-              style={{
-                maxWidth: '90vw',
-                maxHeight: '85vh',
-                borderRadius: 8,
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.7)',
-                objectFit: 'contain',
-              }}
-            />
-            <div style={{ marginTop: 8, color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>
-              {character.name}
-            </div>
-          </div>
-        </div>
+        <ImageLightbox
+          imageUrl={character.imageUrl}
+          title={character.name}
+          onClose={() => setShowFullImage(false)}
+        />
       )}
     </div>
   );

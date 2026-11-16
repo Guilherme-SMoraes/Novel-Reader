@@ -6,6 +6,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { MarkdownViewer } from './MarkdownViewer';
 import { useToast } from '../context/ToastContext';
 import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'lucide-react';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   work: Work;
@@ -287,39 +288,11 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
 
       {/* Lightbox Modal */}
       {lightboxImage && (
-        <div
-          className="modal-overlay"
-          onClick={() => setLightboxImage(null)}
-          style={{ zIndex: 9999, padding: '20px' }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '8px', color: '#fff' }}>
-              <span style={{ fontWeight: 600 }}>{lightboxImage.title}</span>
-              <button className="btn-icon" onClick={() => setLightboxImage(null)}><X size={20} /></button>
-            </div>
-            <img
-              src={lightboxImage.url}
-              alt={lightboxImage.title}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '80vh',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                border: '1px solid #334155',
-              }}
-            />
-          </div>
-        </div>
+        <ImageLightbox
+          imageUrl={lightboxImage.url}
+          title={lightboxImage.title}
+          onClose={() => setLightboxImage(null)}
+        />
       )}
 
       {/* Create / Edit Modal */}
