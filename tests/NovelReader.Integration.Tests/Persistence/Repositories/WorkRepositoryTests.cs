@@ -27,17 +27,48 @@ public class WorkRepositoryTests
         var result = await assertRepository.GetByIdAsync(work.Id, CancellationToken.None);
         Assert.NotNull(result);
         Assert.Equal(work.Title, result.Title);
-        Assert.Equal(work.WorkType, result.WorkType);
         Assert.Equal(work.AggregatorLink, result.AggregatorLink);
         Assert.Equal(work.OriginalLanguage, result.OriginalLanguage);
-        Assert.Equal(work.TotalChapter, result.TotalChapter);
         Assert.Null(result.Description);
-        Assert.Null(result.LinkWhereToRead);
-        Assert.Null(result.TranslatedUpTo);
-        Assert.Null(result.TranslatedLanguage);
+        Assert.Single(result.Formats);
+        var format = result.Formats.First();
+        Assert.Equal(NovelReader.Domain.Enums.WorkType.WebNovel, format.WorkType);
+        Assert.Equal(new NovelReader.Domain.ValueObjects.WorkChapter(null, 2059), format.TotalChapter);
+        Assert.Null(format.LinkWhereToRead);
+        Assert.Null(format.TranslatedUpTo);
+        Assert.Null(format.TranslatedLanguage);
         Assert.Empty(result.Genres);
         Assert.Empty(result.Characters);
         Assert.Empty(result.Progresses);
+    }
+
+    [Fact]
+    public async Task Should_AddAndRemoveFormats_WhenWorkIsUpdated()
+    {
+        var repository = CreateWorkRepository();
+        var work = EntityFactory.CreateValidWork();
+        await repository.CreateAsync(work, CancellationToken.None);
+
+        var workToUpdate = new NovelReader.Domain.Entities.Work(work.Id, work.Title, work.AggregatorLink, work.OriginalLanguage);
+        var manhwaFormat = new NovelReader.Domain.Entities.WorkFormat(
+            work.Id,
+            NovelReader.Domain.Enums.WorkType.Manhwa,
+            new NovelReader.Domain.ValueObjects.WorkChapter(null, 250),
+            "https://example.com/manhwa"
+        );
+        workToUpdate.AddFormat(manhwaFormat);
+
+        var updateRepository = CreateWorkRepository();
+        await updateRepository.UpdateAsync(workToUpdate, CancellationToken.None);
+
+        var assertRepository = CreateWorkRepository();
+        var updated = await assertRepository.GetByIdAsync(work.Id, CancellationToken.None);
+        Assert.NotNull(updated);
+        Assert.Single(updated.Formats);
+        var savedFormat = updated.Formats.First();
+        Assert.Equal(NovelReader.Domain.Enums.WorkType.Manhwa, savedFormat.WorkType);
+        Assert.Equal(new NovelReader.Domain.ValueObjects.WorkChapter(null, 250), savedFormat.TotalChapter);
+        Assert.Equal("https://example.com/manhwa", savedFormat.LinkWhereToRead);
     }
 
     private WorkRepository CreateWorkRepository()

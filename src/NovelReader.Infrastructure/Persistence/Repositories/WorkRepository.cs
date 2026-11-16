@@ -167,7 +167,12 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             existingWork.CoverImageUrl = work.CoverImageUrl;
 
             var targetTypes = work.Formats.Select(f => f.WorkType).ToHashSet();
-            existingWork.Formats.RemoveAll(f => !targetTypes.Contains(f.WorkType));
+            var formatsToRemove = existingWork.Formats.Where(f => !targetTypes.Contains(f.WorkType)).ToList();
+            foreach (var f in formatsToRemove)
+            {
+                existingWork.Formats.Remove(f);
+                _context.WorkFormats.Remove(f);
+            }
 
             foreach (var format in work.Formats)
             {
@@ -193,6 +198,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                         newFormat.UpdateTranslatedChapters(format.TranslatedUpTo, format.TranslatedLanguage.Value);
                     }
                     existingWork.AddFormat(newFormat);
+                    _context.WorkFormats.Add(newFormat);
                 }
             }
 

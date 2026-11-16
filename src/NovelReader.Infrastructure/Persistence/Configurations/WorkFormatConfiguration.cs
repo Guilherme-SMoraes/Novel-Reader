@@ -10,6 +10,7 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("WorkFormats");
             builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
             builder.Property(x => x.WorkType).IsRequired();
             builder.Property(x => x.LinkWhereToRead).HasMaxLength(2048);
 
