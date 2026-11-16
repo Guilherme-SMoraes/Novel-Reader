@@ -3,6 +3,7 @@ import type { Character, Work } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { CharacterModal } from './CharacterModal';
+import { CharacterDetailModal } from './CharacterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { Users, Plus, Trash2, Edit2, User, ArrowUpDown } from 'lucide-react';
@@ -23,7 +24,9 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [detailCharacter, setDetailCharacter] = useState<Character | null>(null);
   const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const handleFilterChange = (val: string) => {
@@ -170,131 +173,180 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
-          {paginatedCharacters.map((c) => (
-            <div
-              key={c.id}
-              style={{
-                background: '#182234',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'transform 0.15s ease, border-color 0.15s ease',
-              }}
-            >
-              {/* Foto ou Avatar Placeholder */}
-              <div style={{ height: 160, position: 'relative', background: '#0c121e' }}>
-                {c.imageUrl ? (
-                  <div style={{ width: '100%', height: '100%', backgroundImage: `url('${c.imageUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
-                    <User size={48} />
+          {paginatedCharacters.map((c) => {
+            const isHovered = hoveredCardId === c.id;
+            return (
+              <div
+                key={c.id}
+                onClick={() => setDetailCharacter(c)}
+                onMouseEnter={() => setHoveredCardId(c.id)}
+                onMouseLeave={() => setHoveredCardId(null)}
+                style={{
+                  background: isHovered ? '#1b283d' : '#182234',
+                  border: isHovered ? '1px solid #38bdf8' : '1px solid var(--border)',
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 380,
+                  cursor: 'pointer',
+                  transform: isHovered ? 'translateY(-2px)' : 'none',
+                  boxShadow: isHovered ? '0 8px 20px rgba(0, 0, 0, 0.35)' : 'none',
+                  transition: 'transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
+                }}
+              >
+                {/* Foto ou Avatar Placeholder */}
+                <div style={{ height: 160, position: 'relative', background: '#0c121e', flexShrink: 0 }}>
+                  {c.imageUrl ? (
+                    <div style={{ width: '100%', height: '100%', backgroundImage: `url('${c.imageUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
+                      <User size={48} />
+                    </div>
+                  )}
+                  {/* Badge de Papel */}
+                  <span
+                    className="badge badge-novel"
+                    style={{
+                      position: 'absolute',
+                      bottom: 8,
+                      left: 8,
+                      fontSize: '0.65rem',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                    }}
+                  >
+                    {CharacterTypeLabels[c.characterType]}
+                  </span>
+
+                  {/* Ações: Editar e Excluir */}
+                  <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(c);
+                      }}
+                      style={{
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#94a3b8',
+                        borderRadius: 4,
+                        padding: 4,
+                        cursor: 'pointer',
+                        border: 'none',
+                      }}
+                      title="Editar personagem"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCharacterToDelete(c);
+                      }}
+                      style={{
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#f87171',
+                        borderRadius: 4,
+                        padding: 4,
+                        cursor: 'pointer',
+                        border: 'none',
+                      }}
+                      title="Excluir personagem"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                )}
-                {/* Badge de Papel */}
-                <span
-                  className="badge badge-novel"
-                  style={{
-                    position: 'absolute',
-                    bottom: 8,
-                    left: 8,
-                    fontSize: '0.65rem',
-                    background: 'rgba(15, 23, 42, 0.85)',
-                    backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {CharacterTypeLabels[c.characterType]}
-                </span>
-
-                {/* Ações: Editar e Excluir */}
-                <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
-                  <button
-                    onClick={() => handleOpenEdit(c)}
-                    style={{
-                      background: 'rgba(0,0,0,0.6)',
-                      color: '#94a3b8',
-                      borderRadius: 4,
-                      padding: 4,
-                      cursor: 'pointer',
-                      border: 'none',
-                    }}
-                    title="Editar personagem"
-                  >
-                    <Edit2 size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCharacterToDelete(c)}
-                    style={{
-                      background: 'rgba(0,0,0,0.6)',
-                      color: '#f87171',
-                      borderRadius: 4,
-                      padding: 4,
-                      cursor: 'pointer',
-                      border: 'none',
-                    }}
-                    title="Excluir personagem"
-                  >
-                    <Trash2 size={13} />
-                  </button>
                 </div>
-              </div>
 
-              {/* Informações */}
-              <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 2 }}>{c.name}</div>
-                {c.alternativeNames && c.alternativeNames.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '4px 0 6px 0' }}>
-                    {c.alternativeNames.map((alt, i) => (
-                      <span
-                        key={i}
+                {/* Informações */}
+                <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {c.name}
+                  </div>
+
+                  {c.alternativeNames && c.alternativeNames.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '4px 0 6px 0', maxHeight: 42, overflow: 'hidden' }}>
+                      {c.alternativeNames.map((alt, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: '0.68rem',
+                            background: 'rgba(56, 189, 248, 0.1)',
+                            color: '#38bdf8',
+                            border: '1px solid rgba(56, 189, 248, 0.25)',
+                            borderRadius: 4,
+                            padding: '1px 5px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {alt}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {c.firstAppearances && c.firstAppearances.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6, maxHeight: 40, overflow: 'hidden' }}>
+                      {c.firstAppearances.map((app, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            fontSize: '0.72rem',
+                            color: '#94a3b8',
+                            background: '#0f172a',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            border: '1px solid #1e293b',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> Cap. {app.chapter.chapter}
+                          {app.chapter.volume && ` (Vol. ${app.chapter.volume})`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {c.description ? (
+                    <div style={{ marginTop: 'auto' }}>
+                      <div
                         style={{
-                          fontSize: '0.68rem',
-                          background: 'rgba(56, 189, 248, 0.1)',
-                          color: '#38bdf8',
-                          border: '1px solid rgba(56, 189, 248, 0.25)',
-                          borderRadius: 4,
-                          padding: '1px 5px',
+                          fontSize: '0.78rem',
+                          color: '#cbd5e1',
+                          lineHeight: '1.4',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
-                        {alt}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {c.firstAppearances && c.firstAppearances.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
-                    {c.firstAppearances.map((app, idx) => (
-                      <span
-                        key={idx}
+                        {c.description}
+                      </div>
+                      <div
                         style={{
                           fontSize: '0.72rem',
-                          color: '#94a3b8',
-                          background: '#0f172a',
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                          border: '1px solid #1e293b',
+                          color: '#38bdf8',
+                          fontWeight: 600,
+                          marginTop: 4,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
                         }}
                       >
-                        <strong style={{ color: '#38bdf8' }}>{WorkTypeLabels[app.workType]}:</strong> Cap. {app.chapter.chapter}
-                        {app.chapter.volume && ` (Vol. ${app.chapter.volume})`}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {c.description ? (
-                  <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: '1.4', marginTop: 'auto' }}>
-                    {c.description}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 'auto' }}>
-                    Sem descrição cadastrada.
-                  </div>
-                )}
+                        Ver ficha completa &rarr;
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 'auto' }}>
+                      Sem descrição cadastrada.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -410,7 +462,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal de Criação / Edição */}
       <CharacterModal
         isOpen={isModalOpen}
         workId={work.id}
@@ -421,6 +473,17 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
           setEditingCharacter(null);
         }}
         onSaved={onCharactersUpdated}
+      />
+
+      {/* Modal de Detalhes / Leitura do Personagem */}
+      <CharacterDetailModal
+        isOpen={!!detailCharacter}
+        character={detailCharacter}
+        onClose={() => setDetailCharacter(null)}
+        onEdit={(char) => {
+          setDetailCharacter(null);
+          handleOpenEdit(char);
+        }}
       />
 
       {characterToDelete && (
