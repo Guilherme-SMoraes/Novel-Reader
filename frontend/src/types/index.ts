@@ -89,6 +89,7 @@ export interface Progress {
   stoppedAtChapter: WorkChapter;
   readingStatus: ReadingStatus;
   readingDescription: string | null;
+  chapterLink?: string | null;
   stoppedAt: string;
 }
 
@@ -98,6 +99,7 @@ export interface CreateProgressRequest {
   stoppedAtChapter: WorkChapter;
   readingStatus: ReadingStatus;
   readingDescription?: string | null;
+  chapterLink?: string | null;
 }
 
 export interface Character {

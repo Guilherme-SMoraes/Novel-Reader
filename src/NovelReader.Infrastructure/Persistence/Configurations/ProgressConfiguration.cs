@@ -13,6 +13,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.WorkType).IsRequired();
             builder.Property(x => x.ReadingDescription)
                 .HasColumnType("text");
+            builder.Property(x => x.ChapterLink)
+                .HasMaxLength(2048);
 
             builder.OwnsOne(x => x.StoppedAtChapter, sc =>
             {

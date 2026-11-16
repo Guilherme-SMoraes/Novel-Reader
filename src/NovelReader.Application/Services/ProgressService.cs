@@ -48,7 +48,8 @@ namespace NovelReader.Application.Services
             var stoppedChapter = new WorkChapter(request.StoppedAtChapter.Volume, request.StoppedAtChapter.Chapter);
             var progress = new Progress(request.WorkId, request.WorkType, stoppedChapter, request.ReadingStatus)
             {
-                ReadingDescription = request.ReadingDescription
+                ReadingDescription = request.ReadingDescription,
+                ChapterLink = request.ChapterLink
             };
 
             await _progressRepository.CreateAsync(progress, cancellationToken);

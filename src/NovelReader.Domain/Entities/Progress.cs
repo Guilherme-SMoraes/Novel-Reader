@@ -11,6 +11,7 @@ namespace NovelReader.Domain.Entities
         public WorkChapter StoppedAtChapter { get; init; }
         public ReadingStatus ReadingStatus { get; init; }
         public string? ReadingDescription { get; set; }
+        public string? ChapterLink { get; set; }
         public DateTime StoppedAt { get; init; }
 
 #pragma warning disable CS8618

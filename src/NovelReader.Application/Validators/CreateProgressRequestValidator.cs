@@ -28,6 +28,16 @@ namespace NovelReader.Application.Validators
 
             RuleFor(x => x.ReadingStatus)
                 .IsInEnum().WithMessage("Status de leitura inválido.");
+
+            RuleFor(x => x.ChapterLink)
+                .MaximumLength(2048).WithMessage("O link do capítulo deve ter no máximo 2048 caracteres.")
+                .Must(BeAValidUrl)
+                .When(x => !string.IsNullOrWhiteSpace(x.ChapterLink))
+                .WithMessage("O link do capítulo deve ser uma URL válida.");
         }
+
+        private static bool BeAValidUrl(string? url) =>
+            Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
+            (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }

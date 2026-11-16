@@ -152,11 +152,36 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
               </a>
             )}
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>
-            Capítulo {currentChapter}{' '}
-            <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-              / {totalChapter} ({pct}%)
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>
+              Capítulo {currentChapter}{' '}
+              <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                / {totalChapter} ({pct}%)
+              </span>
+            </div>
+            {latestProgress?.chapterLink && (
+              <a
+                href={latestProgress.chapterLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.8rem',
+                  color: '#38bdf8',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+                title="Acessar o link do último capítulo registrado"
+              >
+                Acessar Cap. {currentChapter} <ExternalLink size={12} />
+              </a>
+            )}
           </div>
         </div>
 
@@ -227,6 +252,24 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                     <span className="badge badge-tag" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
                       {ReadingStatusLabels[p.readingStatus]}
                     </span>
+                    {p.chapterLink && (
+                      <a
+                        href={p.chapterLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          fontSize: '0.74rem',
+                          color: '#38bdf8',
+                          textDecoration: 'none',
+                        }}
+                        title="Abrir link deste capítulo"
+                      >
+                        <ExternalLink size={12} /> Acessar Capítulo
+                      </a>
+                    )}
                     <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: 'auto' }}>
                       {new Date(p.stoppedAt).toLocaleDateString('pt-BR', {
                         day: '2-digit',

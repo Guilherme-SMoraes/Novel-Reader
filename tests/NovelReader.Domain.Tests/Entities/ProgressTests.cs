@@ -21,8 +21,23 @@ public class ProgressTests
         Assert.Equal(stoppedAtChapter, progress.StoppedAtChapter);
         Assert.Equal(ReadingStatus.Reading, progress.ReadingStatus);
         Assert.Null(progress.ReadingDescription);
+        Assert.Null(progress.ChapterLink);
         Assert.True(progress.StoppedAt <= DateTime.UtcNow);
         Assert.True(progress.StoppedAt > DateTime.UtcNow.AddSeconds(-5));
+    }
+
+    [Fact]
+    public void Should_SetChapterLink_WhenProvided()
+    {
+        var stoppedAtChapter = new WorkChapter(null, 10);
+        var work = EntityFactory.CreateValidWork();
+
+        var progress = new Progress(work.Id, WorkType.WebNovel, stoppedAtChapter, ReadingStatus.Reading)
+        {
+            ChapterLink = "https://example.com/chapter-10"
+        };
+
+        Assert.Equal("https://example.com/chapter-10", progress.ChapterLink);
     }
 
     [Fact]

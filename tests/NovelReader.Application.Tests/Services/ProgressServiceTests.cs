@@ -43,7 +43,8 @@ namespace NovelReader.Application.Tests.Services
                 WorkType.WebNovel,
                 new WorkChapterDto(null, 150),
                 ReadingStatus.Reading,
-                "Arc 2 finished"
+                "Arc 2 finished",
+                "https://example.com/chapter-150"
             );
 
             var result = await _progressService.CreateAsync(request, CancellationToken.None);
@@ -54,8 +55,9 @@ namespace NovelReader.Application.Tests.Services
             result.StoppedAtChapter.Chapter.Should().Be(150);
             result.ReadingStatus.Should().Be(ReadingStatus.Reading);
             result.ReadingDescription.Should().Be("Arc 2 finished");
+            result.ChapterLink.Should().Be("https://example.com/chapter-150");
 
-            _progressRepositoryMock.Verify(x => x.CreateAsync(It.Is<Progress>(p => p.WorkId == work.Id && p.WorkType == WorkType.WebNovel), It.IsAny<CancellationToken>()), Times.Once);
+            _progressRepositoryMock.Verify(x => x.CreateAsync(It.Is<Progress>(p => p.WorkId == work.Id && p.WorkType == WorkType.WebNovel && p.ChapterLink == "https://example.com/chapter-150"), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

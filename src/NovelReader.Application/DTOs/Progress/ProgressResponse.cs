@@ -11,6 +11,7 @@ namespace NovelReader.Application.DTOs.Progress
         WorkChapterDto StoppedAtChapter,
         ReadingStatus ReadingStatus,
         string? ReadingDescription,
+        string? ChapterLink,
         DateTime StoppedAt
     )
     {
@@ -22,6 +23,7 @@ namespace NovelReader.Application.DTOs.Progress
                 new WorkChapterDto(progress.StoppedAtChapter.Volume, progress.StoppedAtChapter.Chapter),
                 progress.ReadingStatus,
                 progress.ReadingDescription,
+                progress.ChapterLink,
                 progress.StoppedAt
             );
     }

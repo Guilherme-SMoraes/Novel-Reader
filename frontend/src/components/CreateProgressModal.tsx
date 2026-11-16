@@ -25,6 +25,7 @@ export const CreateProgressModal: React.FC<Props> = ({
   const [volume, setVolume] = useState<string>('');
   const [readingStatus, setReadingStatus] = useState<ReadingStatus>(1); // Reading default
   const [description, setDescription] = useState('');
+  const [chapterLink, setChapterLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +54,7 @@ export const CreateProgressModal: React.FC<Props> = ({
         },
         readingStatus,
         readingDescription: description || null,
+        chapterLink: chapterLink.trim() || null,
       };
 
       await progressApi.create(req);
@@ -131,6 +133,20 @@ export const CreateProgressModal: React.FC<Props> = ({
                 <option key={val} value={val}>{label}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Link do Último Capítulo Lido (opcional)
+            </label>
+            <input
+              type="url"
+              className="input-text"
+              value={chapterLink}
+              onChange={(e) => setChapterLink(e.target.value)}
+              placeholder="https://exemplo.com/capitulo-123"
+              style={{ width: '100%' }}
+            />
           </div>
 
           <div>

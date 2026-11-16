@@ -124,6 +124,10 @@ namespace NovelReader.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ChapterLink")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
                     b.Property<string>("ReadingDescription")
                         .HasColumnType("text");
 

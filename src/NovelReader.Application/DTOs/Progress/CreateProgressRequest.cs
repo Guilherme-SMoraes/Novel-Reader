@@ -8,6 +8,7 @@ namespace NovelReader.Application.DTOs.Progress
         WorkType WorkType,
         WorkChapterDto StoppedAtChapter,
         ReadingStatus ReadingStatus,
-        string? ReadingDescription
+        string? ReadingDescription,
+        string? ChapterLink = null
     );
 }
