@@ -145,7 +145,7 @@ export const CreateProgressModal: React.FC<Props> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                {getUnitLabel(currentFormat.workType)} Onde Parou * (Máx: {currentFormat.totalChapter.chapter})
+                {getUnitLabel(currentFormat.workType)} *
               </label>
               <input
                 type="number"
@@ -154,6 +154,7 @@ export const CreateProgressModal: React.FC<Props> = ({
                 required
                 value={chapter}
                 onChange={(e) => setChapter(e.target.value)}
+                placeholder={`Máx: ${currentFormat.totalChapter.chapter}`}
                 style={{ width: '100%' }}
               />
             </div>

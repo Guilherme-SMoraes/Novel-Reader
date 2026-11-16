@@ -143,27 +143,33 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   return (
     <section>
-      {/* Header com Busca, Ordenação e Botão de Adicionar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+      {/* Header com Título e Botão de Adicionar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={18} color="#38bdf8" />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
             Personagens da Obra ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
           </h3>
         </div>
+        <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
+          <Plus size={14} /> Personagem
+        </button>
+      </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={filterQuery}
-            onChange={(e) => handleFilterChange(e.target.value)}
-            placeholder="🔍 Filtrar por nome ou papel..."
-            style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
-          />
+      {/* Barra de Busca e Filtros Responsivos */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+        <input
+          type="text"
+          value={filterQuery}
+          onChange={(e) => handleFilterChange(e.target.value)}
+          placeholder="🔍 Filtrar por nome ou papel..."
+          style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
+        />
 
+        <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? 'repeat(auto-fit, minmax(140px, 1fr))' : '1fr', gap: 10 }}>
           {allAffiliations.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Shield size={14} color="#c084fc" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Shield size={14} color="#c084fc" style={{ flexShrink: 0 }} />
               <select
                 value={selectedAffiliation}
                 onChange={(e) => {
@@ -171,14 +177,14 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
                   setCurrentPage(1);
                 }}
                 style={{
-                  padding: '6px 8px',
-                  fontSize: '0.8rem',
+                  padding: '7px 10px',
+                  fontSize: '0.82rem',
                   background: '#1e293b',
                   color: '#f8fafc',
                   border: '1px solid var(--border)',
                   borderRadius: 6,
                   cursor: 'pointer',
-                  maxWidth: 160,
+                  width: '100%',
                 }}
                 title="Filtrar por grupo / afiliação"
               >
@@ -192,19 +198,20 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ArrowUpDown size={14} color="#94a3b8" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ArrowUpDown size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value as SortOption)}
               style={{
-                padding: '6px 8px',
-                fontSize: '0.8rem',
+                padding: '7px 10px',
+                fontSize: '0.82rem',
                 background: '#1e293b',
                 color: '#f8fafc',
                 border: '1px solid var(--border)',
                 borderRadius: 6,
                 cursor: 'pointer',
+                width: '100%',
               }}
               title="Critério de ordenação"
             >
@@ -215,10 +222,6 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               <option value="appearance-desc">1ª Aparição (Decrescente)</option>
             </select>
           </div>
-
-          <button onClick={handleOpenCreate} className="btn-primary" style={{ padding: '6px 12px' }}>
-            <Plus size={14} /> Personagem
-          </button>
         </div>
       </div>
 
