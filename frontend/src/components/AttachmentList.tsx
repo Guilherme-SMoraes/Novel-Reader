@@ -139,7 +139,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
           {filtered.map((att) => {
             const catStyle = getCategoryColor(att.category);
             return (

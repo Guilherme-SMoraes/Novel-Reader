@@ -5,7 +5,7 @@ import { ReadingJournal } from './ReadingJournal';
 import { CharacterList } from './CharacterList';
 import { AttachmentList } from './AttachmentList';
 import { DeleteWorkModal } from './DeleteWorkModal';
-import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map, Maximize2 } from 'lucide-react';
+import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map, Maximize2, ArrowLeft } from 'lucide-react';
 import { JournalSkeleton, AttachmentGridSkeleton } from './Skeletons';
 import { getActionLabel, getUnitLabel } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
@@ -19,6 +19,7 @@ interface Props {
   onDataUpdated: () => void;
   onWorkDeleted: () => void;
   onOpenEditWork: () => void;
+  onBackToLibrary?: () => void;
 }
 
 export const WorkDetail: React.FC<Props> = ({
@@ -30,15 +31,30 @@ export const WorkDetail: React.FC<Props> = ({
   onDataUpdated,
   onWorkDeleted,
   onOpenEditWork,
+  onBackToLibrary,
 }) => {
   const [activeTab, setActiveTab] = useState<'journal' | 'characters' | 'attachments'>('journal');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showCoverLightbox, setShowCoverLightbox] = useState(false);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', background: '#0f172a' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: 'clamp(14px, 3vw, 36px)', background: '#0f172a' }}>
+      {/* Botão de Retorno Mobile */}
+      {onBackToLibrary && (
+        <div style={{ marginBottom: 14 }} className="mobile-only">
+          <button
+            type="button"
+            onClick={onBackToLibrary}
+            className="btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: '0.85rem' }}
+          >
+            <ArrowLeft size={16} /> Voltar para Biblioteca
+          </button>
+        </div>
+      )}
+
       {/* Cabeçalho com Capa e Detalhes */}
-      <div style={{ display: 'flex', gap: 24, marginBottom: 28, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginBottom: 28, alignItems: 'flex-start' }}>
         {work.coverImageUrl ? (
           <div
             onClick={() => setShowCoverLightbox(true)}
@@ -198,12 +214,14 @@ export const WorkDetail: React.FC<Props> = ({
 
       {/* Navegação por Abas */}
       <div
+        className="scroll-touch"
         style={{
           display: 'flex',
           gap: '8px',
           borderBottom: '1px solid #334155',
           marginBottom: '24px',
           paddingBottom: '2px',
+          whiteSpace: 'nowrap',
         }}
       >
         <button
@@ -211,6 +229,7 @@ export const WorkDetail: React.FC<Props> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexShrink: 0,
             gap: '8px',
             padding: '10px 18px',
             background: 'none',
@@ -234,6 +253,7 @@ export const WorkDetail: React.FC<Props> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexShrink: 0,
             gap: '8px',
             padding: '10px 18px',
             background: 'none',
@@ -257,6 +277,7 @@ export const WorkDetail: React.FC<Props> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexShrink: 0,
             gap: '8px',
             padding: '10px 18px',
             background: 'none',

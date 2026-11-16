@@ -230,7 +230,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           {characters.length === 0 ? 'Nenhum personagem cadastrado para esta obra.' : 'Nenhum personagem corresponde ao filtro informado.'}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))', gap: 16 }}>
           {paginatedCharacters.map((c) => {
             const isHovered = hoveredCardId === c.id;
             return (

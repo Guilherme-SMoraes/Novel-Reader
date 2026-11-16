@@ -22,6 +22,7 @@ interface Props {
   onGenreChange: (g: string | null) => void;
   onResetFilters: () => void;
   onOpenManageGenres?: () => void;
+  isMobile?: boolean;
 }
 
 export const Sidebar: React.FC<Props> = ({
@@ -41,13 +42,14 @@ export const Sidebar: React.FC<Props> = ({
   onGenreChange,
   onResetFilters,
   onOpenManageGenres,
+  isMobile = false,
 }) => {
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
 
   const activeFiltersCount = (selectedType ? 1 : 0) + (selectedGenreId ? 1 : 0);
 
   return (
-    <aside style={{ width: 330, background: '#0c121e', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100vh', flexShrink: 0 }}>
+    <aside style={{ width: isMobile ? '100%' : 330, maxWidth: '100%', background: '#0c121e', borderRight: isMobile ? 'none' : '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100dvh', flexShrink: 0 }}>
       {/* Top Header */}
       <div style={{ padding: '16px 16px 10px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

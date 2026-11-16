@@ -112,15 +112,15 @@ export const ModalDockProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           aria-label="Itens minimizados"
           style={{
             position: 'fixed',
-            bottom: 20,
-            right: 20,
+            bottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
+            right: 'max(14px, env(safe-area-inset-right, 14px))',
             zIndex: 9999,
             display: 'flex',
             flexDirection: 'row',
             flexWrap: 'wrap-reverse',
             justifyContent: 'flex-end',
             gap: 10,
-            maxWidth: 'calc(100vw - 40px)',
+            maxWidth: 'calc(100vw - 28px)',
             pointerEvents: 'none',
           }}
         >

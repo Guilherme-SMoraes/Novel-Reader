@@ -182,3 +182,61 @@ input:focus, select:focus, textarea:focus, .input-text:focus {
   animation: skeleton-shimmer 1.4s ease infinite;
   border-radius: 6px;
 }
+
+/* Mobile & Responsive Enhancements */
+html, body, #root {
+  height: 100%;
+  min-height: 100dvh;
+}
+
+:root {
+  --target-size: 36px;
+}
+
+@media (pointer: coarse), (max-width: 768px) {
+  :root {
+    --target-size: 42px;
+  }
+  input, select, textarea, .input-text {
+    font-size: 16px !important;
+  }
+  .modal-overlay, .modal-backdrop {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .modal-content, .modal-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92dvh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    padding: 18px 16px !important;
+  }
+}
+
+.scroll-touch {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-touch::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}

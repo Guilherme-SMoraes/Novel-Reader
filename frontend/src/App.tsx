@@ -28,6 +28,31 @@ export function App() {
   const [isManageGenresOpen, setIsManageGenresOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMobileView('detail');
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleSelectWork = (id: string) => {
+    setSelectedWorkId(id);
+    if (isMobile) {
+      setMobileView('detail');
+    }
+  };
+
+  const handleBackToLibrary = () => {
+    setMobileView('list');
+  };
 
   const fetchGenres = async () => {
     try {
@@ -126,29 +151,32 @@ export function App() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden' }}>
       {/* Sidebar com Lista e Filtros */}
-      <Sidebar
-        works={works}
-        loading={loading}
-        selectedWorkId={selectedWorkId}
-        onSelectWork={setSelectedWorkId}
-        onOpenCreateWork={handleOpenCreateWork}
-        genres={genres}
-        searchTitle={searchTitle}
-        onSearchTitleChange={setSearchTitle}
-        selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
-        selectedType={selectedType}
-        onTypeChange={setSelectedType}
-        selectedGenreId={selectedGenreId}
-        onGenreChange={setSelectedGenreId}
-        onResetFilters={handleResetFilters}
-        onOpenManageGenres={() => setIsManageGenresOpen(true)}
-      />
+      <div style={{ display: !isMobile || mobileView === 'list' ? 'flex' : 'none', width: isMobile ? '100%' : 'auto', height: '100%' }}>
+        <Sidebar
+          works={works}
+          loading={loading}
+          selectedWorkId={selectedWorkId}
+          onSelectWork={handleSelectWork}
+          onOpenCreateWork={handleOpenCreateWork}
+          genres={genres}
+          searchTitle={searchTitle}
+          onSearchTitleChange={setSearchTitle}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          selectedType={selectedType}
+          onTypeChange={setSelectedType}
+          selectedGenreId={selectedGenreId}
+          onGenreChange={setSelectedGenreId}
+          onResetFilters={handleResetFilters}
+          onOpenManageGenres={() => setIsManageGenresOpen(true)}
+          isMobile={isMobile}
+        />
+      </div>
 
       {/* Painel Principal */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <main style={{ flex: 1, display: !isMobile || mobileView === 'detail' ? 'flex' : 'none', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
         {loading && works.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
             Carregando sua biblioteca...
@@ -166,6 +194,7 @@ export function App() {
             }}
             onWorkDeleted={fetchWorks}
             onOpenEditWork={handleOpenEditWork}
+            onBackToLibrary={isMobile ? handleBackToLibrary : undefined}
           />
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 32 }}>
