@@ -47,6 +47,8 @@ CodeCoverage/
 node_modules/
 dist/
 .docker-data/
+tools/
+*.dump
 
 # MSBuild Binary and Structured Log
 *.binlog
