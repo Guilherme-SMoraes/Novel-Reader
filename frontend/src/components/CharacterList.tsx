@@ -7,16 +7,18 @@ import { CharacterDetailModal } from './CharacterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { Users, Plus, Trash2, Edit2, User, ArrowUpDown } from 'lucide-react';
+import { CharacterGridSkeleton } from './Skeletons';
 
 interface Props {
   work: Work;
   characters: Character[];
+  loading?: boolean;
   onCharactersUpdated: () => void;
 }
 
 type SortOption = 'role' | 'name-asc' | 'name-desc' | 'appearance-asc' | 'appearance-desc';
 
-export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersUpdated }) => {
+export const CharacterList: React.FC<Props> = ({ work, characters, loading = false, onCharactersUpdated }) => {
   const [filterQuery, setFilterQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('role');
   const [currentPage, setCurrentPage] = useState(1);
@@ -167,7 +169,9 @@ export const CharacterList: React.FC<Props> = ({ work, characters, onCharactersU
       </div>
 
       {/* Grid de Personagens */}
-      {paginatedCharacters.length === 0 ? (
+      {loading ? (
+        <CharacterGridSkeleton count={pageSize <= 20 ? pageSize : 12} />
+      ) : paginatedCharacters.length === 0 ? (
         <div style={{ background: '#121927', border: '1px dashed var(--border)', borderRadius: 10, padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           {characters.length === 0 ? 'Nenhum personagem cadastrado para esta obra.' : 'Nenhum personagem corresponde ao filtro informado.'}
         </div>

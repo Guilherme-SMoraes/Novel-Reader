@@ -6,9 +6,11 @@ import { CharacterList } from './CharacterList';
 import { AttachmentList } from './AttachmentList';
 import { DeleteWorkModal } from './DeleteWorkModal';
 import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map } from 'lucide-react';
+import { JournalSkeleton, AttachmentGridSkeleton } from './Skeletons';
 
 interface Props {
   work: Work;
+  loading?: boolean;
   progressList: Progress[];
   characters: Character[];
   attachments: Attachment[];
@@ -19,6 +21,7 @@ interface Props {
 
 export const WorkDetail: React.FC<Props> = ({
   work,
+  loading = false,
   progressList,
   characters,
   attachments,
@@ -240,27 +243,36 @@ export const WorkDetail: React.FC<Props> = ({
 
       {/* Conteúdo da Aba Ativa */}
       {activeTab === 'journal' && (
-        <ReadingJournal
-          work={work}
-          progressList={progressList}
-          onProgressUpdated={onDataUpdated}
-        />
+        loading ? (
+          <JournalSkeleton />
+        ) : (
+          <ReadingJournal
+            work={work}
+            progressList={progressList}
+            onProgressUpdated={onDataUpdated}
+          />
+        )
       )}
 
       {activeTab === 'characters' && (
         <CharacterList
           work={work}
           characters={characters}
+          loading={loading}
           onCharactersUpdated={onDataUpdated}
         />
       )}
 
       {activeTab === 'attachments' && (
-        <AttachmentList
-          work={work}
-          attachments={attachments}
-          onAttachmentsUpdated={onDataUpdated}
-        />
+        loading ? (
+          <AttachmentGridSkeleton count={4} />
+        ) : (
+          <AttachmentList
+            work={work}
+            attachments={attachments}
+            onAttachmentsUpdated={onDataUpdated}
+          />
+        )
       )}
 
       {isDeleteModalOpen && (

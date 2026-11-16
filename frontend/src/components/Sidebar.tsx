@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import type { Genre, ReadingStatus, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
 import { SlidersHorizontal, Plus, BookOpen } from 'lucide-react';
+import { SidebarWorksSkeleton } from './Skeletons';
 
 interface Props {
   works: Work[];
+  loading?: boolean;
   selectedWorkId: string | null;
   onSelectWork: (id: string) => void;
   onOpenCreateWork: () => void;
@@ -23,6 +25,7 @@ interface Props {
 
 export const Sidebar: React.FC<Props> = ({
   works,
+  loading = false,
   selectedWorkId,
   onSelectWork,
   onOpenCreateWork,
@@ -186,7 +189,9 @@ export const Sidebar: React.FC<Props> = ({
 
       {/* Lista de Obras */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {works.length === 0 ? (
+        {loading && works.length === 0 ? (
+          <SidebarWorksSkeleton count={5} />
+        ) : works.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             Nenhuma obra encontrada.
           </div>

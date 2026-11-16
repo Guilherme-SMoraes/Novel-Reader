@@ -27,6 +27,7 @@ export function App() {
   const [workToEdit, setWorkToEdit] = useState<Work | null>(null);
   const [isManageGenresOpen, setIsManageGenresOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const fetchGenres = async () => {
     try {
@@ -76,6 +77,7 @@ export function App() {
   }, [searchTitle, selectedStatus, selectedType, selectedGenreId]);
 
   const fetchWorkDetails = async (workId: string) => {
+    setLoadingDetails(true);
     try {
       const [progRes, charRes, attRes] = await Promise.all([
         progressApi.getByWorkId(workId),
@@ -87,6 +89,8 @@ export function App() {
       setAttachments(attRes);
     } catch (err) {
       console.error('Erro ao buscar detalhes da obra:', err);
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -126,6 +130,7 @@ export function App() {
       {/* Sidebar com Lista e Filtros */}
       <Sidebar
         works={works}
+        loading={loading}
         selectedWorkId={selectedWorkId}
         onSelectWork={setSelectedWorkId}
         onOpenCreateWork={handleOpenCreateWork}
@@ -151,6 +156,7 @@ export function App() {
         ) : selectedWork ? (
           <WorkDetail
             work={selectedWork}
+            loading={loadingDetails}
             progressList={progressList}
             characters={characters}
             attachments={attachments}
