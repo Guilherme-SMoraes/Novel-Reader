@@ -120,8 +120,13 @@ export const progressApi = {
 };
 
 export const charactersApi = {
-  getByWorkId: (workId: string, page = 1, pageSize = 500) =>
-    request<PagedResult<Character>>(`/works/${workId}/characters?page=${page}&pageSize=${pageSize}`),
+  getByWorkId: (workId: string, page = 1, pageSize = 500, affiliation?: string) => {
+    const q = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+    if (affiliation && affiliation.trim()) {
+      q.append('affiliation', affiliation.trim());
+    }
+    return request<PagedResult<Character>>(`/works/${workId}/characters?${q.toString()}`);
+  },
 
   create: (data: CreateCharacterRequest) =>
     request<Character>(`/works/${data.workId}/characters`, {

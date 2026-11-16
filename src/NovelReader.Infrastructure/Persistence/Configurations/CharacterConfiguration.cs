@@ -19,6 +19,8 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.ImageUrl)
                 .HasMaxLength(2048);
             builder.Property(x => x.AlternativeNames);
+            builder.Property(x => x.Affiliations)
+                .HasDefaultValueSql("'{}'");
 
             builder.HasMany(x => x.FirstAppearances)
                 .WithOne()

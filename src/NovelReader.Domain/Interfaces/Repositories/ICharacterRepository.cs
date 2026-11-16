@@ -8,7 +8,7 @@ namespace NovelReader.Domain.Interfaces.Repositories
         Task CreateAsync(Character character, CancellationToken cancellationToken);
         Task UpdateAsync(Character character, CancellationToken cancellationToken);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken);
-        Task<PagedResult<Character>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken);
+        Task<PagedResult<Character>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken, string? affiliation = null);
         Task<Character?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     }
 }

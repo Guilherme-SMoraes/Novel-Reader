@@ -11,7 +11,8 @@ namespace NovelReader.Application.DTOs.Characters
         string? ImageUrl,
         CharacterType CharacterType,
         List<CharacterAppearanceDto> FirstAppearances,
-        List<string> AlternativeNames
+        List<string> AlternativeNames,
+        List<string> Affiliations
     )
     {
         public static CharacterResponse FromEntity(Character character) =>
@@ -23,7 +24,8 @@ namespace NovelReader.Application.DTOs.Characters
                 character.ImageUrl,
                 character.CharacterType,
                 character.FirstAppearances?.Select(CharacterAppearanceDto.FromEntity).ToList() ?? new List<CharacterAppearanceDto>(),
-                character.AlternativeNames ?? new List<string>()
+                character.AlternativeNames ?? new List<string>(),
+                character.Affiliations ?? new List<string>()
             );
     }
 }

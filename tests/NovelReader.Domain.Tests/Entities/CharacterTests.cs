@@ -68,4 +68,18 @@ public class CharacterTests
         Assert.Contains("Mongrel", character.AlternativeNames);
         Assert.Contains("Lord Shadow", character.AlternativeNames);
     }
+
+    [Fact]
+    public void Should_SetAffiliations_Correctly_And_Sanitize()
+    {
+        var work = EntityFactory.CreateValidWork();
+        var character = new Character("Klein Moretti", CharacterType.Protagonist, work.Id);
+
+        character.SetAffiliations(new[] { "Tarot Club", "  Nighthawks  ", "tarot club", "", "   ", "MI9" });
+
+        Assert.Equal(3, character.Affiliations.Count);
+        Assert.Contains("Tarot Club", character.Affiliations);
+        Assert.Contains("Nighthawks", character.Affiliations);
+        Assert.Contains("MI9", character.Affiliations);
+    }
 }

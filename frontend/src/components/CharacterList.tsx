@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Character, Work } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
@@ -6,7 +6,7 @@ import { CharacterModal } from './CharacterModal';
 import { CharacterDetailModal } from './CharacterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
-import { Users, Plus, Trash2, Edit2, User, ArrowUpDown } from 'lucide-react';
+import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield } from 'lucide-react';
 import { CharacterGridSkeleton } from './Skeletons';
 
 interface Props {
@@ -20,6 +20,7 @@ type SortOption = 'role' | 'name-asc' | 'name-desc' | 'appearance-asc' | 'appear
 
 export const CharacterList: React.FC<Props> = ({ work, characters, loading = false, onCharactersUpdated }) => {
   const [filterQuery, setFilterQuery] = useState('');
+  const [selectedAffiliation, setSelectedAffiliation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('role');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -30,6 +31,14 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const { showToast } = useToast();
+
+  const allAffiliations = useMemo(() => {
+    const set = new Set<string>();
+    characters.forEach((c) => {
+      c.affiliations?.forEach((a) => set.add(a));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [characters]);
 
   const handleFilterChange = (val: string) => {
     setFilterQuery(val);
@@ -47,13 +56,18 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   };
 
   const filtered = characters.filter((c) => {
+    if (selectedAffiliation !== 'all' && (!c.affiliations || !c.affiliations.includes(selectedAffiliation))) {
+      return false;
+    }
+    if (!filterQuery) return true;
     const q = filterQuery.toLowerCase();
     const role = CharacterTypeLabels[c.characterType].toLowerCase();
     const matchesName = c.name.toLowerCase().includes(q);
     const matchesRole = role.includes(q);
     const matchesDesc = c.description ? c.description.toLowerCase().includes(q) : false;
     const matchesAlt = c.alternativeNames ? c.alternativeNames.some((alt) => alt.toLowerCase().includes(q)) : false;
-    return matchesName || matchesRole || matchesDesc || matchesAlt;
+    const matchesAff = c.affiliations ? c.affiliations.some((aff) => aff.toLowerCase().includes(q)) : false;
+    return matchesName || matchesRole || matchesDesc || matchesAlt || matchesAff;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -137,6 +151,37 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
             placeholder="🔍 Filtrar por nome ou papel..."
             style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
           />
+
+          {allAffiliations.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Shield size={14} color="#c084fc" />
+              <select
+                value={selectedAffiliation}
+                onChange={(e) => {
+                  setSelectedAffiliation(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '6px 8px',
+                  fontSize: '0.8rem',
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  maxWidth: 160,
+                }}
+                title="Filtrar por grupo / afiliação"
+              >
+                <option value="all">Todas Afiliações</option>
+                {allAffiliations.map((aff) => (
+                  <option key={aff} value={aff}>
+                    {aff}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <ArrowUpDown size={14} color="#94a3b8" />
@@ -316,6 +361,54 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
                     </div>
                   )}
 
+                  {/* Afiliações / Grupos (linha única) */}
+                  {c.affiliations && c.affiliations.length > 0 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        margin: '1px 0 4px 0',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Shield size={11} color="#c084fc" style={{ flexShrink: 0 }} />
+                      {c.affiliations.slice(0, 2).map((aff, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: '0.66rem',
+                            background: 'rgba(168, 85, 247, 0.1)',
+                            color: '#c084fc',
+                            border: '1px solid rgba(168, 85, 247, 0.25)',
+                            borderRadius: 4,
+                            padding: '1px 5px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: 85,
+                          }}
+                          title={aff}
+                        >
+                          {aff}
+                        </span>
+                      ))}
+                      {c.affiliations.length > 2 && (
+                        <span
+                          style={{
+                            fontSize: '0.64rem',
+                            color: '#64748b',
+                            padding: '1px 3px',
+                          }}
+                          title={c.affiliations.slice(2).join(', ')}
+                        >
+                          +{c.affiliations.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Primeira Aparição (linha única compacta com separador bullet) */}
                   {c.firstAppearances && c.firstAppearances.length > 0 && (
                     <div
@@ -357,7 +450,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
                         color: '#cbd5e1',
                         lineHeight: '1.4',
                         display: '-webkit-box',
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: c.alternativeNames?.length && c.affiliations?.length ? 2 : 3,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

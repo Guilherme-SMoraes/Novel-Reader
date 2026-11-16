@@ -68,6 +68,12 @@ namespace NovelReader.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.PrimitiveCollection<List<string>>("Affiliations")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("'{}'");
+
                     b.PrimitiveCollection<List<string>>("AlternativeNames")
                         .IsRequired()
                         .HasColumnType("text[]");

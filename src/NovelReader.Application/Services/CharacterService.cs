@@ -47,6 +47,7 @@ namespace NovelReader.Application.Services
                 ImageUrl = request.ImageUrl
             };
             character.SetAlternativeNames(request.AlternativeNames);
+            character.SetAffiliations(request.Affiliations);
 
             var appearances = request.FirstAppearances.Select(a =>
                 new CharacterAppearance(character.Id, a.WorkType, new WorkChapter(a.Chapter.Volume, a.Chapter.Chapter)));
@@ -57,7 +58,7 @@ namespace NovelReader.Application.Services
             return CharacterResponse.FromEntity(character);
         }
 
-        public async Task<PagedResult<CharacterResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<CharacterResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default, string? affiliation = null)
         {
             var work = await _workRepository.GetByIdAsync(workId, cancellationToken);
             if (work is null)
@@ -65,7 +66,7 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
             }
 
-            var pagedCharacters = await _characterRepository.GetByWorkIdAsync(workId, page, pageSize, cancellationToken);
+            var pagedCharacters = await _characterRepository.GetByWorkIdAsync(workId, page, pageSize, cancellationToken, affiliation);
             var items = pagedCharacters.Items.Select(CharacterResponse.FromEntity);
 
             return new PagedResult<CharacterResponse>(items, pagedCharacters.TotalCount, pagedCharacters.Page, pagedCharacters.PageSize);
@@ -96,6 +97,7 @@ namespace NovelReader.Application.Services
             character.ImageUrl = request.ImageUrl;
             character.CharacterType = request.CharacterType;
             character.SetAlternativeNames(request.AlternativeNames);
+            character.SetAffiliations(request.Affiliations);
 
             var appearances = request.FirstAppearances.Select(a =>
                 new CharacterAppearance(character.Id, a.WorkType, new WorkChapter(a.Chapter.Volume, a.Chapter.Chapter)));

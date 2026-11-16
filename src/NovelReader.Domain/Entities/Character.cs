@@ -12,6 +12,7 @@ namespace NovelReader.Domain.Entities
         public Guid WorkId { get; init; }
         public List<CharacterAppearance> FirstAppearances { get; private set; } = new();
         public List<string> AlternativeNames { get; set; } = new();
+        public List<string> Affiliations { get; set; } = new();
 
 #pragma warning disable CS8618
         private Character() { }
@@ -70,6 +71,15 @@ namespace NovelReader.Domain.Entities
             AlternativeNames = names?
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .Select(n => n.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+        }
+
+        public void SetAffiliations(IEnumerable<string>? affiliations)
+        {
+            Affiliations = affiliations?
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList() ?? new List<string>();
         }

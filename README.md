@@ -12,6 +12,7 @@ Personal reading tracker and knowledge base for novels, web novels, manga, and m
 - **Character Management:**
   - First appearance tracking specific to each format of the work (e.g., Web Novel vs. Manhwa).
   - Aliases and alternative names per character.
+  - Group and faction affiliations per character (e.g., guilds, sects, secret societies) with interactive tag management, dedicated toolbar filter dropdown, and badge displays.
   - Role-weighted default sorting (Protagonist → Antagonist → Supporting → Extra) with customizable Sort By filters.
   - Character pagination with selectable page size (`10`, `20`, `50`, `100`).
   - Full character reading and inspection modal with rich typography, expandable notes, and image preview.

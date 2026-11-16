@@ -37,9 +37,10 @@ namespace NovelReader.API.Controllers
             [FromRoute] Guid workId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
+            [FromQuery] string? affiliation = null,
             CancellationToken cancellationToken = default)
         {
-            var result = await _characterService.GetByWorkIdAsync(workId, page, pageSize, cancellationToken);
+            var result = await _characterService.GetByWorkIdAsync(workId, page, pageSize, cancellationToken, affiliation);
             return Ok(result);
         }
 

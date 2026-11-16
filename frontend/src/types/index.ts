@@ -119,6 +119,7 @@ export interface Character {
   characterType: CharacterType;
   firstAppearances: CharacterAppearance[];
   alternativeNames: string[];
+  affiliations: string[];
 }
 
 export interface CreateCharacterRequest {
@@ -129,6 +130,7 @@ export interface CreateCharacterRequest {
   characterType: CharacterType;
   firstAppearances: CharacterAppearance[];
   alternativeNames?: string[];
+  affiliations?: string[];
 }
 
 export interface UpdateCharacterRequest {
@@ -138,6 +140,7 @@ export interface UpdateCharacterRequest {
   characterType: CharacterType;
   firstAppearances: CharacterAppearance[];
   alternativeNames?: string[];
+  affiliations?: string[];
 }
 
 export interface Genre {

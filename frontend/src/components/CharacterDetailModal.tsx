@@ -2,7 +2,7 @@ import React from 'react';
 import type { Character } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { MarkdownViewer } from './MarkdownViewer';
-import { X, Edit2, User, BookOpen } from 'lucide-react';
+import { X, Edit2, User, BookOpen, Shield } from 'lucide-react';
 
 interface Props {
   character: Character | null;
@@ -172,6 +172,34 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
                       }}
                     >
                       {alt}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Afiliações / Grupos */}
+              {character.affiliations && character.affiliations.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Shield size={12} color="#c084fc" /> Grupos / Afiliações:
+                  </span>
+                  {character.affiliations.map((aff, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize: '0.72rem',
+                        background: 'rgba(168, 85, 247, 0.1)',
+                        color: '#c084fc',
+                        border: '1px solid rgba(168, 85, 247, 0.25)',
+                        borderRadius: 4,
+                        padding: '2px 7px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Shield size={10} />
+                      {aff}
                     </span>
                   ))}
                 </div>

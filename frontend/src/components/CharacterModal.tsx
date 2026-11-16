@@ -21,6 +21,7 @@ import {
   Code,
   Eye,
   Edit3,
+  Shield,
 } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 import { MarkdownViewer } from './MarkdownViewer';
@@ -48,6 +49,8 @@ export const CharacterModal: React.FC<Props> = ({
   const [description, setDescription] = useState('');
   const [alternativeNames, setAlternativeNames] = useState<string[]>([]);
   const [altNameInput, setAltNameInput] = useState('');
+  const [affiliations, setAffiliations] = useState<string[]>([]);
+  const [affiliationInput, setAffiliationInput] = useState('');
   const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -64,6 +67,7 @@ export const CharacterModal: React.FC<Props> = ({
       setImageUrl(characterToEdit.imageUrl || '');
       setDescription(characterToEdit.description || '');
       setAlternativeNames(characterToEdit.alternativeNames || []);
+      setAffiliations(characterToEdit.affiliations || []);
 
       const map: Record<number, { chapter: string; volume: string }> = {};
       characterToEdit.firstAppearances?.forEach((app) => {
@@ -79,6 +83,7 @@ export const CharacterModal: React.FC<Props> = ({
       setImageUrl('');
       setDescription('');
       setAlternativeNames([]);
+      setAffiliations([]);
 
       const map: Record<number, { chapter: string; volume: string }> = {};
       if (availableFormats.length > 0) {
@@ -87,6 +92,7 @@ export const CharacterModal: React.FC<Props> = ({
       setAppearances(map);
     }
     setAltNameInput('');
+    setAffiliationInput('');
     setActiveTab('write');
     setError(null);
   }, [characterToEdit, isOpen]);
@@ -109,6 +115,25 @@ export const CharacterModal: React.FC<Props> = ({
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       handleAddAltName();
+    }
+  };
+
+  const handleAddAffiliation = () => {
+    const trimmed = affiliationInput.trim();
+    if (trimmed && !affiliations.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+      setAffiliations([...affiliations, trimmed]);
+      setAffiliationInput('');
+    }
+  };
+
+  const handleRemoveAffiliation = (indexToRemove: number) => {
+    setAffiliations(affiliations.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleAffiliationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      handleAddAffiliation();
     }
   };
 
@@ -167,6 +192,7 @@ export const CharacterModal: React.FC<Props> = ({
           description: description.trim() || null,
           firstAppearances: validAppearances,
           alternativeNames,
+          affiliations,
         };
         await charactersApi.update(workId, characterToEdit.id, req);
       } else {
@@ -178,6 +204,7 @@ export const CharacterModal: React.FC<Props> = ({
           description: description.trim() || null,
           firstAppearances: validAppearances,
           alternativeNames,
+          affiliations,
         };
         await charactersApi.create(req);
       }
@@ -275,6 +302,68 @@ export const CharacterModal: React.FC<Props> = ({
                         alignItems: 'center',
                       }}
                       title="Remover nome"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Grupos / Facções / Afiliações (opcional)
+            </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                className="input-text"
+                value={affiliationInput}
+                onChange={(e) => setAffiliationInput(e.target.value)}
+                onKeyDown={handleAffiliationKeyDown}
+                placeholder="Ex: Tarot Club, Nighthawks, Ahjin Guild (pressione Enter ou +)"
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleAddAffiliation}
+                style={{ whiteSpace: 'nowrap', padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Plus size={14} /> Adicionar
+              </button>
+            </div>
+            {affiliations.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {affiliations.map((aff, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: 'rgba(168, 85, 247, 0.15)',
+                      border: '1px solid rgba(168, 85, 247, 0.35)',
+                      color: '#c084fc',
+                      fontSize: '0.78rem',
+                      padding: '2px 8px',
+                      borderRadius: 14,
+                    }}
+                  >
+                    <Shield size={11} />
+                    {aff}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAffiliation(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#c084fc',
+                        cursor: 'pointer',
+                        padding: '0 2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title="Remover afiliação"
                     >
                       <X size={12} />
                     </button>

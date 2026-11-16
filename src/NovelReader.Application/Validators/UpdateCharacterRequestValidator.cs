@@ -29,6 +29,10 @@ namespace NovelReader.Application.Validators
                 .MaximumLength(200).WithMessage("Cada nome alternativo deve ter no máximo 200 caracteres.")
                 .When(x => x.AlternativeNames != null);
 
+            RuleForEach(x => x.Affiliations)
+                .MaximumLength(150).WithMessage("Cada afiliação/grupo deve ter no máximo 150 caracteres.")
+                .When(x => x.Affiliations != null);
+
             RuleFor(x => x.FirstAppearances)
                 .NotEmpty().WithMessage("A primeira aparição deve ser preenchida em pelo menos um formato.")
                 .Must(HaveUniqueWorkTypes).WithMessage("Não é permitido repetir o mesmo formato de aparição.");

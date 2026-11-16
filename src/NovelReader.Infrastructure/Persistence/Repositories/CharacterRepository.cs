@@ -43,13 +43,19 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
-        public async Task<PagedResult<Character>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken)
+        public async Task<PagedResult<Character>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken, string? affiliation = null)
         {
             var query = _context.Characters
                 .Include(x => x.FirstAppearances)
                 .AsNoTracking()
-                .Where(x => x.WorkId == workId)
-                .OrderBy(x => x.CharacterType)
+                .Where(x => x.WorkId == workId);
+
+            if (!string.IsNullOrWhiteSpace(affiliation))
+            {
+                query = query.Where(x => x.Affiliations.Any(a => EF.Functions.ILike(a, $"%{affiliation}%")));
+            }
+
+            query = query.OrderBy(x => x.CharacterType)
                 .ThenBy(x => x.Name);
 
             var total = await query.CountAsync(cancellationToken);
@@ -78,6 +84,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             existing.ImageUrl = character.ImageUrl;
             existing.CharacterType = character.CharacterType;
             existing.SetAlternativeNames(character.AlternativeNames);
+            existing.SetAffiliations(character.Affiliations);
 
             var targetTypes = character.FirstAppearances.Select(a => a.WorkType).ToHashSet();
             var appearancesToRemove = existing.FirstAppearances.Where(a => !targetTypes.Contains(a.WorkType)).ToList();

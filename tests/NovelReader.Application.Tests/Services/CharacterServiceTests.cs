@@ -119,7 +119,7 @@ namespace NovelReader.Application.Tests.Services
                 .ReturnsAsync(work);
 
             var pagedResult = new PagedResult<Character>(new List<Character> { character }, 1, 1, 10);
-            _characterRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, 1, 10, It.IsAny<CancellationToken>()))
+            _characterRepositoryMock.Setup(x => x.GetByWorkIdAsync(work.Id, 1, 10, It.IsAny<CancellationToken>(), It.IsAny<string?>()))
                 .ReturnsAsync(pagedResult);
 
             var result = await _characterService.GetByWorkIdAsync(work.Id, 1, 10, CancellationToken.None);
@@ -221,6 +221,36 @@ namespace NovelReader.Application.Tests.Services
             await _characterService.DeleteAsync(id, CancellationToken.None);
 
             _characterRepositoryMock.Verify(x => x.DeleteAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateAsync_WithAffiliations_ShouldPersistAndReturnAffiliations()
+        {
+            var work = EntityFactory.CreateValidWork();
+            _workRepositoryMock.Setup(x => x.GetByIdAsync(work.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(work);
+
+            var appearances = new List<CharacterAppearanceDto>
+            {
+                new(WorkType.WebNovel, new WorkChapterDto(null, 1))
+            };
+
+            var request = new CreateCharacterRequest(
+                work.Id,
+                "Klein Moretti",
+                "Lord of the Mysteries",
+                null,
+                CharacterType.Protagonist,
+                appearances,
+                new List<string> { "The Fool" },
+                new List<string> { "Tarot Club", "Nighthawks" }
+            );
+
+            var result = await _characterService.CreateAsync(request, CancellationToken.None);
+
+            result.Should().NotBeNull();
+            result.Affiliations.Should().Contain(new[] { "Tarot Club", "Nighthawks" });
+            _characterRepositoryMock.Verify(x => x.CreateAsync(It.Is<Character>(c => c.Affiliations.Count == 2), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

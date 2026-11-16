@@ -6,7 +6,7 @@ namespace NovelReader.Application.Interfaces
     public interface ICharacterService
     {
         Task<CharacterResponse> CreateAsync(CreateCharacterRequest request, CancellationToken cancellationToken = default);
-        Task<PagedResult<CharacterResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default);
+        Task<PagedResult<CharacterResponse>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken = default, string? affiliation = null);
         Task<CharacterResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         Task UpdateAsync(Guid id, UpdateCharacterRequest request, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
