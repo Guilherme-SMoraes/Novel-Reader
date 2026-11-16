@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Character } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { MarkdownViewer } from './MarkdownViewer';
-import { X, Edit2, User, BookOpen, Shield } from 'lucide-react';
+import { X, Edit2, User, BookOpen, Shield, Maximize2 } from 'lucide-react';
 
 interface Props {
   character: Character | null;
@@ -12,6 +12,14 @@ interface Props {
 }
 
 export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClose, onEdit }) => {
+  const [showFullImage, setShowFullImage] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowFullImage(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen || !character) return null;
 
   return (
@@ -111,8 +119,8 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
             <div
               style={{
-                width: 90,
-                height: 90,
+                width: 105,
+                height: 140,
                 borderRadius: 10,
                 overflow: 'hidden',
                 background: '#090e17',
@@ -121,16 +129,43 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                position: 'relative',
+                cursor: character.imageUrl ? 'pointer' : 'default',
               }}
+              onClick={() => {
+                if (character.imageUrl) {
+                  setShowFullImage(true);
+                }
+              }}
+              title={character.imageUrl ? 'Clique para ampliar a imagem' : undefined}
             >
               {character.imageUrl ? (
-                <img
-                  src={character.imageUrl}
-                  alt={character.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                <>
+                  <img
+                    src={character.imageUrl}
+                    alt={character.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 4,
+                      right: 4,
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      borderRadius: 4,
+                      padding: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#94a3b8',
+                    }}
+                    title="Ampliar imagem"
+                  >
+                    <Maximize2 size={12} />
+                  </div>
+                </>
               ) : (
-                <User size={42} color="#475569" />
+                <User size={48} color="#475569" />
               )}
             </div>
 
@@ -274,6 +309,76 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
           </button>
         </div>
       </div>
+
+      {/* Lightbox da Imagem Completa */}
+      {showFullImage && character.imageUrl && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 60,
+            padding: 24,
+            cursor: 'zoom-out',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowFullImage(false);
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowFullImage(false)}
+              style={{
+                position: 'absolute',
+                top: -38,
+                right: 0,
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1px solid #334155',
+                color: '#f8fafc',
+                cursor: 'pointer',
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Fechar visualização"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={character.imageUrl}
+              alt={character.name}
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '85vh',
+                borderRadius: 8,
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.7)',
+                objectFit: 'contain',
+              }}
+            />
+            <div style={{ marginTop: 8, color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>
+              {character.name}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
