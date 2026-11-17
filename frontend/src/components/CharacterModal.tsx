@@ -143,92 +143,44 @@ export const CharacterModal: React.FC<Props> = ({
       !affiliations.some((a) => a.toLowerCase() === aff.toLowerCase())
   );
 
-  const autoSaveCharacter = async (updatedAltNames: string[], updatedAffiliations: string[]) => {
-    if (!characterToEdit) return;
-    try {
-      const validAppearances: CharacterAppearance[] = [];
-      Object.entries(appearances).forEach(([workTypeStr, val]) => {
-        const chNum = parseInt(val.chapter, 10);
-        if (!isNaN(chNum) && chNum > 0) {
-          validAppearances.push({
-            workType: Number(workTypeStr) as any,
-            chapter: {
-              volume: val.volume ? parseInt(val.volume, 10) : null,
-              chapter: chNum,
-            },
-          });
-        }
-      });
-
-      const req: UpdateCharacterRequest = {
-        name: name.trim() || characterToEdit.name,
-        characterType,
-        imageUrl: imageUrl.trim() || null,
-        description: description.trim() || null,
-        firstAppearances: validAppearances.length > 0 ? validAppearances : (characterToEdit.firstAppearances || []),
-        alternativeNames: updatedAltNames,
-        affiliations: updatedAffiliations,
-      };
-
-      await charactersApi.update(workId, characterToEdit.id, req);
-      onSaved();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar dados do personagem.');
-    }
-  };
-
-  const handleAddAltName = async () => {
+  const handleAddAltName = () => {
     const trimmed = altNameInput.trim();
     if (trimmed && !alternativeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
-      const updated = [...alternativeNames, trimmed];
-      setAlternativeNames(updated);
+      setAlternativeNames([...alternativeNames, trimmed]);
       setAltNameInput('');
-      if (characterToEdit) {
-        await autoSaveCharacter(updated, affiliations);
-      }
     }
   };
 
-  const handleRemoveAltName = async (indexToRemove: number) => {
-    const updated = alternativeNames.filter((_, idx) => idx !== indexToRemove);
-    setAlternativeNames(updated);
-    if (characterToEdit) {
-      await autoSaveCharacter(updated, affiliations);
-    }
+  const handleRemoveAltName = (indexToRemove: number) => {
+    setAlternativeNames(alternativeNames.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleAltKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
+      e.stopPropagation();
       handleAddAltName();
     }
   };
 
-  const handleAddAffiliation = async (val?: string) => {
+  const handleAddAffiliation = (val?: string) => {
     const target = val !== undefined ? val : affiliationInput;
     const trimmed = target.trim();
     if (trimmed && !affiliations.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
-      const updated = [...affiliations, trimmed];
-      setAffiliations(updated);
+      setAffiliations([...affiliations, trimmed]);
       setAffiliationInput('');
       setShowAffiliationSuggestions(false);
-      if (characterToEdit) {
-        await autoSaveCharacter(alternativeNames, updated);
-      }
     }
   };
 
-  const handleRemoveAffiliation = async (indexToRemove: number) => {
-    const updated = affiliations.filter((_, idx) => idx !== indexToRemove);
-    setAffiliations(updated);
-    if (characterToEdit) {
-      await autoSaveCharacter(alternativeNames, updated);
-    }
+  const handleRemoveAffiliation = (indexToRemove: number) => {
+    setAffiliations(affiliations.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleAffiliationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
+      e.stopPropagation();
       handleAddAffiliation();
     } else if (e.key === 'Escape') {
       setShowAffiliationSuggestions(false);
@@ -352,7 +304,15 @@ export const CharacterModal: React.FC<Props> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+              e.preventDefault();
+            }
+          }}
+          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+        >
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
               Nome do Personagem *
