@@ -63,6 +63,7 @@ export const CharacterModal: React.FC<Props> = ({
   const [appearances, setAppearances] = useState<Record<number, { chapter: string; volume: string }>>({});
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasModifiedTags, setHasModifiedTags] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +133,11 @@ export const CharacterModal: React.FC<Props> = ({
 
   const handleClose = () => {
     closeModal(effectiveSessionId);
-    onClose();
+    if (hasModifiedTags) {
+      onSaved();
+    } else {
+      onClose();
+    }
   };
 
   if (!isOpen || isMinimized) return null;
@@ -143,16 +148,58 @@ export const CharacterModal: React.FC<Props> = ({
       !affiliations.some((a) => a.toLowerCase() === aff.toLowerCase())
   );
 
+  const saveTagsSilently = async (updatedAltNames: string[], updatedAffiliations: string[]) => {
+    if (!characterToEdit) return;
+    try {
+      const validAppearances: CharacterAppearance[] = [];
+      Object.entries(appearances).forEach(([workTypeStr, val]) => {
+        const chNum = parseInt(val.chapter, 10);
+        if (!isNaN(chNum) && chNum > 0) {
+          validAppearances.push({
+            workType: Number(workTypeStr) as any,
+            chapter: {
+              volume: val.volume ? parseInt(val.volume, 10) : null,
+              chapter: chNum,
+            },
+          });
+        }
+      });
+
+      const req: UpdateCharacterRequest = {
+        name: name.trim() || characterToEdit.name,
+        characterType,
+        imageUrl: imageUrl.trim() || null,
+        description: description.trim() || null,
+        firstAppearances: validAppearances.length > 0 ? validAppearances : (characterToEdit.firstAppearances || []),
+        alternativeNames: updatedAltNames,
+        affiliations: updatedAffiliations,
+      };
+
+      await charactersApi.update(workId, characterToEdit.id, req);
+      setHasModifiedTags(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar dados do personagem.');
+    }
+  };
+
   const handleAddAltName = () => {
     const trimmed = altNameInput.trim();
     if (trimmed && !alternativeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
-      setAlternativeNames([...alternativeNames, trimmed]);
+      const updated = [...alternativeNames, trimmed];
+      setAlternativeNames(updated);
       setAltNameInput('');
+      if (characterToEdit) {
+        saveTagsSilently(updated, affiliations);
+      }
     }
   };
 
   const handleRemoveAltName = (indexToRemove: number) => {
-    setAlternativeNames(alternativeNames.filter((_, idx) => idx !== indexToRemove));
+    const updated = alternativeNames.filter((_, idx) => idx !== indexToRemove);
+    setAlternativeNames(updated);
+    if (characterToEdit) {
+      saveTagsSilently(updated, affiliations);
+    }
   };
 
   const handleAltKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -167,14 +214,22 @@ export const CharacterModal: React.FC<Props> = ({
     const target = val !== undefined ? val : affiliationInput;
     const trimmed = target.trim();
     if (trimmed && !affiliations.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
-      setAffiliations([...affiliations, trimmed]);
+      const updated = [...affiliations, trimmed];
+      setAffiliations(updated);
       setAffiliationInput('');
       setShowAffiliationSuggestions(false);
+      if (characterToEdit) {
+        saveTagsSilently(alternativeNames, updated);
+      }
     }
   };
 
   const handleRemoveAffiliation = (indexToRemove: number) => {
-    setAffiliations(affiliations.filter((_, idx) => idx !== indexToRemove));
+    const updated = affiliations.filter((_, idx) => idx !== indexToRemove);
+    setAffiliations(updated);
+    if (characterToEdit) {
+      saveTagsSilently(alternativeNames, updated);
+    }
   };
 
   const handleAffiliationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
