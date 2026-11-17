@@ -252,8 +252,9 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
                         color: '#cbd5e1',
                         lineHeight: 1.5,
                         flex: 1,
+                        minHeight: 0,
                         marginBottom: '8px',
-                        maxHeight: '130px',
+                        maxHeight: att.imageUrl ? '130px' : '310px',
                         overflowY: 'auto',
                         paddingRight: '4px',
                       }}
