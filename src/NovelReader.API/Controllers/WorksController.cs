@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovelReader.Application.DTOs.Works;
 using NovelReader.Application.Interfaces;
@@ -6,6 +7,7 @@ using NovelReader.Domain.Enums;
 
 namespace NovelReader.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class WorksController : ControllerBase

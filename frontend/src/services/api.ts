@@ -13,21 +13,42 @@ import type {
   UpdateCharacterRequest,
   UpdateWorkRequest,
   Work,
-  WorkType
+  WorkType,
+  User,
+  AuthResponse
 } from '../types';
 
 const API_BASE = '/api';
+const TOKEN_KEY = 'novelreader_auth_token';
+
+export const authStorage = {
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+  setToken: (token: string) => localStorage.setItem(TOKEN_KEY, token),
+  removeToken: () => localStorage.removeItem(TOKEN_KEY),
+};
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const token = authStorage.getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-    },
+    headers,
   });
 
   if (!res.ok) {
+    if (res.status === 401 && endpoint !== '/auth/google') {
+      authStorage.removeToken();
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    }
+
     let errorMsg = `Erro na requisição: ${res.statusText}`;
     try {
       const errData = await res.json();
@@ -195,12 +216,24 @@ export const imagesApi = {
     const formData = new FormData();
     formData.append('file', file);
 
+    const token = authStorage.getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}/images/upload`, {
       method: 'POST',
+      headers,
       body: formData,
     });
 
     if (!res.ok) {
+      if (res.status === 401) {
+        authStorage.removeToken();
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
+
       let errorMsg = `Erro no upload da imagem: ${res.statusText}`;
       try {
         const errData = await res.json();
@@ -216,4 +249,13 @@ export const imagesApi = {
 
     return res.json();
   },
+};
+
+export const authApi = {
+  googleLogin: (idToken: string) =>
+    request<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+  getMe: () => request<User>('/auth/me'),
 };

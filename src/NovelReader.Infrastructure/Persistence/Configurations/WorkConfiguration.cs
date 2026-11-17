@@ -25,6 +25,14 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(x => x.Title);
 
+            builder.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(x => x.UserId)
+                   .OnDelete(DeleteBehavior.Cascade)
+                   .IsRequired(false);
+
+            builder.HasIndex(x => x.UserId);
+
             builder.HasMany(x => x.Formats)
                     .WithOne()
                     .HasForeignKey(x => x.WorkId)

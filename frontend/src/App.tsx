@@ -5,9 +5,12 @@ import { Sidebar } from './components/Sidebar';
 import { WorkDetail } from './components/WorkDetail';
 import { WorkModal } from './components/WorkModal';
 import { ManageGenresModal } from './components/ManageGenresModal';
+import { LoginPage } from './components/LoginPage';
+import { useAuth } from './context/AuthContext';
 import { BookOpen } from 'lucide-react';
 
 export function App() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
@@ -64,10 +67,17 @@ export function App() {
   };
 
   useEffect(() => {
-    fetchGenres();
-  }, []);
+    if (isAuthenticated) {
+      fetchGenres();
+    } else {
+      setGenres([]);
+      setWorks([]);
+      setSelectedWorkId(null);
+    }
+  }, [isAuthenticated]);
 
   const fetchWorks = async () => {
+    if (!isAuthenticated) return;
     try {
       setLoading(true);
       const res = await worksApi.getAll({
@@ -94,12 +104,13 @@ export function App() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const timer = setTimeout(() => {
       fetchWorks();
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [searchTitle, selectedStatus, selectedType, selectedGenreId]);
+  }, [searchTitle, selectedStatus, selectedType, selectedGenreId, isAuthenticated]);
 
   const fetchWorkDetails = async (workId: string) => {
     setLoadingDetails(true);
@@ -149,6 +160,18 @@ export function App() {
       setIsWorkModalOpen(true);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', height: '100dvh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: '#090d16', color: '#8b5cf6', fontSize: '1.1rem', fontWeight: 600 }}>
+        Carregando NovelReader...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   return (
     <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden' }}>

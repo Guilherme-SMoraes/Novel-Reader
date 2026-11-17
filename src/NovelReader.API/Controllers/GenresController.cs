@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovelReader.Application.DTOs.Genres;
 using NovelReader.Application.Interfaces;
@@ -5,6 +6,7 @@ using NovelReader.Domain.Common;
 
 namespace NovelReader.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class GenresController : ControllerBase

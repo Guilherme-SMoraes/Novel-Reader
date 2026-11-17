@@ -1,3 +1,18 @@
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
+export interface AuthResponse {
+  token: string;
+  userId: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
 export type WorkType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const WorkTypeLabels: Record<WorkType, string> = {
   1: 'Novel',

@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovelReader.Application.DTOs.Attachments;
 using NovelReader.Application.Interfaces;
 
 namespace NovelReader.API.Controllers
 {
+    [Authorize]
     [ApiController]
     public class AttachmentsController : ControllerBase
     {

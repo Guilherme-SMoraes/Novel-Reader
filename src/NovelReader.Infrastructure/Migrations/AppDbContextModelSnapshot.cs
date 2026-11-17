@@ -178,6 +178,44 @@ namespace NovelReader.Infrastructure.Migrations
                     b.ToTable("Progresses", (string)null);
                 });
 
+            modelBuilder.Entity("NovelReader.Domain.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("GoogleId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("GoogleId")
+                        .IsUnique();
+
+                    b.ToTable("Users", (string)null);
+                });
+
             modelBuilder.Entity("NovelReader.Domain.Entities.Work", b =>
                 {
                     b.Property<Guid>("Id")
@@ -211,9 +249,14 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Title");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Works", (string)null);
                 });
@@ -341,6 +384,14 @@ namespace NovelReader.Infrastructure.Migrations
 
                     b.Navigation("StoppedAtChapter")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("NovelReader.Domain.Entities.Work", b =>
+                {
+                    b.HasOne("NovelReader.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("NovelReader.Domain.Entities.WorkFormat", b =>

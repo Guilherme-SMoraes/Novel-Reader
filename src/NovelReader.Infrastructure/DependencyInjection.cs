@@ -19,10 +19,12 @@ namespace NovelReader.Infrastructure
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<IWorkRepository, WorkRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IGenreRepository, GenreRepository>();
             services.AddScoped<IProgressRepository, ProgressRepository>();
             services.AddScoped<ICharacterRepository, CharacterRepository>();
             services.AddScoped<IAttachmentRepository, AttachmentRepository>();
+            services.AddScoped<IAuthService, AuthService>();
 
             services.AddHttpClient<IImageUploadService, ImgBbUploadService>();
 

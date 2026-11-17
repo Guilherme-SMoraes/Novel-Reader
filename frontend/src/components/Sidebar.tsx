@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import type { Genre, ReadingStatus, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
-import { SlidersHorizontal, Plus, BookOpen } from 'lucide-react';
+import { SlidersHorizontal, Plus, BookOpen, LogOut } from 'lucide-react';
 import { SidebarWorksSkeleton } from './Skeletons';
 import { getUnitLabel } from '../utils/formatLabels';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   works: Work[];
@@ -44,6 +45,7 @@ export const Sidebar: React.FC<Props> = ({
   onOpenManageGenres,
   isMobile = false,
 }) => {
+  const { user, logout } = useAuth();
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
 
   const activeFiltersCount = (selectedType ? 1 : 0) + (selectedGenreId ? 1 : 0);
@@ -253,6 +255,36 @@ export const Sidebar: React.FC<Props> = ({
           })
         )}
       </div>
+
+      {/* Rodapé com Informações do Usuário e Botão Sair */}
+      {user && (
+        <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#090e17' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.name} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#6366f1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.name}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.email}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Sair da Conta"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      )}
     </aside>
   );
 };

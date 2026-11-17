@@ -27,6 +27,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=novelreader;Username=postgres;Password=postgrespassword
       ImgBB__ApiKey: ${IMGBB_API_KEY:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-NovelReader_Super_Secret_Jwt_Signing_Key_2026_Secure_Auth!}
     ports:
       - "5092:8080"
     depends_on:
@@ -37,6 +39,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     container_name: novelreader-ui
     restart: unless-stopped
     ports:

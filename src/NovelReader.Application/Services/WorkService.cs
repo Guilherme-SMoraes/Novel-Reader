@@ -14,15 +14,18 @@ namespace NovelReader.Application.Services
         private readonly IWorkRepository _workRepository;
         private readonly IValidator<CreateWorkRequest> _createValidator;
         private readonly IValidator<UpdateWorkRequest> _updateValidator;
+        private readonly ICurrentUserService? _currentUserService;
 
         public WorkService(
             IWorkRepository workRepository,
             IValidator<CreateWorkRequest> createValidator,
-            IValidator<UpdateWorkRequest> updateValidator)
+            IValidator<UpdateWorkRequest> updateValidator,
+            ICurrentUserService? currentUserService = null)
         {
             _workRepository = workRepository;
             _createValidator = createValidator;
             _updateValidator = updateValidator;
+            _currentUserService = currentUserService;
         }
 
         public async Task<WorkResponse> CreateAsync(CreateWorkRequest request, CancellationToken cancellationToken = default)
@@ -36,7 +39,8 @@ namespace NovelReader.Application.Services
             var work = new Work(
                 request.Title,
                 request.AggregatorLink,
-                request.OriginalLanguage
+                request.OriginalLanguage,
+                _currentUserService?.UserId
             )
             {
                 Description = request.Description,
@@ -105,7 +109,8 @@ namespace NovelReader.Application.Services
                 id,
                 request.Title,
                 request.AggregatorLink,
-                work.OriginalLanguage
+                work.OriginalLanguage,
+                work.UserId
             )
             {
                 Description = request.Description,

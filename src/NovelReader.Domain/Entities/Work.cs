@@ -6,6 +6,7 @@ namespace NovelReader.Domain.Entities
     public class Work
     {
         public Guid Id { get; private set; }
+        public Guid? UserId { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
         public List<Genre> Genres { get; private set; } = new();
@@ -24,15 +25,17 @@ namespace NovelReader.Domain.Entities
 
         public Work(string title,
                     string aggregatorLink,
-                    Language originalLanguage)
-            : this(Guid.NewGuid(), title, aggregatorLink, originalLanguage)
+                    Language originalLanguage,
+                    Guid? userId = null)
+            : this(Guid.NewGuid(), title, aggregatorLink, originalLanguage, userId)
         {
         }
 
         public Work(Guid id,
                     string title,
                     string aggregatorLink,
-                    Language originalLanguage)
+                    Language originalLanguage,
+                    Guid? userId = null)
         {
             if (id == Guid.Empty)
             {
@@ -48,6 +51,7 @@ namespace NovelReader.Domain.Entities
             }
 
             Id = id;
+            UserId = userId;
             Title = title;
             AggregatorLink = aggregatorLink;
             OriginalLanguage = originalLanguage;
