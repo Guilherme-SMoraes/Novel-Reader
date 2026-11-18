@@ -29,25 +29,13 @@ export const authStorage = {
   removeToken: () => localStorage.removeItem(TOKEN_KEY),
 };
 
-let activeWakingRequests = 0;
+let isServerWaking = false;
 
-function notifyRequestStart(): () => void {
-  let isMarkedWaking = false;
-  const timer = setTimeout(() => {
-    isMarkedWaking = true;
-    activeWakingRequests++;
-    window.dispatchEvent(new CustomEvent('server:waking'));
-  }, 1800);
-
-  return () => {
-    clearTimeout(timer);
-    if (isMarkedWaking) {
-      activeWakingRequests = Math.max(0, activeWakingRequests - 1);
-      if (activeWakingRequests === 0) {
-        window.dispatchEvent(new CustomEvent('server:ready'));
-      }
-    }
-  };
+function setServerWaking(waking: boolean) {
+  if (isServerWaking !== waking) {
+    isServerWaking = waking;
+    window.dispatchEvent(new CustomEvent(waking ? 'server:waking' : 'server:ready'));
+  }
 }
 
 async function request<T>(endpoint: string, options?: RequestInit, retryCount = 0): Promise<T> {
@@ -61,16 +49,14 @@ async function request<T>(endpoint: string, options?: RequestInit, retryCount = 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const finishTracking = notifyRequestStart();
-
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
     });
 
-    if ([502, 503, 504].includes(res.status) && retryCount < 5) {
-      window.dispatchEvent(new CustomEvent('server:waking'));
+    if ([502, 503, 504].includes(res.status) && retryCount < 8) {
+      setServerWaking(true);
       await new Promise(resolve => setTimeout(resolve, 3000));
       return await request<T>(endpoint, options, retryCount + 1);
     }
@@ -94,20 +80,20 @@ async function request<T>(endpoint: string, options?: RequestInit, retryCount = 
       throw new Error(errorMsg);
     }
 
+    setServerWaking(false);
+
     if (res.status === 204) {
       return {} as T;
     }
 
     return await res.json();
   } catch (err: unknown) {
-    if (err instanceof TypeError && err.message.includes('Failed to fetch') && retryCount < 5) {
-      window.dispatchEvent(new CustomEvent('server:waking'));
+    if (err instanceof TypeError && err.message.includes('Failed to fetch') && retryCount < 8) {
+      setServerWaking(true);
       await new Promise(resolve => setTimeout(resolve, 3000));
       return await request<T>(endpoint, options, retryCount + 1);
     }
     throw err;
-  } finally {
-    finishTracking();
   }
 }
 

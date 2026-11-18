@@ -15,10 +15,25 @@ export function useKeepAlive() {
       }
     };
 
-    // Initial ping on mount to ensure server is awake
-    ping();
+    // Initial warmup check: only show cold start if taking > 4s
+    const warmup = async () => {
+      let timer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('server:waking'));
+      }, 4000);
 
-    // Periodic ping every 4 minutes
+      try {
+        await healthApi.check();
+      } catch {
+        // Handled silently
+      } finally {
+        if (timer) clearTimeout(timer);
+        window.dispatchEvent(new CustomEvent('server:ready'));
+      }
+    };
+
+    warmup();
+
+    // Periodic ping every 4 minutes (silent, keeps server active)
     timer = setInterval(ping, PING_INTERVAL_MS);
 
     // Ping on tab focus / visibility change
