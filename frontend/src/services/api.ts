@@ -18,7 +18,9 @@ import type {
   AuthResponse
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
 const TOKEN_KEY = 'novelreader_auth_token';
 
 export const authStorage = {
