@@ -25,15 +25,12 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=novelreader;Username=postgres;Password=postgrespassword
+      ConnectionStrings__DefaultConnection: ${POSTGRES_CONNECTION_STRING}
       ImgBB__ApiKey: ${IMGBB_API_KEY:-}
       Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
-      Jwt__SecretKey: ${JWT_SECRET_KEY:-NovelReader_Super_Secret_Jwt_Signing_Key_2026_Secure_Auth!}
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
     ports:
       - "5092:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   frontend:
     build:

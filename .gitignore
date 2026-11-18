@@ -48,6 +48,7 @@ node_modules/
 dist/
 .docker-data/
 tools/
+*.sql
 *.dump
 
 # MSBuild Binary and Structured Log

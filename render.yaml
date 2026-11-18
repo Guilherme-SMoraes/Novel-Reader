@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: novelreader-api
+    runtime: docker
+    dockerfilePath: ./src/NovelReader.API/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Authentication__Google__ClientId
+        sync: false
+      - key: Jwt__SecretKey
+        sync: false
+      - key: ImgBB__ApiKey
+        sync: false
