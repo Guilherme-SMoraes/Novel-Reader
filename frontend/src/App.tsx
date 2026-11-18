@@ -6,10 +6,13 @@ import { WorkDetail } from './components/WorkDetail';
 import { WorkModal } from './components/WorkModal';
 import { ManageGenresModal } from './components/ManageGenresModal';
 import { LoginPage } from './components/LoginPage';
+import { ColdStartOverlay } from './components/ColdStartOverlay';
+import { useKeepAlive } from './hooks/useKeepAlive';
 import { useAuth } from './context/AuthContext';
 import { BookOpen } from 'lucide-react';
 
 export function App() {
+  useKeepAlive();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -163,18 +166,27 @@ export function App() {
 
   if (authLoading) {
     return (
-      <div style={{ display: 'flex', height: '100dvh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: '#090d16', color: '#8b5cf6', fontSize: '1.1rem', fontWeight: 600 }}>
-        Carregando NovelReader...
-      </div>
+      <>
+        <ColdStartOverlay />
+        <div style={{ display: 'flex', height: '100dvh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: '#090d16', color: '#8b5cf6', fontSize: '1.1rem', fontWeight: 600 }}>
+          Carregando NovelReader...
+        </div>
+      </>
     );
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return (
+      <>
+        <ColdStartOverlay />
+        <LoginPage />
+      </>
+    );
   }
 
   return (
     <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden' }}>
+      <ColdStartOverlay />
       {/* Sidebar com Lista e Filtros */}
       <div style={{ display: !isMobile || mobileView === 'list' ? 'flex' : 'none', width: isMobile ? '100%' : 'auto', height: '100%' }}>
         <Sidebar

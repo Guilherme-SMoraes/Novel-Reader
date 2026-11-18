@@ -29,7 +29,28 @@ export const authStorage = {
   removeToken: () => localStorage.removeItem(TOKEN_KEY),
 };
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+let activeWakingRequests = 0;
+
+function notifyRequestStart(): () => void {
+  let isMarkedWaking = false;
+  const timer = setTimeout(() => {
+    isMarkedWaking = true;
+    activeWakingRequests++;
+    window.dispatchEvent(new CustomEvent('server:waking'));
+  }, 1800);
+
+  return () => {
+    clearTimeout(timer);
+    if (isMarkedWaking) {
+      activeWakingRequests = Math.max(0, activeWakingRequests - 1);
+      if (activeWakingRequests === 0) {
+        window.dispatchEvent(new CustomEvent('server:ready'));
+      }
+    }
+  };
+}
+
+async function request<T>(endpoint: string, options?: RequestInit, retryCount = 0): Promise<T> {
   const token = authStorage.getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -40,36 +61,59 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const finishTracking = notifyRequestStart();
 
-  if (!res.ok) {
-    if (res.status === 401 && endpoint !== '/auth/google') {
-      authStorage.removeToken();
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if ([502, 503, 504].includes(res.status) && retryCount < 5) {
+      window.dispatchEvent(new CustomEvent('server:waking'));
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return await request<T>(endpoint, options, retryCount + 1);
     }
 
-    let errorMsg = `Erro na requisição: ${res.statusText}`;
-    try {
-      const errData = await res.json();
-      if (errData.message) errorMsg = errData.message;
-      else if (errData.errors) {
-        errorMsg = Object.values(errData.errors).flat().join(', ');
+    if (!res.ok) {
+      if (res.status === 401 && endpoint !== '/auth/google') {
+        authStorage.removeToken();
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       }
-    } catch {
-      // Ignora erro de parse de corpo caso resposta não seja JSON
+
+      let errorMsg = `Erro na requisição: ${res.statusText}`;
+      try {
+        const errData = await res.json();
+        if (errData.message) errorMsg = errData.message;
+        else if (errData.errors) {
+          errorMsg = Object.values(errData.errors).flat().join(', ');
+        }
+      } catch {
+        // Ignora erro de parse de corpo caso resposta não seja JSON
+      }
+      throw new Error(errorMsg);
     }
-    throw new Error(errorMsg);
-  }
 
-  if (res.status === 204) {
-    return {} as T;
-  }
+    if (res.status === 204) {
+      return {} as T;
+    }
 
-  return res.json();
+    return await res.json();
+  } catch (err: unknown) {
+    if (err instanceof TypeError && err.message.includes('Failed to fetch') && retryCount < 5) {
+      window.dispatchEvent(new CustomEvent('server:waking'));
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return await request<T>(endpoint, options, retryCount + 1);
+    }
+    throw err;
+  } finally {
+    finishTracking();
+  }
 }
+
+export const healthApi = {
+  check: () => request<{ status: string }>('/health'),
+};
 
 export const worksApi = {
   getAll: (params?: {
