@@ -3,7 +3,9 @@ import type { Progress, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { CreateProgressModal } from './CreateProgressModal';
+import { EditProgressModal } from './EditProgressModal';
 import { ConfirmModal } from './ConfirmModal';
+import { MarkdownViewer } from './MarkdownViewer';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Plus, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import {
@@ -26,12 +28,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingQuickAdd, setLoadingQuickAdd] = useState(false);
   const [progressToDeleteId, setProgressToDeleteId] = useState<string | null>(null);
-  const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
-  const [editDescriptionText, setEditDescriptionText] = useState('');
-  const [loadingSaveEdit, setLoadingSaveEdit] = useState(false);
+  const [progressToEdit, setProgressToEdit] = useState<Progress | null>(null);
   const { showToast } = useToast();
 
-  // Fallback se o formato selecionado não existir mais na obra
   const activeFormat =
     (work.formats && work.formats.find((f) => f.workType === selectedWorkType)) ||
     (work.formats && work.formats[0]) || {
@@ -43,7 +42,6 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
       linkWhereToRead: null,
     };
 
-  // Filtra o progresso exclusivo deste formato
   const formatProgressList = progressList.filter((p) => p.workType === activeFormat.workType);
   const latestProgress = formatProgressList[0];
   const currentChapter = latestProgress ? latestProgress.stoppedAtChapter.chapter : 0;
@@ -80,30 +78,18 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
 
   const handleConfirmDeleteProgress = async () => {
     if (!progressToDeleteId) return;
-    await progressApi.delete(work.id, progressToDeleteId);
-    showToast('Registro de progresso excluído.', 'info');
-    onProgressUpdated();
-    setProgressToDeleteId(null);
-  };
-
-  const handleSaveDescription = async (progressId: string) => {
-    setLoadingSaveEdit(true);
     try {
-      const trimmed = editDescriptionText.trim();
-      await progressApi.updateDescription(work.id, progressId, trimmed || null);
-      showToast('Anotação do progresso atualizada com sucesso!', 'success');
-      setEditingProgressId(null);
+      await progressApi.delete(work.id, progressToDeleteId);
+      showToast('Registro de progresso excluído.', 'info');
       onProgressUpdated();
+      setProgressToDeleteId(null);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Erro ao atualizar anotação.', 'error');
-    } finally {
-      setLoadingSaveEdit(false);
+      showToast(err instanceof Error ? err.message : 'Erro ao excluir progresso.', 'error');
     }
   };
 
   return (
     <section style={{ background: '#162032', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
-      {/* Seletor de Formatos (Pílulas) */}
       <div style={{ marginBottom: 18, borderBottom: '1px solid #1e293b', paddingBottom: 14 }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px', marginBottom: 8 }}>
           Formatos Disponíveis da Obra (Selecione para ver o progresso)
@@ -138,14 +124,14 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                 <span>{WorkTypeLabels[f.workType]}</span>
                 <span
                   style={{
-                    fontSize: '0.72rem',
-                    padding: '2px 6px',
-                    borderRadius: 6,
+                    fontSize: '0.75rem',
                     background: isSelected ? 'rgba(139, 92, 246, 0.25)' : '#1e293b',
                     color: isSelected ? '#c084fc' : '#64748b',
+                    padding: '2px 6px',
+                    borderRadius: 4,
                   }}
                 >
-                  {getUnitLabel(f.workType, { short: true })} {fCurrent}/{f.totalChapter.chapter} ({fPct}%)
+                  {fCurrent}/{f.totalChapter.chapter} ({fPct}%)
                 </span>
               </button>
             );
@@ -153,102 +139,84 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
         </div>
       </div>
 
-      {/* Barra de Progresso do Formato Ativo */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
-              Progresso em {WorkTypeLabels[activeFormat.workType]}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span className="badge badge-novel" style={{ fontSize: '0.75rem' }}>
+              {WorkTypeLabels[activeFormat.workType]}
             </span>
-            {activeFormat.linkWhereToRead && (
-              <a
-                href={activeFormat.linkWhereToRead}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  fontSize: '0.72rem',
-                  color: '#60a5fa',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  textDecoration: 'none',
-                }}
-              >
-                {getActionLabel(activeFormat.workType)} online <ExternalLink size={11} />
-              </a>
-            )}
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              {getActionLabel(activeFormat.workType)}
+            </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>
-              {getUnitLabel(activeFormat.workType)} {currentChapter}{' '}
-              <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                / {totalChapter} ({pct}%)
-              </span>
-            </div>
-            {latestProgress?.chapterLink && (
-              <a
-                href={latestProgress.chapterLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: '0.8rem',
-                  color: '#38bdf8',
-                  background: 'rgba(56, 189, 248, 0.1)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                }}
-                title={`Acessar o link do último ${getUnitLabel(activeFormat.workType).toLowerCase()} registrado`}
-              >
-                Acessar {getUnitLabel(activeFormat.workType, { short: true })} {currentChapter} <ExternalLink size={12} />
-              </a>
-            )}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text)' }}>
+              {currentChapter}
+            </span>
+            <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>
+              / {totalChapter} {getUnitLabel(activeFormat.workType, { plural: true }).toLowerCase()}
+            </span>
+            <span style={{ fontSize: '0.9rem', color: '#8b5cf6', fontWeight: 600, marginLeft: 6 }}>
+              ({pct}%)
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {activeFormat.linkWhereToRead && (
+            <a
+              href={activeFormat.linkWhereToRead}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: '0.85rem' }}
+            >
+              <ExternalLink size={15} />
+              Onde {isWatchable(activeFormat.workType) ? 'Assistir' : 'Ler'}
+            </a>
+          )}
           <button
+            type="button"
+            className="btn-secondary"
             onClick={handleQuickAddChapter}
             disabled={loadingQuickAdd || currentChapter >= totalChapter}
-            className="btn-secondary"
-            style={{ padding: '8px 14px' }}
-            title={`Avança 1 ${getUnitLabel(activeFormat.workType).toLowerCase()} imediatamente neste formato`}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
           >
+            <Plus size={15} />
             +1 {getUnitLabel(activeFormat.workType)}
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            type="button"
             className="btn-primary"
-            style={{ padding: '8px 16px' }}
+            onClick={() => setIsModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
           >
-            <Plus size={16} /> Registrar Progresso
+            <BookMarked size={15} />
+            Registrar Detalhado
           </button>
         </div>
       </div>
 
-      {/* Barra Visual */}
-      <div style={{ width: '100%', height: 10, background: '#1e293b', borderRadius: 99, overflow: 'hidden', margin: '14px 0 16px' }}>
-        <div style={{ width: `${Math.min(parseFloat(pct), 100)}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #38bdf8)', borderRadius: 99 }} />
+      <div style={{ background: '#0f172a', borderRadius: 8, height: 8, overflow: 'hidden', marginBottom: 20 }}>
+        <div
+          style={{
+            background: 'linear-gradient(90deg, #8b5cf6, #38bdf8)',
+            height: '100%',
+            width: `${Math.min(100, Math.max(0, parseFloat(pct)))}%`,
+            transition: 'width 0.3s ease',
+          }}
+        />
       </div>
 
-      {/* Diário de Acompanhamento & Reflexões Exclusivo deste Formato */}
-      <div style={{ marginTop: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <BookMarked size={16} color="#c084fc" />
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#e2e8f0' }}>
-            Diário de Acompanhamento ({WorkTypeLabels[activeFormat.workType]}) ({formatProgressList.length})
-          </h3>
-        </div>
+      <div>
+        <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Histórico e Diário de {isWatchable(activeFormat.workType) ? 'Episódios' : 'Leitura'}
+        </h4>
 
         {formatProgressList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px 10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            Nenhum progresso ou anotação registrado para {WorkTypeLabels[activeFormat.workType]} ainda. Clique em "Registrar Progresso" para começar.
-          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', margin: 0 }}>
+            Nenhum registro de {isWatchable(activeFormat.workType) ? 'episódio' : 'capítulo'} para este formato ainda.
+          </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {formatProgressList.map((p) => (
@@ -258,47 +226,65 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                   background: '#0f172a',
                   border: '1px solid #1e293b',
                   borderRadius: 8,
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 8,
+                  gap: 6,
                 }}
               >
-                {/* Linha de Cabeçalho do Card */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
                       {getUnitLabel(p.workType)} {p.stoppedAtChapter.chapter}
                     </span>
                     {p.stoppedAtChapter.volume && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        ({isWatchable(p.workType) ? 'Temp.' : 'Vol.'} {p.stoppedAtChapter.volume})
+                      <span className="badge badge-tag" style={{ fontSize: '0.7rem' }}>
+                        {isWatchable(p.workType) ? 'Temporada' : 'Vol.'} {p.stoppedAtChapter.volume}
                       </span>
-                    )}
-                    <span className="badge badge-tag" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                      {getStatusLabel(p.readingStatus, p.workType)}
-                    </span>
-                    {p.chapterLink && (
-                      <a
-                        href={p.chapterLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          fontSize: '0.74rem',
-                          color: '#38bdf8',
-                          textDecoration: 'none',
-                        }}
-                        title={`Abrir link deste ${getUnitLabel(p.workType).toLowerCase()}`}
-                      >
-                        <ExternalLink size={12} /> Acessar {getUnitLabel(p.workType)}
-                      </a>
                     )}
                   </div>
 
-                  {/* Ações e Data (Data oculta no celular via desktop-only) */}
+                  <span
+                    className="badge badge-status"
+                    style={{
+                      fontSize: '0.7rem',
+                      background:
+                        p.readingStatus === 1
+                          ? 'rgba(56, 189, 248, 0.2)'
+                          : p.readingStatus === 2
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'rgba(239, 68, 68, 0.2)',
+                      color:
+                        p.readingStatus === 1
+                          ? '#38bdf8'
+                          : p.readingStatus === 2
+                          ? '#4ade80'
+                          : '#f87171',
+                    }}
+                  >
+                    {getStatusLabel(p.readingStatus, p.workType)}
+                  </span>
+
+                  {p.chapterLink && (
+                    <a
+                      href={p.chapterLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: '#818cf8',
+                        fontSize: '0.75rem',
+                        textDecoration: 'none',
+                      }}
+                      title="Abrir link do capítulo lido"
+                    >
+                      <ExternalLink size={12} />
+                      Link
+                    </a>
+                  )}
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
                     <span className="desktop-only" style={{ fontSize: '0.72rem', color: '#64748b' }}>
                       {new Date(p.stoppedAt).toLocaleDateString('pt-BR', {
@@ -312,10 +298,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <button
                         type="button"
-                        onClick={() => {
-                          setEditingProgressId(p.id);
-                          setEditDescriptionText(p.readingDescription || '');
-                        }}
+                        onClick={() => setProgressToEdit(p)}
                         style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                         title="Editar anotação"
                       >
@@ -333,58 +316,20 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                   </div>
                 </div>
 
-                {/* Descrição / Anotação preenchendo toda a largura útil */}
-                {editingProgressId === p.id ? (
-                  <div style={{ marginTop: 4 }}>
-                    <textarea
-                      className="input-text"
-                      rows={3}
-                      value={editDescriptionText}
-                      onChange={(e) => setEditDescriptionText(e.target.value)}
-                      placeholder="Escreva sua anotação ou reflexão sobre este capítulo..."
-                      style={{ resize: 'vertical', width: '100%', fontSize: '0.85rem' }}
-                      autoFocus
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem' }}
-                        onClick={() => setEditingProgressId(null)}
-                        disabled={loadingSaveEdit}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                        onClick={() => handleSaveDescription(p.id)}
-                        disabled={loadingSaveEdit}
-                      >
-                        {loadingSaveEdit ? 'Salvando...' : 'Salvar Anotação'}
-                      </button>
+                <div style={{ marginTop: 2 }}>
+                  {p.readingDescription ? (
+                    <div style={{ color: '#cbd5e1', fontSize: '0.84rem', lineHeight: '1.5', width: '100%' }}>
+                      <MarkdownViewer content={p.readingDescription} />
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    {p.readingDescription ? (
-                      <p style={{ color: '#cbd5e1', fontSize: '0.84rem', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap', width: '100%' }}>
-                        {p.readingDescription}
-                      </p>
-                    ) : (
-                      <span
-                        onClick={() => {
-                          setEditingProgressId(p.id);
-                          setEditDescriptionText('');
-                        }}
-                        style={{ color: '#64748b', fontSize: '0.78rem', fontStyle: 'italic', cursor: 'pointer' }}
-                      >
-                        + Adicionar anotação...
-                      </span>
-                    )}
-                  </>
-                )}
+                  ) : (
+                    <span
+                      onClick={() => setProgressToEdit(p)}
+                      style={{ color: '#64748b', fontSize: '0.78rem', fontStyle: 'italic', cursor: 'pointer' }}
+                    >
+                      + Adicionar anotação...
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -399,6 +344,16 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           lastChapter={currentChapter}
           onClose={() => setIsModalOpen(false)}
           onCreated={onProgressUpdated}
+        />
+      )}
+
+      {progressToEdit && (
+        <EditProgressModal
+          isOpen={!!progressToEdit}
+          workId={work.id}
+          progress={progressToEdit}
+          onClose={() => setProgressToEdit(null)}
+          onSaved={onProgressUpdated}
         />
       )}
 

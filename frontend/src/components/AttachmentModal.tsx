@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Attachment } from '../types';
 import { attachmentsApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { usePopoutModal } from '../hooks/usePopoutModal';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
 import {
@@ -18,6 +19,8 @@ import {
   Sparkles,
   Eye,
   Edit3,
+  ExternalLink,
+  ArrowDownLeft,
 } from 'lucide-react';
 
 interface Props {
@@ -108,6 +111,15 @@ export const AttachmentModal: React.FC<Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (attachmentToEdit ? `att-edit-${attachmentToEdit.id}` : 'att-create');
+  const modalTitle = attachmentToEdit ? `Anexo: ${attachmentToEdit.title}` : 'Novo Anexo';
+
+  const {
+    isSupported: isPopoutSupported,
+    isPoppedOut,
+    popoutContainer,
+    openPopout,
+    closePopout,
+  } = usePopoutModal(modalTitle);
 
   useEffect(() => {
     if (attachmentToEdit) {
@@ -142,6 +154,9 @@ export const AttachmentModal: React.FC<Props> = ({
   }, [title, isMinimized, effectiveSessionId, attachmentToEdit]);
 
   const handleMinimize = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     setIsMinimized(true);
     minimizeModal({
       id: effectiveSessionId,
@@ -153,8 +168,23 @@ export const AttachmentModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     closeModal(effectiveSessionId);
     onClose();
+  };
+
+  const handleTogglePopout = async () => {
+    if (isPoppedOut) {
+      closePopout();
+    } else {
+      await openPopout({
+        title: title.trim() || (attachmentToEdit ? attachmentToEdit.title : 'Novo Anexo'),
+        width: 760,
+        height: 750,
+      });
+    }
   };
 
   if (!isOpen || isMinimized) return null;
@@ -223,24 +253,58 @@ export const AttachmentModal: React.FC<Props> = ({
           content: content.trim() || null,
         });
       }
+      if (isPoppedOut) {
+        closePopout();
+      }
       closeModal(effectiveSessionId);
       onSaved();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao salvar anexo.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar anexo.');
     } finally {
       setLoading(false);
     }
   };
 
-  return createPortal(
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '760px', width: '95%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-            {attachmentToEdit ? 'Editar Anexo' : 'Novo Anexo da Obra'}
-          </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+  const modalContent = (
+    <div
+      className={isPoppedOut ? '' : 'modal-content'}
+      style={
+        isPoppedOut
+          ? {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100vh',
+              width: '100vw',
+              background: '#0f172a',
+              color: '#f8fafc',
+              overflowY: 'auto',
+              padding: 20,
+              boxSizing: 'border-box',
+            }
+          : { maxWidth: '760px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }
+      }
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
+          {attachmentToEdit ? 'Editar Anexo' : 'Novo Anexo da Obra'}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isPopoutSupported && (
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleTogglePopout}
+              title={isPoppedOut ? 'Reanexar à janela principal' : 'Destacar em Pop-up (Picture-in-Picture)'}
+              style={{
+                color: isPoppedOut ? '#38bdf8' : 'var(--text-muted)',
+                background: isPoppedOut ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              }}
+            >
+              {isPoppedOut ? <ArrowDownLeft size={18} /> : <ExternalLink size={18} />}
+            </button>
+          )}
+          {!isPoppedOut && (
             <button
               type="button"
               className="btn-icon"
@@ -250,17 +314,18 @@ export const AttachmentModal: React.FC<Props> = ({
             >
               <Minus size={18} />
             </button>
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={handleClose}
-              title="Fechar"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
+          )}
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleClose}
+            title="Fechar"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <X size={20} />
+          </button>
         </div>
+      </div>
 
         {error && (
           <div style={{ padding: '10px', background: '#7f1d1d', borderRadius: '6px', color: '#fca5a5', marginBottom: '14px', fontSize: '0.9rem' }}>
@@ -552,6 +617,16 @@ export const AttachmentModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
+    );
+
+  if (isPoppedOut && popoutContainer) {
+    return createPortal(modalContent, popoutContainer);
+  }
+
+  return createPortal(
+    <div className="modal-overlay">
+      <div className="modal-backdrop" onClick={handleClose} />
+      {modalContent}
     </div>,
     document.body
   );

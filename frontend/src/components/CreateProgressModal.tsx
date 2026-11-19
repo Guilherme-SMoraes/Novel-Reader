@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { CreateProgressRequest, ReadingStatus, WorkFormat } from '../types';
 import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
-import { X, Minus } from 'lucide-react';
+import { usePopoutModal } from '../hooks/usePopoutModal';
+import { MarkdownToolbar } from './MarkdownToolbar';
+import { MarkdownViewer } from './MarkdownViewer';
+import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
 import { getUnitLabel, getStatusLabel, isWatchable } from '../utils/formatLabels';
 
 interface Props {
@@ -31,27 +34,38 @@ export const CreateProgressModal: React.FC<Props> = ({
   const [readingStatus, setReadingStatus] = useState<ReadingStatus>(1); // Reading default
   const [description, setDescription] = useState('');
   const [chapterLink, setChapterLink] = useState('');
+  const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || `progress-${workId}-${currentFormat.workType}`;
+  const modalTitle = `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`;
+
+  const {
+    isSupported: isPopoutSupported,
+    isPoppedOut,
+    popoutContainer,
+    openPopout,
+    closePopout,
+  } = usePopoutModal(modalTitle);
 
   useEffect(() => {
     if (isMinimized) {
-      updateModalTitle(
-        effectiveSessionId,
-        `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`
-      );
+      updateModalTitle(effectiveSessionId, modalTitle);
     }
-  }, [chapter, isMinimized, effectiveSessionId, currentFormat.workType]);
+  }, [modalTitle, isMinimized, effectiveSessionId, updateModalTitle]);
 
   const handleMinimize = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     setIsMinimized(true);
     minimizeModal({
       id: effectiveSessionId,
-      title: `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`,
+      title: modalTitle,
       type: 'progress',
       onRestore: () => setIsMinimized(false),
       onClose: handleClose,
@@ -59,8 +73,23 @@ export const CreateProgressModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     closeModal(effectiveSessionId);
     onClose();
+  };
+
+  const handleTogglePopout = async () => {
+    if (isPoppedOut) {
+      closePopout();
+    } else {
+      await openPopout({
+        title: modalTitle,
+        width: 600,
+        height: 700,
+      });
+    }
   };
 
   if (!isOpen || isMinimized) return null;
@@ -88,11 +117,14 @@ export const CreateProgressModal: React.FC<Props> = ({
           chapter: chapterNum,
         },
         readingStatus,
-        readingDescription: description || null,
+        readingDescription: description.trim() || null,
         chapterLink: chapterLink.trim() || null,
       };
 
       await progressApi.create(req);
+      if (isPoppedOut) {
+        closePopout();
+      }
       closeModal(effectiveSessionId);
       onCreated();
       onClose();
@@ -103,45 +135,124 @@ export const CreateProgressModal: React.FC<Props> = ({
     }
   };
 
-  return createPortal(
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Registrar Progresso</h2>
-            <span className="badge badge-novel" style={{ fontSize: '0.72rem' }}>
-              {WorkTypeLabels[currentFormat.workType]}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+  const modalContent = (
+    <div
+      className={isPoppedOut ? '' : 'modal-card'}
+      style={
+        isPoppedOut
+          ? {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100vh',
+              width: '100vw',
+              background: '#0f172a',
+              color: '#f8fafc',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+            }
+          : {
+              maxWidth: 620,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '90vh',
+            }
+      }
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: isPoppedOut ? '12px 16px' : '14px 20px',
+          borderBottom: '1px solid #1e293b',
+          background: '#162032',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
+            Registrar Progresso
+          </h2>
+          <span className="badge badge-novel" style={{ fontSize: '0.72rem' }}>
+            {WorkTypeLabels[currentFormat.workType]}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isPopoutSupported && (
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleTogglePopout}
+              title={isPoppedOut ? 'Reanexar à janela principal' : 'Destacar em Pop-up (Picture-in-Picture)'}
+              style={{
+                color: isPoppedOut ? '#38bdf8' : '#94a3b8',
+                background: isPoppedOut ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              }}
+            >
+              {isPoppedOut ? <ArrowDownLeft size={16} /> : <ExternalLink size={16} />}
+            </button>
+          )}
+
+          {!isPoppedOut && (
             <button
               type="button"
               className="btn-icon"
               onClick={handleMinimize}
               title="Minimizar formulário"
-              style={{ color: 'var(--text-muted)' }}
+              style={{ color: '#94a3b8' }}
             >
-              <Minus size={18} />
+              <Minus size={16} />
             </button>
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={handleClose}
-              title="Fechar"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
+          )}
+
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleClose}
+            title="Fechar"
+            style={{ color: '#94a3b8' }}
+          >
+            <X size={16} />
+          </button>
         </div>
+      </div>
 
-        {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '8px 12px', borderRadius: 6, marginBottom: 14, fontSize: '0.85rem' }}>
-            {error}
-          </div>
-        )}
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            padding: isPoppedOut ? '14px 16px' : '18px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            overflowY: 'auto',
+            flex: 1,
+          }}
+        >
+          {error && (
+            <div
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid #ef4444',
+                color: '#fca5a5',
+                padding: '8px 12px',
+                borderRadius: 6,
+                fontSize: '0.85rem',
+              }}
+            >
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
@@ -152,6 +263,7 @@ export const CreateProgressModal: React.FC<Props> = ({
                 min="1"
                 max={currentFormat.totalChapter.chapter}
                 required
+                className="input-text"
                 value={chapter}
                 onChange={(e) => setChapter(e.target.value)}
                 placeholder={`Máx: ${currentFormat.totalChapter.chapter}`}
@@ -166,6 +278,7 @@ export const CreateProgressModal: React.FC<Props> = ({
               <input
                 type="number"
                 min="1"
+                className="input-text"
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
                 style={{ width: '100%' }}
@@ -179,6 +292,7 @@ export const CreateProgressModal: React.FC<Props> = ({
               Status de {isWatchable(currentFormat.workType) ? 'Acompanhamento' : 'Leitura'}
             </label>
             <select
+              className="input-text"
               value={readingStatus}
               onChange={(e) => setReadingStatus(Number(e.target.value) as ReadingStatus)}
               style={{ width: '100%' }}
@@ -205,29 +319,87 @@ export const CreateProgressModal: React.FC<Props> = ({
             />
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Diário de Acompanhamento / Reflexão (opcional)
-            </label>
-            <textarea
-              rows={3}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <MarkdownToolbar
+              textareaRef={textareaRef}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={`Ex: Neste ${getUnitLabel(currentFormat.workType).toLowerCase()} o protagonista usou a habilidade X...`}
-              style={{ width: '100%', resize: 'vertical' }}
+              onChange={setDescription}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              label={`Diário de Acompanhamento / Reflexão (opcional)`}
+              showTable={true}
             />
-          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
-            <button type="button" onClick={handleClose} className="btn-secondary" disabled={loading}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Progresso'}
-            </button>
+            {activeTab === 'write' ? (
+              <textarea
+                ref={textareaRef}
+                className="input-text"
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={`Ex: Neste ${getUnitLabel(currentFormat.workType).toLowerCase()} o protagonista usou a habilidade X...`}
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  borderRadius: '0 0 6px 6px',
+                  borderTop: 'none',
+                  minHeight: 90,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  minHeight: 90,
+                  padding: 10,
+                  background: '#0b1120',
+                  borderRadius: '0 0 6px 6px',
+                  border: '1px solid #334155',
+                  borderTop: 'none',
+                  overflowY: 'auto',
+                }}
+              >
+                {description.trim() ? (
+                  <MarkdownViewer content={description} />
+                ) : (
+                  <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                    Nada para pré-visualizar ainda.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 10,
+            padding: isPoppedOut ? '12px 16px' : '14px 20px',
+            borderTop: '1px solid #1e293b',
+            background: '#162032',
+            flexShrink: 0,
+          }}
+        >
+          <button type="button" onClick={handleClose} className="btn-secondary" disabled={loading}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar Progresso'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
+  if (isPoppedOut && popoutContainer) {
+    return createPortal(modalContent, popoutContainer);
+  }
+
+  return createPortal(
+    <div className="modal-overlay">
+      <div className="modal-backdrop" onClick={handleClose} />
+      {modalContent}
     </div>,
     document.body
   );

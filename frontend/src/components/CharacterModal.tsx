@@ -11,6 +11,7 @@ import type {
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { usePopoutModal } from '../hooks/usePopoutModal';
 import {
   X,
   Minus,
@@ -25,6 +26,8 @@ import {
   Eye,
   Edit3,
   Shield,
+  ExternalLink,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 import { MarkdownViewer } from './MarkdownViewer';
@@ -70,6 +73,15 @@ export const CharacterModal: React.FC<Props> = ({
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (characterToEdit ? `char-edit-${characterToEdit.id}` : 'char-create');
+  const modalTitle = characterToEdit ? `Personagem: ${characterToEdit.name}` : 'Novo Personagem';
+
+  const {
+    isSupported: isPopoutSupported,
+    isPoppedOut,
+    popoutContainer,
+    openPopout,
+    closePopout,
+  } = usePopoutModal(modalTitle);
 
   // Available formats: either from the work or fallback to WebNovel
   const availableFormats = formats && formats.length > 0 ? formats : [{ workType: 2, totalChapter: { volume: null, chapter: 100 } } as WorkFormat];
@@ -121,6 +133,9 @@ export const CharacterModal: React.FC<Props> = ({
   }, [name, isMinimized, effectiveSessionId, characterToEdit]);
 
   const handleMinimize = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     setIsMinimized(true);
     minimizeModal({
       id: effectiveSessionId,
@@ -132,11 +147,26 @@ export const CharacterModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isPoppedOut) {
+      closePopout();
+    }
     closeModal(effectiveSessionId);
     if (hasModifiedTags) {
       onSaved();
     } else {
       onClose();
+    }
+  };
+
+  const handleTogglePopout = async () => {
+    if (isPoppedOut) {
+      closePopout();
+    } else {
+      await openPopout({
+        title: name.trim() || (characterToEdit ? characterToEdit.name : 'Novo Personagem'),
+        width: 650,
+        height: 750,
+      });
     }
   };
 
@@ -314,6 +344,9 @@ export const CharacterModal: React.FC<Props> = ({
         await charactersApi.create(req);
       }
 
+      if (isPoppedOut) {
+        closePopout();
+      }
       closeModal(effectiveSessionId);
       onSaved();
       onClose();
@@ -324,14 +357,45 @@ export const CharacterModal: React.FC<Props> = ({
     }
   };
 
-  return createPortal(
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
-            {characterToEdit ? 'Editar Personagem' : 'Cadastrar Personagem'}
-          </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+  const modalContent = (
+    <div
+      className={isPoppedOut ? '' : 'modal-content'}
+      style={
+        isPoppedOut
+          ? {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100vh',
+              width: '100vw',
+              background: '#0f172a',
+              color: '#f8fafc',
+              overflowY: 'auto',
+              padding: 20,
+              boxSizing: 'border-box',
+            }
+          : { maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }
+      }
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
+          {characterToEdit ? 'Editar Personagem' : 'Cadastrar Personagem'}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isPopoutSupported && (
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleTogglePopout}
+              title={isPoppedOut ? 'Reanexar à janela principal' : 'Destacar em Pop-up (Picture-in-Picture)'}
+              style={{
+                color: isPoppedOut ? '#38bdf8' : 'var(--text-muted)',
+                background: isPoppedOut ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              }}
+            >
+              {isPoppedOut ? <ArrowDownLeft size={18} /> : <ExternalLink size={18} />}
+            </button>
+          )}
+          {!isPoppedOut && (
             <button
               type="button"
               className="btn-icon"
@@ -341,17 +405,18 @@ export const CharacterModal: React.FC<Props> = ({
             >
               <Minus size={18} />
             </button>
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={handleClose}
-              title="Fechar"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
+          )}
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleClose}
+            title="Fechar"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <X size={20} />
+          </button>
         </div>
+      </div>
 
         {error && (
           <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '8px 12px', borderRadius: 6, marginBottom: 14, fontSize: '0.85rem' }}>
@@ -833,6 +898,16 @@ export const CharacterModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
+    );
+
+  if (isPoppedOut && popoutContainer) {
+    return createPortal(modalContent, popoutContainer);
+  }
+
+  return createPortal(
+    <div className="modal-overlay">
+      <div className="modal-backdrop" onClick={handleClose} />
+      {modalContent}
     </div>,
     document.body
   );
