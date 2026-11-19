@@ -346,11 +346,14 @@ export const EditProgressModal: React.FC<Props> = ({
   }
 
   return createPortal(
-    <div className="modal-overlay">
-      <div
-        className="modal-backdrop"
-        onClick={handleClose}
-      />
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
       {modalContent}
     </div>,
     document.body
