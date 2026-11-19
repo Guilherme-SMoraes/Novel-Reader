@@ -41,7 +41,7 @@ interface Props {
   formats: WorkFormat[];
   characterToEdit?: Character | null;
   existingAffiliations?: string[];
-  onClose: () => void;
+  onClose: (tagsModified?: boolean) => void;
   onSaved: (character: Character) => void;
 }
 
@@ -147,11 +147,7 @@ export const CharacterModal: React.FC<Props> = ({
       closePopout();
     }
     closeModal(effectiveSessionId);
-    if (hasModifiedTags && characterToEdit) {
-      onSaved(characterToEdit);
-    } else {
-      onClose();
-    }
+    onClose(hasModifiedTags);
   };
 
   const handleTogglePopout = async () => {

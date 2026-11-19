@@ -726,7 +726,12 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           formats={work.formats || []}
           characterToEdit={session.character}
           existingAffiliations={allAffiliations}
-          onClose={() => handleCloseSession(session.id)}
+          onClose={(tagsModified) => {
+            handleCloseSession(session.id);
+            if (tagsModified) {
+              onCharactersUpdated();
+            }
+          }}
           onSaved={(savedChar) => {
             onCharactersUpdated();
             handleCloseSession(session.id);
