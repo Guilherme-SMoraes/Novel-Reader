@@ -38,6 +38,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+        - VITE_IMGBB_API_KEY=${IMGBB_API_KEY:-}
     container_name: novelreader-ui
     restart: unless-stopped
     ports:

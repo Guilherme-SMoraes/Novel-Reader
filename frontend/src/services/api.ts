@@ -245,6 +245,36 @@ export const attachmentsApi = {
 
 export const imagesApi = {
   upload: async (file: File): Promise<{ url: string }> => {
+    const imgbbKey = import.meta.env.VITE_IMGBB_API_KEY;
+
+    if (imgbbKey) {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(imgbbKey)}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      let data: { success?: boolean; data?: { url?: string }; error?: { message?: string } } | null = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Ignore json parse error
+      }
+
+      if (!res.ok || !data?.success) {
+        const errorMsg = data?.error?.message || `Erro no ImgBB (${res.statusText})`;
+        throw new Error(`ImgBB error: ${errorMsg}`);
+      }
+
+      if (!data?.data?.url) {
+        throw new Error('ImgBB não retornou a URL da imagem.');
+      }
+
+      return { url: data.data.url };
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
