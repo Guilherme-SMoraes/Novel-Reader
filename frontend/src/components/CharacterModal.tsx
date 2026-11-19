@@ -110,12 +110,7 @@ export const CharacterModal: React.FC<Props> = ({
       setDescription('');
       setAlternativeNames([]);
       setAffiliations([]);
-
-      const map: Record<number, { chapter: string; volume: string }> = {};
-      if (availableFormats.length > 0) {
-        map[availableFormats[0].workType] = { chapter: '1', volume: '' };
-      }
-      setAppearances(map);
+      setAppearances({});
     }
     setAltNameInput('');
     setAffiliationInput('');
