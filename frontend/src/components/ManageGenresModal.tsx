@@ -4,6 +4,7 @@ import { genresApi } from '../services/api';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { X, Plus, Trash2, Tag } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface Props {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const ManageGenresModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [genreToDelete, setGenreToDelete] = useState<Genre | null>(null);
   const { showToast } = useToast();
+
+  useEscapeKey(onClose, isOpen && !loading);
 
   if (!isOpen) return null;
 

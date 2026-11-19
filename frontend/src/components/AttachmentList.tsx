@@ -7,6 +7,7 @@ import { MarkdownViewer } from './MarkdownViewer';
 import { useToast } from '../context/ToastContext';
 import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'lucide-react';
 import { ImageLightbox } from './ImageLightbox';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface Props {
   work: Work;
@@ -22,6 +23,8 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [selectedAttachmentForView, setSelectedAttachmentForView] = useState<Attachment | null>(null);
   const { showToast } = useToast();
+
+  useEscapeKey(() => setSelectedAttachmentForView(null), !!selectedAttachmentForView);
 
   const categories = ['TODAS', ...Array.from(new Set(attachments.map((a) => a.category)))];
 

@@ -12,6 +12,7 @@ import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   X,
   Minus,
@@ -164,6 +165,8 @@ export const CharacterModal: React.FC<Props> = ({
       });
     }
   };
+
+  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut);
 
   if (!isOpen || isMinimized) return null;
 

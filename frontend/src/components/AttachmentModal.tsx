@@ -4,6 +4,7 @@ import type { Attachment } from '../types';
 import { attachmentsApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
 import {
@@ -186,6 +187,8 @@ export const AttachmentModal: React.FC<Props> = ({
       });
     }
   };
+
+  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut);
 
   if (!isOpen || isMinimized) return null;
 

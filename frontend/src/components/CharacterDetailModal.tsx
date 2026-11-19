@@ -5,6 +5,7 @@ import { MarkdownViewer } from './MarkdownViewer';
 import { X, Edit2, User, BookOpen, Shield, Maximize2 } from 'lucide-react';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface Props {
   character: Character | null;
@@ -21,6 +22,8 @@ export const CharacterDetailModal: React.FC<Props> = ({ character, isOpen, onClo
       setShowFullImage(false);
     }
   }, [isOpen]);
+
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !character) return null;
 

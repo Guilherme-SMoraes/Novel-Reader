@@ -3,6 +3,7 @@ import type { Work } from '../types';
 import { worksApi } from '../services/api';
 import { AlertOctagon, X } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface Props {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const DeleteWorkModal: React.FC<Props> = ({ isOpen, work, onClose, onDele
     setError(null);
     setLoading(false);
   }, [isOpen]);
+
+  useEscapeKey(onClose, isOpen && !loading);
 
   if (!isOpen) return null;
 

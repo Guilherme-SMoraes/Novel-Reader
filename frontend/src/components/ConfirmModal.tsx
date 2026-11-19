@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface Props {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const ConfirmModal: React.FC<Props> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeKey(onCancel, isOpen && !loading);
 
   if (!isOpen) return null;
 

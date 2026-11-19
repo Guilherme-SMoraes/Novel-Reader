@@ -5,6 +5,7 @@ import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
@@ -99,6 +100,8 @@ export const EditProgressModal: React.FC<Props> = ({
       });
     }
   };
+
+  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut);
 
   if (!isOpen || isMinimized) return null;
 

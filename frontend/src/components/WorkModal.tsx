@@ -4,6 +4,7 @@ import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkF
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { GenreMultiSelect } from './GenreMultiSelect';
 import { X, Minus, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
@@ -152,6 +153,8 @@ export const WorkModal: React.FC<Props> = ({
     closeModal(effectiveSessionId);
     onClose();
   };
+
+  useEscapeKey(handleClose, isOpen && !isMinimized && !loading);
 
   if (!isOpen || isMinimized) return null;
 
