@@ -7,10 +7,9 @@ import { EditProgressModal } from './EditProgressModal';
 import { ConfirmModal } from './ConfirmModal';
 import { MarkdownViewer } from './MarkdownViewer';
 import { useToast } from '../context/ToastContext';
-import { BookMarked, Plus, Trash2, ExternalLink, Edit2 } from 'lucide-react';
+import { BookMarked, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import {
   getUnitLabel,
-  getActionLabel,
   getStatusLabel,
   isWatchable,
 } from '../utils/formatLabels';
@@ -145,9 +144,6 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
             <span className="badge badge-novel" style={{ fontSize: '0.75rem' }}>
               {WorkTypeLabels[activeFormat.workType]}
             </span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              {getActionLabel(activeFormat.workType)}
-            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text)' }}>
@@ -182,7 +178,6 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
             disabled={loadingQuickAdd || currentChapter >= totalChapter}
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
           >
-            <Plus size={15} />
             +1 {getUnitLabel(activeFormat.workType)}
           </button>
           <button
