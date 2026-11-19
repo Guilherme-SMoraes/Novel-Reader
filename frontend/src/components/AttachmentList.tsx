@@ -312,9 +312,10 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
           attachmentToEdit={session.attachment}
           existingCategories={categories.filter((c) => c !== 'TODAS')}
           onClose={() => handleCloseAttachmentSession(session.id)}
-          onSaved={() => {
+          onSaved={(savedAtt) => {
             onAttachmentsUpdated();
             handleCloseAttachmentSession(session.id);
+            setSelectedAttachmentForView(savedAtt);
           }}
         />
       ))}

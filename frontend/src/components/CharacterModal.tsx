@@ -41,7 +41,7 @@ interface Props {
   characterToEdit?: Character | null;
   existingAffiliations?: string[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (character: Character) => void;
 }
 
 export const CharacterModal: React.FC<Props> = ({
@@ -146,8 +146,8 @@ export const CharacterModal: React.FC<Props> = ({
       closePopout();
     }
     closeModal(effectiveSessionId);
-    if (hasModifiedTags) {
-      onSaved();
+    if (hasModifiedTags && characterToEdit) {
+      onSaved(characterToEdit);
     } else {
       onClose();
     }
@@ -314,6 +314,8 @@ export const CharacterModal: React.FC<Props> = ({
         throw new Error('Preencha a primeira aparição em pelo menos um formato.');
       }
 
+      let savedCharacter: Character;
+
       if (characterToEdit) {
         const req: UpdateCharacterRequest = {
           name: name.trim(),
@@ -325,6 +327,17 @@ export const CharacterModal: React.FC<Props> = ({
           affiliations,
         };
         await charactersApi.update(workId, characterToEdit.id, req);
+        savedCharacter = {
+          id: characterToEdit.id,
+          workId,
+          name: name.trim(),
+          characterType,
+          imageUrl: imageUrl.trim() || null,
+          description: description.trim() || null,
+          firstAppearances: validAppearances,
+          alternativeNames,
+          affiliations,
+        };
       } else {
         const req: CreateCharacterRequest = {
           workId,
@@ -336,15 +349,25 @@ export const CharacterModal: React.FC<Props> = ({
           alternativeNames,
           affiliations,
         };
-        await charactersApi.create(req);
+        const created = await charactersApi.create(req);
+        savedCharacter = created || {
+          id: 'created',
+          workId,
+          name: name.trim(),
+          characterType,
+          imageUrl: imageUrl.trim() || null,
+          description: description.trim() || null,
+          firstAppearances: validAppearances,
+          alternativeNames,
+          affiliations,
+        };
       }
 
       if (isPoppedOut) {
         closePopout();
       }
       closeModal(effectiveSessionId);
-      onSaved();
-      onClose();
+      onSaved(savedCharacter);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar personagem.');
     } finally {

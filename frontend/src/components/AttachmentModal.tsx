@@ -30,7 +30,7 @@ interface Props {
   attachmentToEdit?: Attachment | null;
   existingCategories?: string[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (attachment: Attachment) => void;
 }
 
 const PRESET_CATEGORIES = [
@@ -238,15 +238,16 @@ export const AttachmentModal: React.FC<Props> = ({
 
     setLoading(true);
     try {
+      let savedAttachment: Attachment;
       if (attachmentToEdit) {
-        await attachmentsApi.update(attachmentToEdit.id, {
+        savedAttachment = await attachmentsApi.update(attachmentToEdit.id, {
           title: title.trim(),
           category: finalCategory,
           imageUrl: imageUrl.trim() || null,
           content: content.trim() || null,
         });
       } else {
-        await attachmentsApi.create(workId, {
+        savedAttachment = await attachmentsApi.create(workId, {
           title: title.trim(),
           category: finalCategory,
           imageUrl: imageUrl.trim() || null,
@@ -257,8 +258,7 @@ export const AttachmentModal: React.FC<Props> = ({
         closePopout();
       }
       closeModal(effectiveSessionId);
-      onSaved();
-      onClose();
+      onSaved(savedAttachment);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar anexo.');
     } finally {
