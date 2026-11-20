@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import type { Attachment } from '../types';
 import { attachmentsApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
 import {
@@ -90,6 +92,14 @@ const TEMPLATES = [
   },
 ];
 
+interface AttachmentDraftData {
+  title: string;
+  category: string;
+  customCategory: string;
+  imageUrl: string;
+  content: string;
+}
+
 export const AttachmentModal: React.FC<Props> = ({
   sessionId,
   isOpen,
@@ -108,6 +118,7 @@ export const AttachmentModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [isMinimized, setIsMinimized] = useState(false);
+  const { showToast } = useToast();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
@@ -123,6 +134,20 @@ export const AttachmentModal: React.FC<Props> = ({
   } = usePopoutModal(modalTitle);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const draft = getFormDraft<AttachmentDraftData>(effectiveSessionId);
+    if (draft) {
+      setTitle(draft.title || '');
+      setCategory(draft.category || 'Mapa');
+      setCustomCategory(draft.customCategory || '');
+      setImageUrl(draft.imageUrl || '');
+      setContent(draft.content || '');
+      setError(null);
+      showToast('Rascunho recuperado com sucesso.', 'info');
+      return;
+    }
+
     if (attachmentToEdit) {
       setTitle(attachmentToEdit.title);
       if (PRESET_CATEGORIES.includes(attachmentToEdit.category)) {
@@ -143,7 +168,46 @@ export const AttachmentModal: React.FC<Props> = ({
     }
     setError(null);
     setActiveTab('write');
-  }, [attachmentToEdit, isOpen]);
+  }, [attachmentToEdit, isOpen, effectiveSessionId, showToast]);
+
+  useEffect(() => {
+    if (!isOpen || loading) return;
+    const hasContent =
+      title.trim() !== '' ||
+      content.trim() !== '' ||
+      imageUrl.trim() !== '' ||
+      customCategory.trim() !== '';
+
+    if (hasContent) {
+      saveFormDraft(
+        effectiveSessionId,
+        {
+          type: 'attachment',
+          mode: attachmentToEdit ? 'edit' : 'create',
+          workId,
+          entityId: attachmentToEdit?.id,
+        },
+        {
+          title,
+          category,
+          customCategory,
+          imageUrl,
+          content,
+        }
+      );
+    }
+  }, [
+    isOpen,
+    loading,
+    effectiveSessionId,
+    attachmentToEdit,
+    workId,
+    title,
+    category,
+    customCategory,
+    imageUrl,
+    content,
+  ]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -152,7 +216,7 @@ export const AttachmentModal: React.FC<Props> = ({
         title.trim() || (attachmentToEdit ? attachmentToEdit.title : 'Novo Anexo')
       );
     }
-  }, [title, isMinimized, effectiveSessionId, attachmentToEdit]);
+  }, [title, isMinimized, effectiveSessionId, attachmentToEdit, updateModalTitle]);
 
   const handleMinimize = () => {
     if (isPoppedOut) {
@@ -172,6 +236,7 @@ export const AttachmentModal: React.FC<Props> = ({
     if (isPoppedOut) {
       closePopout();
     }
+    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -260,6 +325,7 @@ export const AttachmentModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
+      clearFormDraft(effectiveSessionId);
       closeModal(effectiveSessionId);
       onSaved(savedAttachment);
     } catch (err: unknown) {

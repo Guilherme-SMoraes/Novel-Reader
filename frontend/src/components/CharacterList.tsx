@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Character, Work } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
@@ -11,6 +11,7 @@ import { CharacterGridSkeleton } from './Skeletons';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
 import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
+import { getActiveDraftMeta } from '../utils/formDrafts';
 
 interface Props {
   work: Work;
@@ -32,6 +33,26 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const activeDraft = getActiveDraftMeta();
+    if (activeDraft && activeDraft.type === 'character' && activeDraft.workId === work.id) {
+      if (activeDraft.mode === 'create') {
+        setCharacterSessions((prev) => {
+          if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
+          return [...prev, { id: activeDraft.sessionKey, character: null }];
+        });
+      } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
+        const char = characters.find((c) => c.id === activeDraft.entityId);
+        if (char) {
+          setCharacterSessions((prev) => {
+            if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
+            return [...prev, { id: activeDraft.sessionKey, character: char }];
+          });
+        }
+      }
+    }
+  }, [work.id, characters]);
 
   const allAffiliations = useMemo(() => {
     const set = new Set<string>();

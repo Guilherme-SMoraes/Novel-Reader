@@ -11,6 +11,7 @@ import { JournalItemsSkeleton } from './Skeletons';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import { getNavParams, updateNavParams } from '../utils/navigationState';
+import { getActiveDraftMeta } from '../utils/formDrafts';
 import {
   getUnitLabel,
   getStatusLabel,
@@ -81,6 +82,20 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
   useEffect(() => {
     loadFormatProgress(selectedWorkType, 1, false);
   }, [selectedWorkType, work.id, loadFormatProgress]);
+
+  useEffect(() => {
+    const activeDraft = getActiveDraftMeta();
+    if (activeDraft && activeDraft.type === 'progress' && activeDraft.workId === work.id) {
+      if (activeDraft.mode === 'create') {
+        setIsModalOpen(true);
+      } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
+        const item = formatRecords.find((p) => p.id === activeDraft.entityId);
+        if (item) {
+          setProgressToEdit(item);
+        }
+      }
+    }
+  }, [work.id, formatRecords]);
 
   const handleLoadMore = useCallback(() => {
     if (!loadingInitial && !loadingMore && hasMore) {

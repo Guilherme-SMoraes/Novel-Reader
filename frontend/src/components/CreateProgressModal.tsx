@@ -4,8 +4,10 @@ import type { CreateProgressRequest, ReadingStatus, WorkFormat } from '../types'
 import { ReadingStatusLabels, WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
@@ -19,6 +21,14 @@ interface Props {
   lastChapter?: number;
   onClose: () => void;
   onCreated: () => void;
+}
+
+interface CreateProgressDraftData {
+  chapter: string;
+  volume: string;
+  readingStatus: ReadingStatus;
+  description: string;
+  chapterLink: string;
 }
 
 export const CreateProgressModal: React.FC<Props> = ({
@@ -40,6 +50,7 @@ export const CreateProgressModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || `progress-${workId}-${currentFormat.workType}`;
@@ -52,6 +63,68 @@ export const CreateProgressModal: React.FC<Props> = ({
     openPopout,
     closePopout,
   } = usePopoutModal(modalTitle);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const draft = getFormDraft<CreateProgressDraftData>(effectiveSessionId);
+    if (draft) {
+      setChapter(draft.chapter || (lastChapter ? lastChapter + 1 : 1).toString());
+      setVolume(draft.volume || '');
+      setReadingStatus(draft.readingStatus ?? 1);
+      setDescription(draft.description || '');
+      setChapterLink(draft.chapterLink || '');
+      setError(null);
+      showToast('Rascunho recuperado com sucesso.', 'info');
+      return;
+    }
+
+    setChapter((lastChapter ? lastChapter + 1 : 1).toString());
+    setVolume('');
+    setReadingStatus(1);
+    setDescription('');
+    setChapterLink('');
+    setError(null);
+  }, [isOpen, effectiveSessionId, lastChapter, showToast]);
+
+  useEffect(() => {
+    if (!isOpen || loading) return;
+    const defaultChapter = (lastChapter ? lastChapter + 1 : 1).toString();
+    const hasContent =
+      description.trim() !== '' ||
+      chapterLink.trim() !== '' ||
+      volume.trim() !== '' ||
+      chapter !== defaultChapter;
+
+    if (hasContent) {
+      saveFormDraft(
+        effectiveSessionId,
+        {
+          type: 'progress',
+          mode: 'create',
+          workId,
+        },
+        {
+          chapter,
+          volume,
+          readingStatus,
+          description,
+          chapterLink,
+        }
+      );
+    }
+  }, [
+    isOpen,
+    loading,
+    effectiveSessionId,
+    workId,
+    lastChapter,
+    chapter,
+    volume,
+    readingStatus,
+    description,
+    chapterLink,
+  ]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -77,6 +150,7 @@ export const CreateProgressModal: React.FC<Props> = ({
     if (isPoppedOut) {
       closePopout();
     }
+    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -128,6 +202,7 @@ export const CreateProgressModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
+      clearFormDraft(effectiveSessionId);
       closeModal(effectiveSessionId);
       onCreated();
       onClose();

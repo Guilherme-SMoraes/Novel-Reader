@@ -4,8 +4,10 @@ import type { Progress } from '../types';
 import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
@@ -18,6 +20,10 @@ interface Props {
   progress: Progress;
   onClose: () => void;
   onSaved: () => void;
+}
+
+interface EditProgressDraftData {
+  description: string;
 }
 
 export const EditProgressModal: React.FC<Props> = ({
@@ -34,6 +40,7 @@ export const EditProgressModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const unitSingular = getUnitLabel(progress.workType);
@@ -56,10 +63,39 @@ export const EditProgressModal: React.FC<Props> = ({
   } = usePopoutModal(modalTitle);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const draft = getFormDraft<EditProgressDraftData>(effectiveSessionId);
+    if (draft) {
+      setDescription(draft.description || '');
+      setActiveTab('write');
+      setError(null);
+      showToast('Rascunho recuperado com sucesso.', 'info');
+      return;
+    }
+
     setDescription(progress.readingDescription || '');
     setActiveTab('write');
     setError(null);
-  }, [progress, isOpen]);
+  }, [progress, isOpen, effectiveSessionId, showToast]);
+
+  useEffect(() => {
+    if (!isOpen || loading) return;
+    if (description !== (progress.readingDescription || '')) {
+      saveFormDraft(
+        effectiveSessionId,
+        {
+          type: 'progress',
+          mode: 'edit',
+          workId,
+          entityId: progress.id,
+        },
+        {
+          description,
+        }
+      );
+    }
+  }, [isOpen, loading, effectiveSessionId, workId, progress, description]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -85,6 +121,7 @@ export const EditProgressModal: React.FC<Props> = ({
     if (isPoppedOut) {
       closePopout();
     }
+    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -116,6 +153,7 @@ export const EditProgressModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
+      clearFormDraft(effectiveSessionId);
       closeModal(effectiveSessionId);
       onSaved();
       onClose();

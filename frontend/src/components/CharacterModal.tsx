@@ -11,8 +11,10 @@ import type {
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
 import {
   X,
   Minus,
@@ -45,6 +47,16 @@ interface Props {
   onSaved: (character: Character) => void;
 }
 
+interface CharacterDraftData {
+  name: string;
+  characterType: CharacterType;
+  imageUrl: string;
+  description: string;
+  alternativeNames: string[];
+  affiliations: string[];
+  appearances: Record<number, { chapter: string; volume: string }>;
+}
+
 export const CharacterModal: React.FC<Props> = ({
   sessionId,
   isOpen,
@@ -71,6 +83,7 @@ export const CharacterModal: React.FC<Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (characterToEdit ? `char-edit-${characterToEdit.id}` : 'char-create');
@@ -88,6 +101,22 @@ export const CharacterModal: React.FC<Props> = ({
   const availableFormats = formats && formats.length > 0 ? formats : [{ workType: 2, totalChapter: { volume: null, chapter: 100 } } as WorkFormat];
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const draft = getFormDraft<CharacterDraftData>(effectiveSessionId);
+    if (draft) {
+      setName(draft.name || '');
+      setCharacterType(draft.characterType ?? 1);
+      setImageUrl(draft.imageUrl || '');
+      setDescription(draft.description || '');
+      setAlternativeNames(draft.alternativeNames || []);
+      setAffiliations(draft.affiliations || []);
+      setAppearances(draft.appearances || {});
+      setError(null);
+      showToast('Rascunho recuperado com sucesso.', 'info');
+      return;
+    }
+
     if (characterToEdit) {
       setName(characterToEdit.name);
       setCharacterType(characterToEdit.characterType);
@@ -117,7 +146,52 @@ export const CharacterModal: React.FC<Props> = ({
     setAffiliationInput('');
     setActiveTab('write');
     setError(null);
-  }, [characterToEdit, isOpen]);
+  }, [characterToEdit, isOpen, effectiveSessionId, showToast]);
+
+  useEffect(() => {
+    if (!isOpen || loading) return;
+    const hasContent =
+      name.trim() !== '' ||
+      description.trim() !== '' ||
+      imageUrl.trim() !== '' ||
+      alternativeNames.length > 0 ||
+      affiliations.length > 0 ||
+      Object.keys(appearances).length > 0;
+
+    if (hasContent) {
+      saveFormDraft(
+        effectiveSessionId,
+        {
+          type: 'character',
+          mode: characterToEdit ? 'edit' : 'create',
+          workId,
+          entityId: characterToEdit?.id,
+        },
+        {
+          name,
+          characterType,
+          imageUrl,
+          description,
+          alternativeNames,
+          affiliations,
+          appearances,
+        }
+      );
+    }
+  }, [
+    isOpen,
+    loading,
+    effectiveSessionId,
+    characterToEdit,
+    workId,
+    name,
+    characterType,
+    imageUrl,
+    description,
+    alternativeNames,
+    affiliations,
+    appearances,
+  ]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -126,7 +200,7 @@ export const CharacterModal: React.FC<Props> = ({
         name.trim() || (characterToEdit ? characterToEdit.name : 'Novo Personagem')
       );
     }
-  }, [name, isMinimized, effectiveSessionId, characterToEdit]);
+  }, [name, isMinimized, effectiveSessionId, characterToEdit, updateModalTitle]);
 
   const handleMinimize = () => {
     if (isPoppedOut) {
@@ -146,6 +220,7 @@ export const CharacterModal: React.FC<Props> = ({
     if (isPoppedOut) {
       closePopout();
     }
+    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose(hasModifiedTags);
   };
@@ -365,6 +440,7 @@ export const CharacterModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
+      clearFormDraft(effectiveSessionId);
       closeModal(effectiveSessionId);
       onSaved(savedCharacter);
     } catch (err: unknown) {

@@ -11,6 +11,7 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { useAuth } from './context/AuthContext';
 import { BookOpen } from 'lucide-react';
 import { getNavParams, updateNavParams } from './utils/navigationState';
+import { getActiveDraftMeta } from './utils/formDrafts';
 
 export function App() {
   useKeepAlive();
@@ -95,6 +96,39 @@ export function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchGenres();
+      const activeDraft = getActiveDraftMeta();
+      if (activeDraft) {
+        if (activeDraft.type === 'work') {
+          if (activeDraft.mode === 'create') {
+            setWorkToEdit(null);
+            setIsWorkModalOpen(true);
+          } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
+            worksApi
+              .getById(activeDraft.entityId)
+              .then((w) => {
+                setWorkToEdit(w);
+                setIsWorkModalOpen(true);
+              })
+              .catch((err) => {
+                console.error('Failed to load work for draft restoration', err);
+              });
+          }
+        } else if (activeDraft.workId) {
+          setSelectedWorkId(activeDraft.workId);
+          selectedWorkIdRef.current = activeDraft.workId;
+          const targetTab =
+            activeDraft.type === 'progress'
+              ? 'journal'
+              : activeDraft.type === 'character'
+              ? 'characters'
+              : 'attachments';
+          updateNavParams({ workId: activeDraft.workId, tab: targetTab });
+          if (isMobile) {
+            setMobileView('detail');
+          }
+        }
+      }
+
       if (!selectedWorkIdRef.current) {
         const nav = getNavParams();
         if (nav.workId) {

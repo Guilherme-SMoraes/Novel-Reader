@@ -4,7 +4,9 @@ import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkF
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { worksApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
+import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
 import { GenreMultiSelect } from './GenreMultiSelect';
 import { X, Minus, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
@@ -35,6 +37,18 @@ interface FormatFormState {
   linkWhereToRead: string;
 }
 
+interface WorkDraftData {
+  title: string;
+  alternativeTitles: string[];
+  description: string;
+  originalLanguage: Language;
+  aggregatorLink: string;
+  coverImageUrl: string;
+  selectedGenreIds: string[];
+  formats: FormatFormState[];
+  activeTabWorkType: WorkType;
+}
+
 const ALL_WORK_TYPES: WorkType[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 export const WorkModal: React.FC<Props> = ({
@@ -62,11 +76,34 @@ export const WorkModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (workToEdit ? `work-${workToEdit.id}` : 'work-create');
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const draft = getFormDraft<WorkDraftData>(effectiveSessionId);
+    if (draft) {
+      setTitle(draft.title || '');
+      setAlternativeTitles(draft.alternativeTitles || []);
+      setAltTitleInput('');
+      setDescription(draft.description || '');
+      setOriginalLanguage(draft.originalLanguage ?? 3);
+      setAggregatorLink(draft.aggregatorLink || '');
+      setCoverImageUrl(draft.coverImageUrl || '');
+      setSelectedGenreIds(draft.selectedGenreIds || []);
+
+      if (draft.formats && draft.formats.length > 0) {
+        setFormats(draft.formats);
+        setActiveTabWorkType(draft.activeTabWorkType || draft.formats[0].workType);
+      }
+      setError(null);
+      showToast('Rascunho recuperado com sucesso.', 'info');
+      return;
+    }
+
     if (workToEdit) {
       setTitle(workToEdit.title);
       setAlternativeTitles(workToEdit.alternativeTitles || []);
@@ -90,7 +127,6 @@ export const WorkModal: React.FC<Props> = ({
         setFormats(loadedFormats);
         setActiveTabWorkType(loadedFormats[0].workType);
       } else {
-        // Fallback para novo formato
         setFormats([
           {
             workType: 2,
@@ -127,7 +163,54 @@ export const WorkModal: React.FC<Props> = ({
       setActiveTabWorkType(2);
     }
     setError(null);
-  }, [workToEdit, isOpen]);
+  }, [workToEdit, isOpen, effectiveSessionId, showToast]);
+
+  useEffect(() => {
+    if (!isOpen || loading) return;
+    const hasContent =
+      title.trim() !== '' ||
+      description.trim() !== '' ||
+      aggregatorLink.trim() !== '' ||
+      coverImageUrl.trim() !== '' ||
+      alternativeTitles.length > 0 ||
+      selectedGenreIds.length > 0;
+
+    if (hasContent) {
+      saveFormDraft(
+        effectiveSessionId,
+        {
+          type: 'work',
+          mode: workToEdit ? 'edit' : 'create',
+          entityId: workToEdit?.id,
+        },
+        {
+          title,
+          alternativeTitles,
+          description,
+          originalLanguage,
+          aggregatorLink,
+          coverImageUrl,
+          selectedGenreIds,
+          formats,
+          activeTabWorkType,
+        }
+      );
+    }
+  }, [
+    isOpen,
+    loading,
+    effectiveSessionId,
+    workToEdit,
+    title,
+    alternativeTitles,
+    description,
+    originalLanguage,
+    aggregatorLink,
+    coverImageUrl,
+    selectedGenreIds,
+    formats,
+    activeTabWorkType,
+  ]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -136,7 +219,7 @@ export const WorkModal: React.FC<Props> = ({
         title.trim() || (workToEdit ? workToEdit.title : 'Nova Obra')
       );
     }
-  }, [title, isMinimized, effectiveSessionId, workToEdit]);
+  }, [title, isMinimized, effectiveSessionId, workToEdit, updateModalTitle]);
 
   const handleMinimize = () => {
     setIsMinimized(true);
@@ -150,6 +233,7 @@ export const WorkModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -335,6 +419,7 @@ export const WorkModal: React.FC<Props> = ({
         await worksApi.create(req);
       }
 
+      clearFormDraft(effectiveSessionId);
       closeModal(effectiveSessionId);
       onSaved();
       onClose();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Attachment, Work } from '../types';
 import { attachmentsApi } from '../services/api';
 import { AttachmentModal } from './AttachmentModal';
@@ -10,6 +10,7 @@ import { ImageLightbox } from './ImageLightbox';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
 import { AttachmentGridSkeleton } from './Skeletons';
+import { getActiveDraftMeta } from '../utils/formDrafts';
 
 interface Props {
   work: Work;
@@ -25,6 +26,26 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [selectedAttachmentForView, setSelectedAttachmentForView] = useState<Attachment | null>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const activeDraft = getActiveDraftMeta();
+    if (activeDraft && activeDraft.type === 'attachment' && activeDraft.workId === work.id) {
+      if (activeDraft.mode === 'create') {
+        setAttachmentSessions((prev) => {
+          if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
+          return [...prev, { id: activeDraft.sessionKey, attachment: null }];
+        });
+      } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
+        const att = attachments.find((a) => a.id === activeDraft.entityId);
+        if (att) {
+          setAttachmentSessions((prev) => {
+            if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
+            return [...prev, { id: activeDraft.sessionKey, attachment: att }];
+          });
+        }
+      }
+    }
+  }, [work.id, attachments]);
 
   useEscapeKey(() => setSelectedAttachmentForView(null), !!selectedAttachmentForView);
 
