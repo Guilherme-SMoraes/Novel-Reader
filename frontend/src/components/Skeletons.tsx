@@ -1,48 +1,54 @@
 import React from 'react';
 
-export const CharacterGridSkeleton: React.FC<{ count?: number }> = ({ count = 8 }) => {
+export const CharacterGridSkeleton: React.FC<{ count?: number; inline?: boolean }> = ({ count = 8, inline = false }) => {
+  const cards = Array.from({ length: count }).map((_, i) => (
+    <div
+      key={i}
+      style={{
+        background: '#182234',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        height: 330,
+      }}
+    >
+      {/* Photo Skeleton */}
+      <div className="skeleton" style={{ height: 145, borderRadius: 0, borderBottom: '1px solid #1e293b' }} />
+
+      {/* Info Skeleton */}
+      <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Title */}
+        <div className="skeleton" style={{ height: 16, width: '70%', marginBottom: 6 }} />
+
+        {/* Aliases */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+          <div className="skeleton" style={{ height: 14, width: 50, borderRadius: 4 }} />
+          <div className="skeleton" style={{ height: 14, width: 60, borderRadius: 4 }} />
+        </div>
+
+        {/* First Appearance */}
+        <div className="skeleton" style={{ height: 18, width: '85%', borderRadius: 4, marginBottom: 8 }} />
+
+        {/* Description lines */}
+        <div className="skeleton" style={{ height: 11, width: '95%', marginBottom: 4 }} />
+        <div className="skeleton" style={{ height: 11, width: '85%', marginBottom: 4 }} />
+        <div className="skeleton" style={{ height: 11, width: '60%', marginBottom: 4 }} />
+
+        {/* Footer link */}
+        <div className="skeleton" style={{ height: 12, width: '45%', marginTop: 'auto' }} />
+      </div>
+    </div>
+  ));
+
+  if (inline) {
+    return <>{cards}</>;
+  }
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            background: '#182234',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            height: 330,
-          }}
-        >
-          {/* Photo Skeleton */}
-          <div className="skeleton" style={{ height: 145, borderRadius: 0, borderBottom: '1px solid #1e293b' }} />
-
-          {/* Info Skeleton */}
-          <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Title */}
-            <div className="skeleton" style={{ height: 16, width: '70%', marginBottom: 6 }} />
-
-            {/* Aliases */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-              <div className="skeleton" style={{ height: 14, width: 50, borderRadius: 4 }} />
-              <div className="skeleton" style={{ height: 14, width: 60, borderRadius: 4 }} />
-            </div>
-
-            {/* First Appearance */}
-            <div className="skeleton" style={{ height: 18, width: '85%', borderRadius: 4, marginBottom: 8 }} />
-
-            {/* Description lines */}
-            <div className="skeleton" style={{ height: 11, width: '95%', marginBottom: 4 }} />
-            <div className="skeleton" style={{ height: 11, width: '85%', marginBottom: 4 }} />
-            <div className="skeleton" style={{ height: 11, width: '60%', marginBottom: 4 }} />
-
-            {/* Footer link */}
-            <div className="skeleton" style={{ height: 12, width: '45%', marginTop: 'auto' }} />
-          </div>
-        </div>
-      ))}
+      {cards}
     </div>
   );
 };
@@ -104,32 +110,38 @@ export const JournalSkeleton: React.FC = () => {
   );
 };
 
-export const AttachmentGridSkeleton: React.FC<{ count?: number }> = ({ count = 4 }) => {
+export const AttachmentGridSkeleton: React.FC<{ count?: number; inline?: boolean }> = ({ count = 4, inline = false }) => {
+  const cards = Array.from({ length: count }).map((_, i) => (
+    <div
+      key={i}
+      style={{
+        background: '#182234',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        padding: 16,
+        height: 190,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div className="skeleton" style={{ height: 18, width: '60%' }} />
+        <div className="skeleton" style={{ height: 18, width: 50, borderRadius: 4 }} />
+      </div>
+      <div className="skeleton" style={{ height: 12, width: '90%', marginBottom: 6 }} />
+      <div className="skeleton" style={{ height: 12, width: '80%', marginBottom: 6 }} />
+      <div className="skeleton" style={{ height: 12, width: '50%', marginBottom: 6 }} />
+      <div className="skeleton" style={{ height: 14, width: '35%', marginTop: 'auto' }} />
+    </div>
+  ));
+
+  if (inline) {
+    return <>{cards}</>;
+  }
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            background: '#182234',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            padding: 16,
-            height: 190,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div className="skeleton" style={{ height: 18, width: '60%' }} />
-            <div className="skeleton" style={{ height: 18, width: 50, borderRadius: 4 }} />
-          </div>
-          <div className="skeleton" style={{ height: 12, width: '90%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 12, width: '80%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 12, width: '50%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 14, width: '35%', marginTop: 'auto' }} />
-        </div>
-      ))}
+      {cards}
     </div>
   );
 };

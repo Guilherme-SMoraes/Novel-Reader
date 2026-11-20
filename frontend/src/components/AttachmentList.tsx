@@ -308,7 +308,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
               </div>
             );
           })}
-          {isLoadingMore && <AttachmentGridSkeleton count={5} />}
+          {isLoadingMore && <AttachmentGridSkeleton count={5} inline />}
         </div>
       )}
 

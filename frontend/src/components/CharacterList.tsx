@@ -604,7 +604,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               </div>
             );
           })}
-          {isLoadingMore && <CharacterGridSkeleton count={7} />}
+          {isLoadingMore && <CharacterGridSkeleton count={7} inline />}
         </div>
       )}
 
