@@ -367,6 +367,31 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
                     <span className={`badge ${p.readingStatus === 1 ? 'badge-novel' : 'badge-status'}`} style={{ fontSize: '0.7rem' }}>
                       {getStatusLabel(p.readingStatus)}
                     </span>
+                    {p.chapterLink && (
+                      <a
+                        href={p.chapterLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: '0.72rem',
+                          color: '#38bdf8',
+                          textDecoration: 'none',
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          borderRadius: 4,
+                          padding: '1px 7px',
+                          fontWeight: 500,
+                          transition: 'all 0.15s ease',
+                        }}
+                        title={`Abrir link do ${getUnitLabel(p.workType).toLowerCase()}`}
+                      >
+                        <ExternalLink size={12} />
+                        <span>Link do {getUnitLabel(p.workType)}</span>
+                      </a>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
