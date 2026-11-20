@@ -14,6 +14,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import {
   X,
@@ -84,11 +85,14 @@ export const CharacterModal: React.FC<Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (characterToEdit ? `char-edit-${characterToEdit.id}` : 'char-create');
   const modalTitle = characterToEdit ? `Personagem: ${characterToEdit.name}` : 'Novo Personagem';
+
+  useCtrlEnterSubmit(() => formRef.current?.requestSubmit(), isOpen && !isMinimized && !loading);
 
   const {
     isSupported: isPopoutSupported,
@@ -620,9 +624,10 @@ export const CharacterModal: React.FC<Props> = ({
         )}
 
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+            if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT' && !e.ctrlKey && !e.metaKey) {
               e.preventDefault();
             }
           }}
@@ -634,6 +639,7 @@ export const CharacterModal: React.FC<Props> = ({
             </label>
             <input
               required
+              autoFocus
               className="input-text"
               value={name}
               onChange={(e) => setName(e.target.value)}

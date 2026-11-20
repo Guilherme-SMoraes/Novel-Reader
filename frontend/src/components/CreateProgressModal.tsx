@@ -7,6 +7,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
@@ -51,11 +52,14 @@ export const CreateProgressModal: React.FC<Props> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || `progress-${workId}-${currentFormat.workType}`;
   const modalTitle = `Progresso: ${WorkTypeLabels[currentFormat.workType]} ${getUnitLabel(currentFormat.workType, { short: true })} ${chapter}`;
+
+  useCtrlEnterSubmit(() => formRef.current?.requestSubmit(), isOpen && !isMinimized && !loading);
 
   const {
     isSupported: isPopoutSupported,
@@ -329,6 +333,7 @@ export const CreateProgressModal: React.FC<Props> = ({
       </div>
 
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         style={{
           display: 'flex',
@@ -406,6 +411,7 @@ export const CreateProgressModal: React.FC<Props> = ({
                 min="1"
                 max={currentFormat.totalChapter.chapter}
                 required
+                autoFocus
                 className="input-text"
                 value={chapter}
                 onChange={(e) => setChapter(e.target.value)}

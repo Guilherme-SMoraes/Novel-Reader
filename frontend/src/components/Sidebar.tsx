@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Genre, ReadingStatus, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
-import { SlidersHorizontal, Plus, BookOpen, LogOut, ShieldCheck } from 'lucide-react';
+import { SlidersHorizontal, Plus, BookOpen, LogOut, ShieldCheck, X } from 'lucide-react';
 import { SidebarWorksSkeleton } from './Skeletons';
 import { getUnitLabel } from '../utils/formatLabels';
 import { useAuth } from '../context/AuthContext';
@@ -56,6 +56,29 @@ export const Sidebar: React.FC<Props> = ({
   const { user, logout } = useAuth();
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
   const [isWhitelistOpen, setIsWhitelistOpen] = useState(false);
+  const [failedCovers, setFailedCovers] = useState<Set<string>>(() => new Set());
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (
+        e.key === '/' &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        document.activeElement?.tagName !== 'SELECT'
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const { sentinelRef } = useInfiniteTrigger({
     onIntersect: onLoadMore || (() => {}),
@@ -83,13 +106,47 @@ export const Sidebar: React.FC<Props> = ({
 
         {/* Linha de busca + Botão de Filtros */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-          <input
-            type="text"
-            value={searchTitle}
-            onChange={(e) => onSearchTitleChange(e.target.value)}
-            placeholder="🔍 Buscar obras..."
-            style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem' }}
-          />
+          <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTitle}
+              onChange={(e) => onSearchTitleChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && searchTitle) {
+                  e.stopPropagation();
+                  onSearchTitleChange('');
+                  searchInputRef.current?.blur();
+                }
+              }}
+              placeholder="🔍 Buscar obras... (Ctrl+K)"
+              style={{ width: '100%', padding: '6px 28px 6px 10px', fontSize: '0.8rem' }}
+            />
+            {searchTitle && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSearchTitleChange('');
+                  searchInputRef.current?.focus();
+                }}
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Limpar busca (Esc)"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
           <button
             onClick={() => setShowFiltersPopover(!showFiltersPopover)}
             className="btn-secondary"
@@ -233,12 +290,15 @@ export const Sidebar: React.FC<Props> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                {w.coverImageUrl ? (
+                {w.coverImageUrl && !failedCovers.has(w.id) ? (
                   <img
                     src={w.coverImageUrl}
                     alt={w.title}
                     loading="lazy"
                     decoding="async"
+                    onError={() => {
+                      setFailedCovers((prev) => new Set(prev).add(w.id));
+                    }}
                     style={{ width: 50, height: 70, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
                   />
                 ) : (

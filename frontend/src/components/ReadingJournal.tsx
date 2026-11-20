@@ -130,16 +130,21 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
 
     setLoadingQuickAdd(true);
     try {
+      const nextChapter = currentChapter + 1;
+      const isCompleted = totalChapter > 0 && nextChapter >= totalChapter;
       await progressApi.create({
         workId: work.id,
         workType: activeFormat.workType,
         stoppedAtChapter: {
           volume: latestProgress?.stoppedAtChapter.volume || null,
-          chapter: currentChapter + 1,
+          chapter: nextChapter,
         },
-        readingStatus: latestProgress?.readingStatus || 1,
+        readingStatus: isCompleted ? 2 : (latestProgress?.readingStatus || 1),
         readingDescription: null,
       });
+      if (isCompleted) {
+        showToast(`Parabéns! Obra concluída no formato ${WorkTypeLabels[activeFormat.workType]}.`, 'success');
+      }
       handleProgressChanged();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : `Erro ao avançar ${unitSingular}.`, 'error');

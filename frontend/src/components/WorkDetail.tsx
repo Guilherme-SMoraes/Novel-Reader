@@ -38,6 +38,16 @@ export const WorkDetail: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<NavTab>(() => getNavParams().tab);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showCoverLightbox, setShowCoverLightbox] = useState(false);
+  const [coverError, setCoverError] = useState(false);
+
+  useEffect(() => {
+    setCoverError(false);
+    if (work.coverImageUrl) {
+      const img = new Image();
+      img.onerror = () => setCoverError(true);
+      img.src = work.coverImageUrl;
+    }
+  }, [work.id, work.coverImageUrl]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,7 +111,7 @@ export const WorkDetail: React.FC<Props> = ({
 
       {/* Cabeçalho com Capa e Detalhes */}
       <div className="work-header-container">
-        {work.coverImageUrl ? (
+        {work.coverImageUrl && !coverError ? (
           <div
             onClick={() => setShowCoverLightbox(true)}
             className="work-header-cover"

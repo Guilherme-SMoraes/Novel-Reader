@@ -7,6 +7,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
@@ -41,6 +42,7 @@ export const EditProgressModal: React.FC<Props> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
@@ -62,6 +64,8 @@ export const EditProgressModal: React.FC<Props> = ({
     openPopout,
     closePopout,
   } = usePopoutModal(modalTitle);
+
+  useCtrlEnterSubmit(() => formRef.current?.requestSubmit(), isOpen && !isMinimized && !loading);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -280,6 +284,7 @@ export const EditProgressModal: React.FC<Props> = ({
       </div>
 
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         style={{
           display: 'flex',

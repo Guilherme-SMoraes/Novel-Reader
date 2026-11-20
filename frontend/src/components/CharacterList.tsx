@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Character, Work } from '../types';
+import type { Character, Work, CharacterType } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
 import { CharacterModal } from './CharacterModal';
@@ -24,8 +24,10 @@ type SortOption = 'role' | 'name-asc' | 'name-desc' | 'appearance-asc' | 'appear
 
 export const CharacterList: React.FC<Props> = ({ work, characters, loading = false, onCharactersUpdated }) => {
   const [filterQuery, setFilterQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<CharacterType | 'all'>('all');
   const [selectedAffiliation, setSelectedAffiliation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('role');
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
 
   const [characterSessions, setCharacterSessions] = useState<Array<{ id: string; character: Character | null }>>([]);
   const [detailCharacter, setDetailCharacter] = useState<Character | null>(null);
@@ -83,6 +85,9 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   const filtered = useMemo(() => {
     return characters.filter((c) => {
+      if (selectedRole !== 'all' && c.characterType !== selectedRole) {
+        return false;
+      }
       if (selectedAffiliation !== 'all' && (!c.affiliations || !c.affiliations.includes(selectedAffiliation))) {
         return false;
       }
@@ -96,7 +101,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
       const matchesAff = c.affiliations ? c.affiliations.some((aff) => aff.toLowerCase().includes(q)) : false;
       return matchesName || matchesRole || matchesDesc || matchesAlt || matchesAff;
     });
-  }, [characters, selectedAffiliation, filterQuery]);
+  }, [characters, selectedRole, selectedAffiliation, filterQuery]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -146,7 +151,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   } = useInfiniteSlice({
     items: sorted,
     batchSize: 28,
-    resetDeps: [filterQuery, selectedAffiliation, sortBy],
+    resetDeps: [filterQuery, selectedRole, selectedAffiliation, sortBy],
   });
 
   const handleConfirmDelete = async () => {
@@ -184,6 +189,8 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
     });
   };
 
+  const isFiltered = filterQuery.trim().length > 0 || selectedRole !== 'all' || selectedAffiliation !== 'all';
+
   return (
     <section>
       {/* Header Desktop com Busca, Ordenação e Botão de Adicionar */}
@@ -191,7 +198,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={18} color="#38bdf8" />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-            Personagens da Obra ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
+            Personagens da Obra ({isFiltered ? `${totalItems} de ${characters.length}` : characters.length})
           </h3>
         </div>
 
@@ -203,6 +210,32 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
             placeholder="🔍 Filtrar por nome ou papel..."
             style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
           />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <User size={14} color="#38bdf8" />
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value === 'all' ? 'all' : (Number(e.target.value) as CharacterType))}
+              style={{
+                padding: '6px 8px',
+                fontSize: '0.8rem',
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                cursor: 'pointer',
+                maxWidth: 140,
+              }}
+              title="Filtrar por papel"
+            >
+              <option value="all">Todos os Papéis</option>
+              {Object.entries(CharacterTypeLabels).map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {allAffiliations.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -268,7 +301,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Users size={18} color="#38bdf8" />
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
-              Personagens ({filterQuery ? `${totalItems} de ${characters.length}` : characters.length})
+              Personagens ({isFiltered ? `${totalItems} de ${characters.length}` : characters.length})
             </h3>
           </div>
           <button onClick={handleOpenCreate} className="btn-primary" title="Adicionar Personagem" style={{ padding: '6px 12px' }}>
@@ -284,7 +317,33 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? '1fr 1fr' : '1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? '1fr 1fr 1fr' : '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <User size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value === 'all' ? 'all' : (Number(e.target.value) as CharacterType))}
+              style={{
+                padding: '7px 10px',
+                fontSize: '0.82rem',
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                cursor: 'pointer',
+                width: '100%',
+              }}
+              title="Filtrar por papel"
+            >
+              <option value="all">Todos os Papéis</option>
+              {Object.entries(CharacterTypeLabels).map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {allAffiliations.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Shield size={14} color="#c084fc" style={{ flexShrink: 0 }} />
@@ -345,7 +404,25 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         <CharacterGridSkeleton count={12} />
       ) : visibleCharacters.length === 0 ? (
         <div style={{ background: '#121927', border: '1px dashed var(--border)', borderRadius: 10, padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          {characters.length === 0 ? 'Nenhum personagem cadastrado para esta obra.' : 'Nenhum personagem corresponde ao filtro informado.'}
+          {characters.length === 0 ? (
+            'Nenhum personagem cadastrado para esta obra.'
+          ) : (
+            <div>
+              <p style={{ margin: '0 0 12px 0' }}>Nenhum personagem corresponde ao filtro informado.</p>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setFilterQuery('');
+                  setSelectedRole('all');
+                  setSelectedAffiliation('all');
+                }}
+                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))', gap: 16 }}>
@@ -373,12 +450,13 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               >
                 {/* Foto ou Avatar Placeholder */}
                 <div style={{ height: 145, position: 'relative', background: '#0c121e', flexShrink: 0 }}>
-                  {c.imageUrl ? (
+                  {c.imageUrl && !failedImages.has(c.id) ? (
                     <img
                       src={c.imageUrl}
                       alt={c.name}
                       loading="lazy"
                       decoding="async"
+                      onError={() => setFailedImages((prev) => new Set(prev).add(c.id))}
                       style={{
                         width: '100%',
                         height: '100%',

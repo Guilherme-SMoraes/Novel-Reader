@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { CreateWorkRequest, Genre, Language, UpdateWorkRequest, Work, WorkFormat, WorkType } from '../types';
 import { LanguageLabels, WorkTypeLabels } from '../types';
@@ -6,6 +6,7 @@ import { worksApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { GenreMultiSelect } from './GenreMultiSelect';
 import { X, Minus, Layers, Plus } from 'lucide-react';
@@ -77,10 +78,13 @@ export const WorkModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (workToEdit ? `work-${workToEdit.id}` : 'work-create');
+
+  useCtrlEnterSubmit(() => formRef.current?.requestSubmit(), isOpen && !isMinimized && !loading);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -602,7 +606,7 @@ export const WorkModal: React.FC<Props> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Título */}
           <div style={{ width: '100%' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
@@ -611,6 +615,7 @@ export const WorkModal: React.FC<Props> = ({
             <input
               type="text"
               required
+              autoFocus
               className="input-text"
               style={{ width: '100%' }}
               placeholder="Ex: Solo Leveling"

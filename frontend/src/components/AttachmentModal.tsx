@@ -6,6 +6,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
@@ -122,9 +123,12 @@ export const AttachmentModal: React.FC<Props> = ({
   const { showToast } = useToast();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
   const effectiveSessionId = sessionId || (attachmentToEdit ? `att-edit-${attachmentToEdit.id}` : 'att-create');
   const modalTitle = attachmentToEdit ? `Anexo: ${attachmentToEdit.title}` : 'Novo Anexo';
+
+  useCtrlEnterSubmit(() => formRef.current?.requestSubmit(), isOpen && !isMinimized && !loading);
 
   const {
     isSupported: isPopoutSupported,
@@ -494,7 +498,7 @@ export const AttachmentModal: React.FC<Props> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
               Categoria *
@@ -552,6 +556,7 @@ export const AttachmentModal: React.FC<Props> = ({
             </label>
             <input
               type="text"
+              autoFocus
               placeholder="Ex: Mapa do Continente Sul, Hierarquia de Cultivo..."
               className="input-text"
               value={title}
