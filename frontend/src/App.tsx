@@ -19,6 +19,7 @@ export function App() {
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialNav.workId);
+  const [currentWork, setCurrentWork] = useState<Work | null>(null);
   const selectedWorkIdRef = useRef<string | null>(initialNav.workId);
 
   useEffect(() => {
@@ -62,6 +63,10 @@ export function App() {
   }, []);
 
   const handleSelectWork = (id: string) => {
+    const existing = works.find((w) => w.id === id);
+    if (existing) {
+      setCurrentWork(existing);
+    }
     setSelectedWorkId(id);
     selectedWorkIdRef.current = id;
     updateNavParams({ workId: id });
@@ -73,6 +78,7 @@ export function App() {
   const handleBackToLibrary = () => {
     setSelectedWorkId(null);
     selectedWorkIdRef.current = null;
+    setCurrentWork(null);
     updateNavParams({ workId: null });
     setMobileView('list');
   };
@@ -89,12 +95,24 @@ export function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchGenres();
-    } else {
+      if (!selectedWorkIdRef.current) {
+        const nav = getNavParams();
+        if (nav.workId) {
+          setSelectedWorkId(nav.workId);
+          selectedWorkIdRef.current = nav.workId;
+          if (isMobile) {
+            setMobileView('detail');
+          }
+        }
+      }
+    } else if (!authLoading) {
       setGenres([]);
       setWorks([]);
       setSelectedWorkId(null);
+      selectedWorkIdRef.current = null;
+      setCurrentWork(null);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isMobile]);
 
   const [worksPage, setWorksPage] = useState(1);
   const [hasMoreWorks, setHasMoreWorks] = useState(false);
@@ -176,15 +194,20 @@ export function App() {
   const fetchWorkDetails = async (workId: string) => {
     setLoadingDetails(true);
     try {
-      const needWorkFetch = !works.some((w) => w.id === workId);
+      const existingInWorks = works.find((w) => w.id === workId);
+      const needWorkFetch = !existingInWorks;
       const [progRes, charRes, attRes, fetchedWork] = await Promise.all([
         progressApi.getByWorkId(workId),
         charactersApi.getByWorkId(workId),
         attachmentsApi.getByWorkId(workId),
         needWorkFetch ? worksApi.getById(workId).catch(() => null) : Promise.resolve(null),
       ]);
-      if (fetchedWork) {
-        setWorks((prev) => (prev.some((w) => w.id === fetchedWork.id) ? prev : [fetchedWork, ...prev]));
+      const targetWork = fetchedWork || existingInWorks;
+      if (targetWork) {
+        setCurrentWork(targetWork);
+        if (fetchedWork) {
+          setWorks((prev) => (prev.some((w) => w.id === fetchedWork.id) ? prev : [fetchedWork, ...prev]));
+        }
       }
       setProgressList(progRes.items);
       setCharacters(charRes.items);
@@ -200,17 +223,22 @@ export function App() {
     if (selectedWorkId) {
       fetchWorkDetails(selectedWorkId);
     } else {
+      setCurrentWork(null);
       setProgressList([]);
       setCharacters([]);
       setAttachments([]);
     }
   }, [selectedWorkId]);
 
-  const selectedWork = works.find((w) => w.id === selectedWorkId);
+  const selectedWork =
+    (currentWork && currentWork.id === selectedWorkId)
+      ? currentWork
+      : works.find((w) => w.id === selectedWorkId);
 
   const handleWorkDeleted = () => {
     setSelectedWorkId(null);
     selectedWorkIdRef.current = null;
+    setCurrentWork(null);
     updateNavParams({ workId: null });
     setMobileView('list');
     fetchWorks();
@@ -286,7 +314,7 @@ export function App() {
 
       {/* Painel Principal */}
       <main style={{ flex: 1, display: !isMobile || mobileView === 'detail' ? 'flex' : 'none', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
-        {loading && works.length === 0 ? (
+        {loading && works.length === 0 && !selectedWork ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
             Carregando sua biblioteca...
           </div>
