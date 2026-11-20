@@ -9,6 +9,7 @@ import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'luci
 import { ImageLightbox } from './ImageLightbox';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
+import { AttachmentGridSkeleton } from './Skeletons';
 
 interface Props {
   work: Work;
@@ -43,11 +44,10 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
     visibleItems: visibleAttachments,
     sentinelRef: attachmentSentinelRef,
     hasMore: hasMoreAttachments,
-    visibleCount,
-    totalCount: totalAttachments,
+    isLoadingMore,
   } = useInfiniteSlice({
     items: filtered,
-    batchSize: 14,
+    batchSize: 15,
     resetDeps: [selectedCategory, searchQuery],
   });
 
@@ -308,6 +308,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
               </div>
             );
           })}
+          {isLoadingMore && <AttachmentGridSkeleton count={5} />}
         </div>
       )}
 
@@ -315,14 +316,10 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
         <div
           ref={attachmentSentinelRef}
           style={{
-            padding: '16px',
-            textAlign: 'center',
-            fontSize: '0.8rem',
-            color: '#64748b',
+            height: 20,
+            width: '100%',
           }}
-        >
-          Carregando mais anexos... ({visibleCount} de {totalAttachments})
-        </div>
+        />
       )}
 
       {/* Lightbox Modal */}

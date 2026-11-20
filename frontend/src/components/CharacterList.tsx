@@ -107,9 +107,9 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   const {
     visibleItems: visibleCharacters,
-    visibleCount,
     totalCount: totalItems,
     hasMore,
+    isLoadingMore,
     sentinelRef,
   } = useInfiniteSlice({
     items: sorted,
@@ -604,19 +604,17 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               </div>
             );
           })}
+          {isLoadingMore && <CharacterGridSkeleton count={7} />}
         </div>
       )}
 
       {/* Footer com Status do Infinite Scroll */}
       {!loading && sorted.length > 0 && (
         <div style={{ marginTop: 24, textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
-          {hasMore ? (
-            <div ref={sentinelRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '16px 0' }}>
-              <span className="badge badge-tag" style={{ fontSize: '0.78rem', padding: '6px 14px' }}>
-                Carregando mais personagens... ({visibleCount} de {totalItems})
-              </span>
-            </div>
-          ) : (
+          {hasMore && (
+            <div ref={sentinelRef} style={{ height: 20, width: '100%' }} />
+          )}
+          {!hasMore && (
             <div style={{ padding: '14px 0', borderTop: '1px solid #1e293b' }}>
               <span>Exibindo todos os <strong>{totalItems}</strong> personagens</span>
             </div>

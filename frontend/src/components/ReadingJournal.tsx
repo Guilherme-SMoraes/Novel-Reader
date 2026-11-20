@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Progress, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
@@ -6,7 +6,8 @@ import { CreateProgressModal } from './CreateProgressModal';
 import { EditProgressModal } from './EditProgressModal';
 import { ConfirmModal } from './ConfirmModal';
 import { MarkdownViewer } from './MarkdownViewer';
-import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
+import { useInfiniteTrigger } from '../hooks/useInfiniteScroll';
+import { JournalItemsSkeleton } from './Skeletons';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import {
@@ -17,14 +18,20 @@ import {
 
 interface Props {
   work: Work;
-  progressList: Progress[];
+  progressList?: Progress[];
   onProgressUpdated: () => void;
 }
 
-export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgressUpdated }) => {
+export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onProgressUpdated }) => {
   const [selectedWorkType, setSelectedWorkType] = useState<WorkType>(
     work.formats && work.formats.length > 0 ? work.formats[0].workType : 2
   );
+  const [formatRecords, setFormatRecords] = useState<Progress[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingQuickAdd, setLoadingQuickAdd] = useState(false);
   const [progressToDeleteId, setProgressToDeleteId] = useState<string | null>(null);
@@ -42,21 +49,56 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
       linkWhereToRead: null,
     };
 
-  const formatProgressList = progressList.filter((p) => p.workType === activeFormat.workType);
-  const latestProgress = formatProgressList[0];
+  const loadFormatProgress = useCallback(
+    async (formatType: WorkType, targetPage = 1, append = false) => {
+      if (targetPage === 1) {
+        setLoadingInitial(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const res = await progressApi.getByWorkId(work.id, formatType, targetPage, 20);
+        setFormatRecords((prev) => (append ? [...prev, ...res.items] : res.items));
+        setCurrentPage(res.page);
+        setHasMore(res.page < res.totalPages);
+      } catch (err: unknown) {
+        console.error('Falha ao carregar registros do diário:', err);
+        showToast(err instanceof Error ? err.message : 'Falha ao carregar registros de progresso.', 'error');
+      } finally {
+        setLoadingInitial(false);
+        setLoadingMore(false);
+      }
+    },
+    [work.id, showToast]
+  );
+
+  useEffect(() => {
+    loadFormatProgress(selectedWorkType, 1, false);
+  }, [selectedWorkType, work.id, loadFormatProgress]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loadingInitial && !loadingMore && hasMore) {
+      loadFormatProgress(selectedWorkType, currentPage + 1, true);
+    }
+  }, [loadingInitial, loadingMore, hasMore, loadFormatProgress, selectedWorkType, currentPage]);
+
+  const { sentinelRef } = useInfiniteTrigger({
+    onIntersect: handleLoadMore,
+    hasMore,
+    isLoading: loadingMore || loadingInitial,
+  });
+
+  const latestProgress =
+    formatRecords[0] || (progressList && progressList.find((p) => p.workType === activeFormat.workType));
   const currentChapter = latestProgress ? latestProgress.stoppedAtChapter.chapter : 0;
   const totalChapter = activeFormat.totalChapter.chapter;
   const pct = totalChapter > 0 ? ((currentChapter / totalChapter) * 100).toFixed(1) : '0';
 
-  const {
-    visibleItems: visibleProgressList,
-    sentinelRef: progressSentinelRef,
-    hasMore: hasMoreProgress,
-  } = useInfiniteSlice({
-    items: formatProgressList,
-    batchSize: 20,
-    resetDeps: [selectedWorkType],
-  });
+  const handleProgressChanged = () => {
+    loadFormatProgress(selectedWorkType, 1, false);
+    onProgressUpdated();
+  };
 
   const handleQuickAddChapter = async () => {
     const unitPlural = getUnitLabel(activeFormat.workType, { plural: true }).toLowerCase();
@@ -78,7 +120,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
         readingStatus: latestProgress?.readingStatus || 1,
         readingDescription: null,
       });
-      onProgressUpdated();
+      handleProgressChanged();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : `Erro ao avançar ${unitSingular}.`, 'error');
     } finally {
@@ -91,7 +133,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
     try {
       await progressApi.delete(work.id, progressToDeleteId);
       showToast('Registro de progresso excluído.', 'info');
-      onProgressUpdated();
+      handleProgressChanged();
       setProgressToDeleteId(null);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Erro ao excluir progresso.', 'error');
@@ -107,7 +149,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {work.formats && work.formats.map((f) => {
             const isSelected = f.workType === activeFormat.workType;
-            const fProg = progressList.find((p) => p.workType === f.workType);
+            const fProg =
+              (isSelected && formatRecords[0]) ||
+              (progressList && progressList.find((p) => p.workType === f.workType));
             const fCurrent = fProg ? fProg.stoppedAtChapter.chapter : 0;
             const fPct = f.totalChapter.chapter > 0 ? Math.round((fCurrent / f.totalChapter.chapter) * 100) : 0;
 
@@ -219,13 +263,15 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           Histórico e Diário de {isWatchable(activeFormat.workType) ? 'Episódios' : 'Leitura'}
         </h4>
 
-        {formatProgressList.length === 0 ? (
+        {loadingInitial ? (
+          <JournalItemsSkeleton count={3} />
+        ) : formatRecords.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', margin: 0 }}>
             Nenhum registro de {isWatchable(activeFormat.workType) ? 'episódio' : 'capítulo'} para este formato ainda.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {visibleProgressList.map((p) => (
+            {formatRecords.map((p) => (
               <div
                 key={p.id}
                 style={{
@@ -238,85 +284,39 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                   gap: 6,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#f8fafc' }}>
                       {getUnitLabel(p.workType)} {p.stoppedAtChapter.chapter}
                     </span>
                     {p.stoppedAtChapter.volume && (
                       <span className="badge badge-tag" style={{ fontSize: '0.7rem' }}>
-                        {isWatchable(p.workType) ? 'Temporada' : 'Vol.'} {p.stoppedAtChapter.volume}
+                        {isWatchable(p.workType) ? 'Temporada' : 'Volume'} {p.stoppedAtChapter.volume}
                       </span>
                     )}
+                    <span className={`badge ${p.readingStatus === 1 ? 'badge-novel' : 'badge-status'}`} style={{ fontSize: '0.7rem' }}>
+                      {getStatusLabel(p.readingStatus)}
+                    </span>
                   </div>
 
-                  <span
-                    className="badge badge-status"
-                    style={{
-                      fontSize: '0.7rem',
-                      background:
-                        p.readingStatus === 1
-                          ? 'rgba(56, 189, 248, 0.2)'
-                          : p.readingStatus === 2
-                          ? 'rgba(34, 197, 94, 0.2)'
-                          : 'rgba(239, 68, 68, 0.2)',
-                      color:
-                        p.readingStatus === 1
-                          ? '#38bdf8'
-                          : p.readingStatus === 2
-                          ? '#4ade80'
-                          : '#f87171',
-                    }}
-                  >
-                    {getStatusLabel(p.readingStatus, p.workType)}
-                  </span>
-
-                  {p.chapterLink && (
-                    <a
-                      href={p.chapterLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        color: '#818cf8',
-                        fontSize: '0.75rem',
-                        textDecoration: 'none',
-                      }}
-                      title="Abrir link do capítulo lido"
-                    >
-                      <ExternalLink size={12} />
-                      Link
-                    </a>
-                  )}
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-                    <span className="desktop-only" style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                      {new Date(p.stoppedAt).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {new Date(p.stoppedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <button
-                        type="button"
                         onClick={() => setProgressToEdit(p)}
-                        style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                        style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
                         title="Editar anotação"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={13} />
                       </button>
                       <button
-                        type="button"
                         onClick={() => setProgressToDeleteId(p.id)}
-                        style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                        title="Excluir anotação"
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}
+                        title="Excluir registro"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
@@ -338,18 +338,17 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                 </div>
               </div>
             ))}
-            {hasMoreProgress && (
+
+            {loadingMore && <JournalItemsSkeleton count={3} />}
+
+            {hasMore && (
               <div
-                ref={progressSentinelRef}
+                ref={sentinelRef}
                 style={{
-                  padding: '12px',
-                  textAlign: 'center',
-                  fontSize: '0.78rem',
-                  color: '#64748b',
+                  height: 20,
+                  width: '100%',
                 }}
-              >
-                Carregando mais registros de acompanhamento...
-              </div>
+              />
             )}
           </div>
         )}
@@ -362,7 +361,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           currentFormat={activeFormat}
           lastChapter={currentChapter}
           onClose={() => setIsModalOpen(false)}
-          onCreated={onProgressUpdated}
+          onCreated={handleProgressChanged}
         />
       )}
 
@@ -372,7 +371,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           workId={work.id}
           progress={progressToEdit}
           onClose={() => setProgressToEdit(null)}
-          onSaved={onProgressUpdated}
+          onSaved={handleProgressChanged}
         />
       )}
 

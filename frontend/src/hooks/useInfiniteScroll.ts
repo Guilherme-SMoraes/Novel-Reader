@@ -17,9 +17,15 @@ export function useInfiniteSlice<T>({
 }: UseInfiniteSliceOptions<T>) {
   const initial = initialCount || batchSize;
   const [visibleCount, setVisibleCount] = useState(initial);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reset = useCallback(() => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setIsLoadingMore(false);
     setVisibleCount(initial);
   }, [initial]);
 
@@ -28,8 +34,14 @@ export function useInfiniteSlice<T>({
   }, [reset, ...resetDeps]);
 
   const loadMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + batchSize, items.length));
-  }, [batchSize, items.length]);
+    if (isLoadingMore || visibleCount >= items.length) return;
+
+    setIsLoadingMore(true);
+    loadingTimeoutRef.current = setTimeout(() => {
+      setVisibleCount((prev) => Math.min(prev + batchSize, items.length));
+      setIsLoadingMore(false);
+    }, 200);
+  }, [batchSize, isLoadingMore, items.length, visibleCount]);
 
   const sentinelRef = useCallback(
     (node: HTMLElement | null) => {
@@ -58,6 +70,9 @@ export function useInfiniteSlice<T>({
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -72,6 +87,7 @@ export function useInfiniteSlice<T>({
     visibleCount: Math.min(visibleCount, items.length),
     totalCount: items.length,
     hasMore,
+    isLoadingMore,
     sentinelRef,
     reset,
   };

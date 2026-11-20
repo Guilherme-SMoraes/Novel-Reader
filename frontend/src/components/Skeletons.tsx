@@ -133,3 +133,31 @@ export const AttachmentGridSkeleton: React.FC<{ count?: number }> = ({ count = 4
     </div>
   );
 };
+
+export const JournalItemsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            backgroundColor: '#090e17',
+            border: '1px solid #1e293b',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="skeleton" style={{ height: 18, width: 140, borderRadius: 4 }} />
+            <div className="skeleton" style={{ height: 14, width: 80, borderRadius: 4 }} />
+          </div>
+          <div className="skeleton" style={{ height: 12, width: '75%', borderRadius: 4 }} />
+          <div className="skeleton" style={{ height: 12, width: '45%', borderRadius: 4 }} />
+        </div>
+      ))}
+    </div>
+  );
+};

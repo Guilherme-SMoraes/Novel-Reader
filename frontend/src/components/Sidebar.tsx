@@ -275,10 +275,9 @@ export const Sidebar: React.FC<Props> = ({
             );
           })
         )}
+        {loadingMore && <SidebarWorksSkeleton count={3} />}
         {hasMore && (
-          <div ref={sentinelRef} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
-            {loadingMore ? 'Carregando mais obras...' : 'Carregando mais...'}
-          </div>
+          <div ref={sentinelRef} style={{ height: 20, width: '100%' }} />
         )}
       </div>
 
