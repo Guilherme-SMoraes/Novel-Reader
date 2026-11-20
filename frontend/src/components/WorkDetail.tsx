@@ -287,9 +287,6 @@ export const WorkDetail: React.FC<Props> = ({
           }}
         >
           <BookOpen size={18} /> Diário de Acompanhamento
-          <span style={{ fontSize: '0.75rem', background: '#1e293b', padding: '2px 8px', borderRadius: '10px', color: '#cbd5e1' }}>
-            {progressList.length}
-          </span>
         </button>
 
         <button
