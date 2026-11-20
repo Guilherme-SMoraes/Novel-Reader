@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Attachment, Work } from '../types';
 import { attachmentsApi } from '../services/api';
 import { AttachmentModal } from './AttachmentModal';
@@ -26,6 +26,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [selectedAttachmentForView, setSelectedAttachmentForView] = useState<Attachment | null>(null);
   const { showToast } = useToast();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedIds = getSessionList('attachment', work.id);
@@ -177,14 +178,48 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
           ))}
         </div>
 
-        <input
-          type="text"
-          placeholder="Buscar anexos..."
-          className="input-text"
-          style={{ maxWidth: '240px', padding: '6px 12px', fontSize: '0.85rem' }}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '240px', width: '100%' }}>
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Buscar anexos..."
+            className="input-text"
+            style={{ width: '100%', padding: '6px 28px 6px 12px', fontSize: '0.85rem' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && searchQuery) {
+                e.stopPropagation();
+                setSearchQuery('');
+                searchInputRef.current?.blur();
+              }
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                searchInputRef.current?.focus();
+              }}
+              style={{
+                position: 'absolute',
+                right: 6,
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Limpar busca (Esc)"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Attachments Grid */}

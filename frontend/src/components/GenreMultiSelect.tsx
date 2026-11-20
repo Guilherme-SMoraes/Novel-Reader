@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { Genre } from '../types';
-import { Check, Search, Settings } from 'lucide-react';
+import { Check, Search, Settings, X } from 'lucide-react';
 
 interface Props {
   genres: Genre[];
@@ -16,6 +16,7 @@ export const GenreMultiSelect: React.FC<Props> = ({
   onOpenManageGenres,
 }) => {
   const [search, setSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const toggleGenre = (id: string) => {
     if (selectedGenreIds.includes(id)) {
@@ -57,16 +58,48 @@ export const GenreMultiSelect: React.FC<Props> = ({
       </div>
 
       {genres.length > 8 && (
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: 9, color: '#64748b' }} />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={14} style={{ position: 'absolute', left: 10, color: '#64748b' }} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Filtrar gêneros..."
             className="input-text"
-            style={{ paddingLeft: 30, paddingRight: 10, paddingTop: 4, paddingBottom: 4, fontSize: '0.8rem' }}
+            style={{ width: '100%', paddingLeft: 30, paddingRight: 28, paddingTop: 4, paddingBottom: 4, fontSize: '0.8rem' }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && search) {
+                e.stopPropagation();
+                setSearch('');
+                searchInputRef.current?.blur();
+              }
+            }}
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('');
+                searchInputRef.current?.focus();
+              }}
+              style={{
+                position: 'absolute',
+                right: 6,
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Limpar busca (Esc)"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 

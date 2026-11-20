@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Character, Work, CharacterType } from '../types';
 import { CharacterTypeLabels, WorkTypeLabels } from '../types';
 import { charactersApi } from '../services/api';
@@ -6,7 +6,7 @@ import { CharacterModal } from './CharacterModal';
 import { CharacterDetailModal } from './CharacterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
-import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield, Maximize2 } from 'lucide-react';
+import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield, Maximize2, X } from 'lucide-react';
 import { CharacterGridSkeleton } from './Skeletons';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
@@ -35,6 +35,8 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
   const { showToast } = useToast();
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedIds = getSessionList('character', work.id);
@@ -203,13 +205,47 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={filterQuery}
-            onChange={(e) => handleFilterChange(e.target.value)}
-            placeholder="🔍 Filtrar por nome ou papel..."
-            style={{ width: 210, padding: '6px 10px', fontSize: '0.8rem' }}
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              ref={desktopSearchInputRef}
+              type="text"
+              value={filterQuery}
+              onChange={(e) => handleFilterChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && filterQuery) {
+                  e.stopPropagation();
+                  handleFilterChange('');
+                  desktopSearchInputRef.current?.blur();
+                }
+              }}
+              placeholder="🔍 Filtrar por nome ou papel..."
+              style={{ width: 210, padding: '6px 28px 6px 10px', fontSize: '0.8rem' }}
+            />
+            {filterQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleFilterChange('');
+                  desktopSearchInputRef.current?.focus();
+                }}
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Limpar filtro (Esc)"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <User size={14} color="#38bdf8" />
@@ -265,6 +301,30 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
             </div>
           )}
 
+          {(selectedRole !== 'all' || selectedAffiliation !== 'all') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedRole('all');
+                setSelectedAffiliation('all');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#f87171',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                padding: '4px 6px',
+              }}
+              title="Resetar filtros selecionados"
+            >
+              <X size={12} /> Limpar
+            </button>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <ArrowUpDown size={14} color="#94a3b8" />
             <select
@@ -309,13 +369,47 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
           </button>
         </div>
 
-        <input
-          type="text"
-          value={filterQuery}
-          onChange={(e) => handleFilterChange(e.target.value)}
-          placeholder="🔍 Filtrar por nome ou papel..."
-          style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
-        />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <input
+            ref={mobileSearchInputRef}
+            type="text"
+            value={filterQuery}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && filterQuery) {
+                e.stopPropagation();
+                handleFilterChange('');
+                mobileSearchInputRef.current?.blur();
+              }
+            }}
+            placeholder="🔍 Filtrar por nome ou papel..."
+            style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}
+          />
+          {filterQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                handleFilterChange('');
+                mobileSearchInputRef.current?.focus();
+              }}
+              style={{
+                position: 'absolute',
+                right: 8,
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Limpar filtro (Esc)"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: allAffiliations.length > 0 ? '1fr 1fr 1fr' : '1fr 1fr', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
