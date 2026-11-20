@@ -10,6 +10,7 @@ import { useInfiniteTrigger } from '../hooks/useInfiniteScroll';
 import { JournalItemsSkeleton } from './Skeletons';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Trash2, ExternalLink, Edit2 } from 'lucide-react';
+import { getNavParams, updateNavParams } from '../utils/navigationState';
 import {
   getUnitLabel,
   getStatusLabel,
@@ -23,9 +24,13 @@ interface Props {
 }
 
 export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onProgressUpdated }) => {
-  const [selectedWorkType, setSelectedWorkType] = useState<WorkType>(
-    work.formats && work.formats.length > 0 ? work.formats[0].workType : 2
-  );
+  const [selectedWorkType, setSelectedWorkType] = useState<WorkType>(() => {
+    const nav = getNavParams();
+    if (nav.format && work.formats?.some((f) => f.workType === nav.format)) {
+      return nav.format as WorkType;
+    }
+    return work.formats && work.formats.length > 0 ? work.formats[0].workType : 2;
+  });
   const [formatRecords, setFormatRecords] = useState<Progress[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -159,7 +164,10 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
               <button
                 key={f.workType}
                 type="button"
-                onClick={() => setSelectedWorkType(f.workType)}
+                onClick={() => {
+                  setSelectedWorkType(f.workType);
+                  updateNavParams({ format: f.workType });
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

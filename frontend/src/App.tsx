@@ -10,13 +10,15 @@ import { ColdStartOverlay } from './components/ColdStartOverlay';
 import { useKeepAlive } from './hooks/useKeepAlive';
 import { useAuth } from './context/AuthContext';
 import { BookOpen } from 'lucide-react';
+import { getNavParams, updateNavParams } from './utils/navigationState';
 
 export function App() {
   useKeepAlive();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const initialNav = useState(() => getNavParams())[0];
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
+  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialNav.workId);
 
   const [progressList, setProgressList] = useState<Progress[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -35,7 +37,12 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 768);
-  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return initialNav.workId ? 'detail' : 'list';
+    }
+    return 'detail';
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -51,12 +58,15 @@ export function App() {
 
   const handleSelectWork = (id: string) => {
     setSelectedWorkId(id);
+    updateNavParams({ workId: id });
     if (isMobile) {
       setMobileView('detail');
     }
   };
 
   const handleBackToLibrary = () => {
+    setSelectedWorkId(null);
+    updateNavParams({ workId: null });
     setMobileView('list');
   };
 
@@ -150,11 +160,16 @@ export function App() {
   const fetchWorkDetails = async (workId: string) => {
     setLoadingDetails(true);
     try {
-      const [progRes, charRes, attRes] = await Promise.all([
+      const needWorkFetch = !works.some((w) => w.id === workId);
+      const [progRes, charRes, attRes, fetchedWork] = await Promise.all([
         progressApi.getByWorkId(workId),
         charactersApi.getByWorkId(workId),
         attachmentsApi.getByWorkId(workId),
+        needWorkFetch ? worksApi.getById(workId).catch(() => null) : Promise.resolve(null),
       ]);
+      if (fetchedWork) {
+        setWorks((prev) => (prev.some((w) => w.id === fetchedWork.id) ? prev : [fetchedWork, ...prev]));
+      }
       setProgressList(progRes.items);
       setCharacters(charRes.items);
       setAttachments(attRes);
@@ -176,6 +191,13 @@ export function App() {
   }, [selectedWorkId]);
 
   const selectedWork = works.find((w) => w.id === selectedWorkId);
+
+  const handleWorkDeleted = () => {
+    setSelectedWorkId(null);
+    updateNavParams({ workId: null });
+    setMobileView('list');
+    fetchWorks();
+  };
 
   const handleResetFilters = () => {
     setSearchTitle('');
@@ -262,7 +284,7 @@ export function App() {
               fetchWorkDetails(selectedWork.id);
               fetchWorks();
             }}
-            onWorkDeleted={fetchWorks}
+            onWorkDeleted={handleWorkDeleted}
             onOpenEditWork={handleOpenEditWork}
             onBackToLibrary={isMobile ? handleBackToLibrary : undefined}
           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Attachment, Character, Progress, Work } from '../types';
 import { LanguageLabels, WorkTypeLabels } from '../types';
 import { ReadingJournal } from './ReadingJournal';
@@ -9,6 +9,8 @@ import { ExternalLink, Trash2, Edit2, BookOpen, Users, Map, Maximize2, ArrowLeft
 import { JournalSkeleton, AttachmentGridSkeleton } from './Skeletons';
 import { getActionLabel, getUnitLabel } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
+import { getNavParams, updateNavParams, saveScrollPosition, getSavedScrollPosition } from '../utils/navigationState';
+import type { NavTab } from '../utils/navigationState';
 
 interface Props {
   work: Work;
@@ -33,12 +35,56 @@ export const WorkDetail: React.FC<Props> = ({
   onOpenEditWork,
   onBackToLibrary,
 }) => {
-  const [activeTab, setActiveTab] = useState<'journal' | 'characters' | 'attachments'>('journal');
+  const [activeTab, setActiveTab] = useState<NavTab>(() => getNavParams().tab);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showCoverLightbox, setShowCoverLightbox] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTabChange = (tab: NavTab) => {
+    setActiveTab(tab);
+    updateNavParams({ tab });
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+    scrollDebounceRef.current = setTimeout(() => {
+      saveScrollPosition(work.id, target.scrollTop);
+    }, 150);
+  };
+
+  useEffect(() => {
+    if (!loading && containerRef.current) {
+      const savedTop = getSavedScrollPosition(work.id);
+      if (savedTop > 0) {
+        containerRef.current.scrollTop = savedTop;
+      }
+    }
+  }, [work.id, loading]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (containerRef.current) {
+        saveScrollPosition(work.id, containerRef.current.scrollTop);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+      if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+    };
+  }, [work.id]);
+
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: 'clamp(14px, 3vw, 36px)', background: '#0f172a' }}>
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{ flex: 1, overflowY: 'auto', padding: 'clamp(14px, 3vw, 36px)', background: '#0f172a' }}
+    >
       {/* Botão de Retorno Mobile */}
       {onBackToLibrary && (
         <div style={{ marginBottom: 14 }} className="mobile-only">
@@ -213,7 +259,7 @@ export const WorkDetail: React.FC<Props> = ({
         }}
       >
         <button
-          onClick={() => setActiveTab('journal')}
+          onClick={() => handleTabChange('journal')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -237,7 +283,7 @@ export const WorkDetail: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('characters')}
+          onClick={() => handleTabChange('characters')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -261,7 +307,7 @@ export const WorkDetail: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('attachments')}
+          onClick={() => handleTabChange('attachments')}
           style={{
             display: 'flex',
             alignItems: 'center',
