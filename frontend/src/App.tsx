@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Attachment, Character, Genre, Progress, ReadingStatus, Work, WorkType } from './types';
 import { attachmentsApi, charactersApi, genresApi, progressApi, worksApi } from './services/api';
 import { Sidebar } from './components/Sidebar';
@@ -19,6 +19,11 @@ export function App() {
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialNav.workId);
+  const selectedWorkIdRef = useRef<string | null>(initialNav.workId);
+
+  useEffect(() => {
+    selectedWorkIdRef.current = selectedWorkId;
+  }, [selectedWorkId]);
 
   const [progressList, setProgressList] = useState<Progress[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -58,6 +63,7 @@ export function App() {
 
   const handleSelectWork = (id: string) => {
     setSelectedWorkId(id);
+    selectedWorkIdRef.current = id;
     updateNavParams({ workId: id });
     if (isMobile) {
       setMobileView('detail');
@@ -66,6 +72,7 @@ export function App() {
 
   const handleBackToLibrary = () => {
     setSelectedWorkId(null);
+    selectedWorkIdRef.current = null;
     updateNavParams({ workId: null });
     setMobileView('list');
   };
@@ -106,16 +113,25 @@ export function App() {
         pageSize: 20,
       });
 
-      setWorks(res.items);
+      setWorks((prev) => {
+        const activeId = selectedWorkIdRef.current;
+        const currentActive = activeId ? prev.find((w) => w.id === activeId) : null;
+        if (currentActive && !res.items.some((w) => w.id === activeId)) {
+          return [currentActive, ...res.items];
+        }
+        return res.items;
+      });
       setWorksPage(1);
       setHasMoreWorks(res.page < res.totalPages);
 
-      if (res.items.length > 0) {
-        if (!selectedWorkId || !res.items.some((w) => w.id === selectedWorkId)) {
-          setSelectedWorkId(res.items[0].id);
-        }
-      } else {
+      const currentActiveId = selectedWorkIdRef.current;
+      if (!currentActiveId && !isMobile && res.items.length > 0) {
+        setSelectedWorkId(res.items[0].id);
+        selectedWorkIdRef.current = res.items[0].id;
+        updateNavParams({ workId: res.items[0].id });
+      } else if (!currentActiveId && res.items.length === 0) {
         setSelectedWorkId(null);
+        selectedWorkIdRef.current = null;
       }
     } catch (err) {
       console.error('Erro ao buscar obras:', err);
@@ -194,6 +210,7 @@ export function App() {
 
   const handleWorkDeleted = () => {
     setSelectedWorkId(null);
+    selectedWorkIdRef.current = null;
     updateNavParams({ workId: null });
     setMobileView('list');
     fetchWorks();
