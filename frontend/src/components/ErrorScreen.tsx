@@ -20,8 +20,8 @@ export const ErrorScreen: FC<ErrorScreenProps> = ({ error, errorInfo, onRetry })
       await navigator.clipboard.writeText(fullLog);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard write failed
+    } catch (copyErr: unknown) {
+      console.warn('Failed to copy error to clipboard', copyErr);
     }
   };
 

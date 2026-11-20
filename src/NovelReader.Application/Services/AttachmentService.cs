@@ -60,7 +60,18 @@ namespace NovelReader.Application.Services
         public async Task<AttachmentResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var attachment = await _attachmentRepository.GetByIdAsync(id, cancellationToken);
-            return attachment is null ? null : AttachmentResponse.FromEntity(attachment);
+            if (attachment is null)
+            {
+                return null;
+            }
+
+            var workExists = await _workRepository.ExistsAsync(attachment.WorkId, cancellationToken);
+            if (!workExists)
+            {
+                return null;
+            }
+
+            return AttachmentResponse.FromEntity(attachment);
         }
 
         public async Task<AttachmentResponse> UpdateAsync(Guid id, UpdateAttachmentRequest request, CancellationToken cancellationToken = default)
@@ -77,6 +88,12 @@ namespace NovelReader.Application.Services
                 throw new KeyNotFoundException($"Anexo com ID {id} não encontrado.");
             }
 
+            var workExists = await _workRepository.ExistsAsync(attachment.WorkId, cancellationToken);
+            if (!workExists)
+            {
+                throw new KeyNotFoundException($"Anexo com ID {id} não encontrado.");
+            }
+
             attachment.Update(request.Title, request.Category, request.Content, request.ImageUrl);
             await _attachmentRepository.UpdateAsync(attachment, cancellationToken);
 
@@ -87,6 +104,12 @@ namespace NovelReader.Application.Services
         {
             var attachment = await _attachmentRepository.GetByIdAsync(id, cancellationToken);
             if (attachment is null)
+            {
+                throw new KeyNotFoundException($"Anexo com ID {id} não encontrado.");
+            }
+
+            var workExists = await _workRepository.ExistsAsync(attachment.WorkId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Anexo com ID {id} não encontrado.");
             }

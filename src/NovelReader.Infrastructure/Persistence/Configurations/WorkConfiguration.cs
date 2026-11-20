@@ -23,7 +23,9 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.AlternativeTitles)
                     .HasDefaultValueSql("'{}'");
 
-            builder.HasIndex(x => x.Title);
+            builder.HasIndex(x => x.Title)
+                   .HasMethod("gin")
+                   .HasOperators("gin_trgm_ops");
 
             builder.HasOne<User>()
                    .WithMany()

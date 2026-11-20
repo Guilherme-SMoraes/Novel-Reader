@@ -147,6 +147,8 @@ namespace NovelReader.Application.Tests.Services
             var character = EntityFactory.CreateValidCharacter(Guid.NewGuid());
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(character);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(character.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var result = await _characterService.GetByIdAsync(character.Id, CancellationToken.None);
 
@@ -173,6 +175,8 @@ namespace NovelReader.Application.Tests.Services
             var character = EntityFactory.CreateValidCharacter(Guid.NewGuid());
             _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(character);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(character.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var request = new UpdateCharacterRequest(
                 "Shin Youngwoo",
@@ -216,11 +220,15 @@ namespace NovelReader.Application.Tests.Services
         [Fact]
         public async Task DeleteAsync_ShouldCallRepository()
         {
-            var id = Guid.NewGuid();
+            var character = EntityFactory.CreateValidCharacter(Guid.NewGuid());
+            _characterRepositoryMock.Setup(x => x.GetByIdAsync(character.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(character);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(character.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
-            await _characterService.DeleteAsync(id, CancellationToken.None);
+            await _characterService.DeleteAsync(character.Id, CancellationToken.None);
 
-            _characterRepositoryMock.Verify(x => x.DeleteAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+            _characterRepositoryMock.Verify(x => x.DeleteAsync(character.Id, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

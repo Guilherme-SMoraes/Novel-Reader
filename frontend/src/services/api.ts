@@ -75,8 +75,8 @@ async function request<T>(endpoint: string, options?: RequestInit, retryCount = 
         else if (errData.errors) {
           errorMsg = Object.values(errData.errors).flat().join(', ');
         }
-      } catch {
-        // Ignora erro de parse de corpo caso resposta não seja JSON
+      } catch (parseErr: unknown) {
+        console.debug('Failed to parse error response JSON', parseErr);
       }
       throw new Error(errorMsg);
     }
@@ -89,11 +89,16 @@ async function request<T>(endpoint: string, options?: RequestInit, retryCount = 
 
     return await res.json();
   } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err;
+    }
+
     if (err instanceof TypeError && err.message.includes('Failed to fetch') && retryCount < 8) {
       setServerWaking(true);
       await new Promise(resolve => setTimeout(resolve, 3000));
       return await request<T>(endpoint, options, retryCount + 1);
     }
+    setServerWaking(false);
     throw err;
   }
 }
@@ -103,14 +108,17 @@ export const healthApi = {
 };
 
 export const worksApi = {
-  getAll: (params?: {
-    title?: string;
-    workType?: WorkType;
-    genreId?: string;
-    readingStatus?: ReadingStatus;
-    page?: number;
-    pageSize?: number;
-  }) => {
+  getAll: (
+    params?: {
+      title?: string;
+      workType?: WorkType;
+      genreId?: string;
+      readingStatus?: ReadingStatus;
+      page?: number;
+      pageSize?: number;
+    },
+    signal?: AbortSignal
+  ) => {
     const q = new URLSearchParams();
     if (params?.title) q.append('title', params.title);
     if (params?.workType) q.append('workType', params.workType.toString());
@@ -119,7 +127,7 @@ export const worksApi = {
     q.append('page', (params?.page || 1).toString());
     q.append('pageSize', (params?.pageSize || 20).toString());
 
-    return request<PagedResult<Work>>(`/works?${q.toString()}`);
+    return request<PagedResult<Work>>(`/works?${q.toString()}`, { signal });
   },
 
   getById: (id: string) => request<Work>(`/works/${id}`),
@@ -260,8 +268,8 @@ export const imagesApi = {
       let data: { success?: boolean; data?: { url?: string }; error?: { message?: string } } | null = null;
       try {
         data = await res.json();
-      } catch {
-        // Ignore json parse error
+      } catch (parseErr: unknown) {
+        console.debug('Failed to parse ImgBB response JSON', parseErr);
       }
 
       if (!res.ok || !data?.success) {

@@ -42,6 +42,11 @@ namespace NovelReader.Infrastructure.Services
             }
 
             var clientId = _configuration["Authentication:Google:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId) && (_configuration["ASPNETCORE_ENVIRONMENT"] == "Production" || _configuration["DOTNET_ENVIRONMENT"] == "Production"))
+            {
+                throw new InvalidOperationException("Google ClientId is not configured in production.");
+            }
+
             GoogleJsonWebSignature.Payload payload;
 
             try
@@ -129,6 +134,15 @@ namespace NovelReader.Infrastructure.Services
             var user = await _userRepository.GetByIdAsync(_currentUserService.UserId.Value, cancellationToken);
             if (user == null)
             {
+                return null;
+            }
+
+            var normalizedEmail = user.Email.Trim().ToLowerInvariant();
+            var isAdminEmail = normalizedEmail.Equals(User.AdminEmail, StringComparison.OrdinalIgnoreCase);
+            var isAllowed = isAdminEmail || await _whitelistRepository.IsEmailAllowedAsync(normalizedEmail, cancellationToken);
+            if (!isAllowed)
+            {
+                _logger.LogWarning("Sessão revogada para o e-mail: {Email}", normalizedEmail);
                 return null;
             }
 

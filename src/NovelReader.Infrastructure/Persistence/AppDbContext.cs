@@ -29,7 +29,14 @@ namespace NovelReader.Infrastructure.Persistence
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
             modelBuilder.Entity<Work>().HasQueryFilter(w => CurrentUserId == null || w.UserId == CurrentUserId);
+            modelBuilder.Entity<WorkFormat>().HasQueryFilter(wf => CurrentUserId == null || Works.Any(w => w.Id == wf.WorkId));
+            modelBuilder.Entity<Character>().HasQueryFilter(c => CurrentUserId == null || Works.Any(w => w.Id == c.WorkId));
+            modelBuilder.Entity<CharacterAppearance>().HasQueryFilter(ca => CurrentUserId == null || Characters.Any(c => c.Id == ca.CharacterId));
+            modelBuilder.Entity<Progress>().HasQueryFilter(p => CurrentUserId == null || Works.Any(w => w.Id == p.WorkId));
+            modelBuilder.Entity<Attachment>().HasQueryFilter(a => CurrentUserId == null || Works.Any(w => w.Id == a.WorkId));
         }
     }
 }

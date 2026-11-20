@@ -21,6 +21,7 @@ namespace NovelReader.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("NovelReader.Domain.Entities.Attachment", b =>
@@ -293,6 +294,9 @@ namespace NovelReader.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Title");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("UserId");
 

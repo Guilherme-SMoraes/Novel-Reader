@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NovelReader.Application.DTOs.Images;
 using NovelReader.Application.Interfaces;
 
@@ -25,6 +26,7 @@ namespace NovelReader.API.Controllers
         }
 
         [HttpPost("upload")]
+        [EnableRateLimiting("images-policy")]
         [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Upload(IFormFile? file, CancellationToken cancellationToken)

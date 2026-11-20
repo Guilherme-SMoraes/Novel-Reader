@@ -7,6 +7,10 @@ namespace NovelReader.Application.Validators
     {
         public UpdateProgressDescriptionRequestValidator()
         {
+            RuleFor(x => x.Description)
+                .MaximumLength(2500)
+                .When(x => !string.IsNullOrWhiteSpace(x.Description))
+                .WithMessage("A descrição do progresso deve ter no máximo 2500 caracteres.");
         }
     }
 }

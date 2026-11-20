@@ -152,19 +152,29 @@ export function App() {
   const [worksPage, setWorksPage] = useState(1);
   const [hasMoreWorks, setHasMoreWorks] = useState(false);
   const [loadingMoreWorks, setLoadingMoreWorks] = useState(false);
+  const fetchWorksAbortControllerRef = useRef<AbortController | null>(null);
 
   const fetchWorks = async () => {
     if (!isAuthenticated) return;
+    if (fetchWorksAbortControllerRef.current) {
+      fetchWorksAbortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    fetchWorksAbortControllerRef.current = abortController;
+
     try {
       setLoading(true);
-      const res = await worksApi.getAll({
-        title: searchTitle || undefined,
-        workType: selectedType || undefined,
-        genreId: selectedGenreId || undefined,
-        readingStatus: selectedStatus || undefined,
-        page: 1,
-        pageSize: 20,
-      });
+      const res = await worksApi.getAll(
+        {
+          title: searchTitle || undefined,
+          workType: selectedType || undefined,
+          genreId: selectedGenreId || undefined,
+          readingStatus: selectedStatus || undefined,
+          page: 1,
+          pageSize: 20,
+        },
+        abortController.signal
+      );
 
       setWorks((prev) => {
         const activeId = selectedWorkIdRef.current;
@@ -186,10 +196,15 @@ export function App() {
         setSelectedWorkId(null);
         selectedWorkIdRef.current = null;
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
       console.error('Erro ao buscar obras:', err);
     } finally {
-      setLoading(false);
+      if (fetchWorksAbortControllerRef.current === abortController) {
+        setLoading(false);
+      }
     }
   };
 
@@ -223,7 +238,12 @@ export function App() {
       fetchWorks();
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (fetchWorksAbortControllerRef.current) {
+        fetchWorksAbortControllerRef.current.abort();
+      }
+    };
   }, [searchTitle, selectedStatus, selectedType, selectedGenreId, isAuthenticated]);
 
   const fetchWorkDetails = async (workId: string) => {

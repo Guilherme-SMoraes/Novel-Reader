@@ -118,16 +118,19 @@ export const MarkdownViewer: React.FC<Props> = ({ content, className = '', compa
           hr: () => (
             <hr style={{ border: 'none', borderTop: '1px solid #334155', margin: '14px 0' }} />
           ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#38bdf8', textDecoration: 'underline' }}
-            >
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            const isSafe = href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:'));
+            return (
+              <a
+                href={isSafe ? href : '#'}
+                target={isSafe && href.startsWith('http') ? '_blank' : undefined}
+                rel="noopener noreferrer"
+                style={{ color: '#38bdf8', textDecoration: 'underline' }}
+              >
+                {children}
+              </a>
+            );
+          },
           img: ({ src, alt }) => {
             if (!src) return null;
             return (

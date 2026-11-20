@@ -55,6 +55,25 @@ namespace NovelReader.API.Middlewares
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt.");
+                var statusCode = context.User?.Identity?.IsAuthenticated == true
+                    ? (int)HttpStatusCode.Forbidden
+                    : (int)HttpStatusCode.Unauthorized;
+
+                context.Response.StatusCode = statusCode;
+                context.Response.ContentType = "application/json";
+
+                var response = new
+                {
+                    title = statusCode == (int)HttpStatusCode.Forbidden ? "Forbidden" : "Unauthorized",
+                    status = statusCode,
+                    message = ex.Message
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
                 _logger.LogWarning(ex, "Business rule violation.");

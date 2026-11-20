@@ -64,6 +64,25 @@ namespace NovelReader.Application.Validators
                     .When(f => f.TranslatedUpTo != null)
                     .WithMessage("O volume traduzido deve ser maior que zero.");
 
+                format.RuleFor(f => f.TranslatedLanguage)
+                    .NotNull().WithMessage("O idioma traduzido é obrigatório quando há capítulos traduzidos informados.")
+                    .IsInEnum().WithMessage("Idioma traduzido inválido.")
+                    .When(f => f.TranslatedUpTo != null);
+
+                format.RuleFor(f => f.TranslatedUpTo)
+                    .NotNull().WithMessage("Os capítulos traduzidos são obrigatórios quando o idioma traduzido for informado.")
+                    .When(f => f.TranslatedLanguage.HasValue);
+
+                format.RuleFor(f => f.TranslatedUpTo!)
+                    .Must((f, translated) => translated.Chapter <= f.TotalChapter.Chapter)
+                    .When(f => f.TranslatedUpTo != null && f.TotalChapter != null)
+                    .WithMessage("O capítulo traduzido não pode ser maior que o total de capítulos.");
+
+                format.RuleFor(f => f.TranslatedUpTo!)
+                    .Must((f, translated) => !translated.Volume.HasValue || !f.TotalChapter.Volume.HasValue || translated.Volume <= f.TotalChapter.Volume)
+                    .When(f => f.TranslatedUpTo != null && f.TotalChapter != null)
+                    .WithMessage("O volume traduzido não pode ser maior que o total de volumes.");
+
                 format.RuleFor(f => f.LinkWhereToRead)
                     .MaximumLength(2048).WithMessage("O link de leitura deve ter no máximo 2048 caracteres.")
                     .Must(BeAValidUrl)

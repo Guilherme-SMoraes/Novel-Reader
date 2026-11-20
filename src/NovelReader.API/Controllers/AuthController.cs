@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NovelReader.Application.DTOs.Auth;
 using NovelReader.Application.Interfaces;
 
@@ -17,6 +18,7 @@ namespace NovelReader.API.Controllers
         }
 
         [HttpPost("google")]
+        [EnableRateLimiting("auth-policy")]
         [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

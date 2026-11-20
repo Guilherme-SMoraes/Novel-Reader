@@ -10,12 +10,11 @@ export function useKeepAlive() {
     const ping = async () => {
       try {
         await healthApi.check();
-      } catch {
-        // Silent failure for background keep-alive ping
+      } catch (pingErr: unknown) {
+        console.debug('Background keep-alive ping skipped', pingErr);
       }
     };
 
-    // Initial warmup check: only show cold start if taking > 4s
     const warmup = async () => {
       let timer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
         window.dispatchEvent(new CustomEvent('server:waking'));
@@ -23,8 +22,8 @@ export function useKeepAlive() {
 
       try {
         await healthApi.check();
-      } catch {
-        // Handled silently
+      } catch (warmupErr: unknown) {
+        console.debug('Server warmup check skipped', warmupErr);
       } finally {
         if (timer) clearTimeout(timer);
         window.dispatchEvent(new CustomEvent('server:ready'));

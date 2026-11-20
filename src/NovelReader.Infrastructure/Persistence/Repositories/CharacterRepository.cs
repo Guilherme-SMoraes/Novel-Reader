@@ -46,7 +46,6 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
         public async Task<PagedResult<Character>> GetByWorkIdAsync(Guid workId, int page, int pageSize, CancellationToken cancellationToken, string? affiliation = null)
         {
             var query = _context.Characters
-                .Include(x => x.FirstAppearances)
                 .AsNoTracking()
                 .Where(x => x.WorkId == workId);
 
@@ -63,6 +62,7 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             var items = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Include(x => x.FirstAppearances)
                 .ToListAsync(cancellationToken);
 
             return new PagedResult<Character>(items, total, page, pageSize);
@@ -99,12 +99,14 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 var existingApp = existing.FirstAppearances.FirstOrDefault(a => a.WorkType == app.WorkType);
                 if (existingApp != null)
                 {
-                    existing.FirstAppearances.Remove(existingApp);
-                    _context.CharacterAppearances.Remove(existingApp);
+                    existingApp.UpdateChapter(app.Chapter);
                 }
-                var newApp = new CharacterAppearance(existing.Id, app.WorkType, app.Chapter);
-                existing.AddFirstAppearance(newApp);
-                _context.CharacterAppearances.Add(newApp);
+                else
+                {
+                    var newApp = new CharacterAppearance(existing.Id, app.WorkType, app.Chapter);
+                    existing.AddFirstAppearance(newApp);
+                    _context.CharacterAppearances.Add(newApp);
+                }
             }
 
             await _context.SaveChangesAsync(cancellationToken);

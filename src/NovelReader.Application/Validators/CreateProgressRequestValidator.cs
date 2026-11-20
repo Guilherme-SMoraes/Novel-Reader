@@ -29,6 +29,11 @@ namespace NovelReader.Application.Validators
             RuleFor(x => x.ReadingStatus)
                 .IsInEnum().WithMessage("Status de leitura inválido.");
 
+            RuleFor(x => x.ReadingDescription)
+                .MaximumLength(2500)
+                .When(x => !string.IsNullOrWhiteSpace(x.ReadingDescription))
+                .WithMessage("A descrição do progresso deve ter no máximo 2500 caracteres.");
+
             RuleFor(x => x.ChapterLink)
                 .MaximumLength(2048).WithMessage("O link do capítulo deve ter no máximo 2048 caracteres.")
                 .Must(BeAValidUrl)

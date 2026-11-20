@@ -301,5 +301,49 @@ namespace NovelReader.Application.Tests.Services
             result.AlternativeTitles.Should().Contain(new[] { "SS", "Escravo das Sombras" });
             _workRepositoryMock.Verify(x => x.CreateAsync(It.Is<Work>(w => w.AlternativeTitles.Count == 2), It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact]
+        public async Task CreateAsync_WhenTranslatedUpToExceedsTotalChapter_ShouldThrowValidationException()
+        {
+            var formats = new List<CreateWorkFormatRequest>
+            {
+                new(WorkType.WebNovel, new WorkChapterDto(null, 100), new WorkChapterDto(null, 150), Language.Portuguese, null)
+            };
+
+            var request = new CreateWorkRequest(
+                "Title",
+                null,
+                "https://example.com",
+                null,
+                Language.Korean,
+                formats
+            );
+
+            var act = async () => await _workService.CreateAsync(request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ValidationException>();
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenTranslatedUpToProvidedWithoutLanguage_ShouldThrowValidationException()
+        {
+            var formats = new List<CreateWorkFormatRequest>
+            {
+                new(WorkType.WebNovel, new WorkChapterDto(null, 100), new WorkChapterDto(null, 50), null, null)
+            };
+
+            var request = new CreateWorkRequest(
+                "Title",
+                null,
+                "https://example.com",
+                null,
+                Language.Korean,
+                formats
+            );
+
+            var act = async () => await _workService.CreateAsync(request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ValidationException>();
+        }
     }
 }

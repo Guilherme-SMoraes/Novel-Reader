@@ -81,8 +81,9 @@ namespace NovelReader.Infrastructure.Services
                     return msgElem.GetString();
                 }
             }
-            catch
+            catch (JsonException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Failed to parse error message: {ex.Message}");
                 return null;
             }
 

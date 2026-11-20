@@ -94,6 +94,8 @@ namespace NovelReader.Application.Tests.Services
             var attachment = new Attachment("Antigo", "Mapa", Guid.NewGuid());
             _attachmentRepositoryMock.Setup(x => x.GetByIdAsync(attachment.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(attachment);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(attachment.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var request = new UpdateAttachmentRequest
             {
@@ -137,6 +139,8 @@ namespace NovelReader.Application.Tests.Services
             var attachment = new Attachment("Mapa", "Mapa", Guid.NewGuid());
             _attachmentRepositoryMock.Setup(x => x.GetByIdAsync(attachment.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(attachment);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(attachment.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             await _attachmentService.DeleteAsync(attachment.Id, CancellationToken.None);
 

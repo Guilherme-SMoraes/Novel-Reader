@@ -23,11 +23,13 @@ namespace NovelReader.Application.Tests.Services
         {
             _progressRepositoryMock = new Mock<IProgressRepository>();
             _workRepositoryMock = new Mock<IWorkRepository>();
-            var validator = new CreateProgressRequestValidator();
+            var createValidator = new CreateProgressRequestValidator();
+            var updateValidator = new UpdateProgressDescriptionRequestValidator();
             _progressService = new ProgressService(
                 _progressRepositoryMock.Object,
                 _workRepositoryMock.Object,
-                validator
+                createValidator,
+                updateValidator
             );
         }
 
@@ -177,6 +179,8 @@ namespace NovelReader.Application.Tests.Services
             var progress = EntityFactory.CreateValidProgress(Guid.NewGuid(), WorkType.WebNovel);
             _progressRepositoryMock.Setup(x => x.GetByIdAsync(progress.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(progress);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(progress.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var result = await _progressService.GetByIdAsync(progress.Id, CancellationToken.None);
 
@@ -200,22 +204,60 @@ namespace NovelReader.Application.Tests.Services
         [Fact]
         public async Task UpdateDescriptionAsync_ShouldCallRepository()
         {
-            var id = Guid.NewGuid();
+            var progress = EntityFactory.CreateValidProgress(Guid.NewGuid(), WorkType.WebNovel);
+            _progressRepositoryMock.Setup(x => x.GetByIdAsync(progress.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(progress);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(progress.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
             var request = new UpdateProgressDescriptionRequest("New note");
 
-            await _progressService.UpdateDescriptionAsync(id, request, CancellationToken.None);
+            await _progressService.UpdateDescriptionAsync(progress.Id, request, CancellationToken.None);
 
-            _progressRepositoryMock.Verify(x => x.UpdateDescriptionAsync(id, "New note", It.IsAny<CancellationToken>()), Times.Once);
+            _progressRepositoryMock.Verify(x => x.UpdateDescriptionAsync(progress.Id, "New note", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task DeleteAsync_ShouldCallRepository()
         {
-            var id = Guid.NewGuid();
+            var progress = EntityFactory.CreateValidProgress(Guid.NewGuid(), WorkType.WebNovel);
+            _progressRepositoryMock.Setup(x => x.GetByIdAsync(progress.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(progress);
+            _workRepositoryMock.Setup(x => x.ExistsAsync(progress.WorkId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
-            await _progressService.DeleteAsync(id, CancellationToken.None);
+            await _progressService.DeleteAsync(progress.Id, CancellationToken.None);
 
-            _progressRepositoryMock.Verify(x => x.DeleteAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+            _progressRepositoryMock.Verify(x => x.DeleteAsync(progress.Id, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenReadingDescriptionExceeds2500Characters_ShouldThrowValidationException()
+        {
+            var work = EntityFactory.CreateValidWork();
+            var longDescription = new string('a', 2501);
+            var request = new CreateProgressRequest(
+                work.Id,
+                WorkType.WebNovel,
+                new WorkChapterDto(null, 10),
+                ReadingStatus.Reading,
+                longDescription
+            );
+
+            var act = async () => await _progressService.CreateAsync(request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ValidationException>();
+        }
+
+        [Fact]
+        public async Task UpdateDescriptionAsync_WhenDescriptionExceeds2500Characters_ShouldThrowValidationException()
+        {
+            var longDescription = new string('a', 2501);
+            var request = new UpdateProgressDescriptionRequest(longDescription);
+
+            var act = async () => await _progressService.UpdateDescriptionAsync(Guid.NewGuid(), request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ValidationException>();
         }
     }
 }

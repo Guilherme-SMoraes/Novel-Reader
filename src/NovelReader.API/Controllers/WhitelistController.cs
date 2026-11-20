@@ -58,6 +58,11 @@ namespace NovelReader.API.Controllers
                 return BadRequest(new { message = "Este e-mail já está autorizado na whitelist." });
             }
 
+            if (request.Description != null && request.Description.Trim().Length > 500)
+            {
+                return BadRequest(new { message = "A descrição deve ter no máximo 500 caracteres." });
+            }
+
             string creatorEmail = "Admin";
             if (_currentUserService.UserId.HasValue)
             {
@@ -84,6 +89,11 @@ namespace NovelReader.API.Controllers
             if (entry == null)
             {
                 return NotFound(new { message = "Entrada da whitelist não encontrada." });
+            }
+
+            if (request?.Description != null && request.Description.Trim().Length > 500)
+            {
+                return BadRequest(new { message = "A descrição deve ter no máximo 500 caracteres." });
             }
 
             entry.UpdateDescription(request?.Description);

@@ -75,7 +75,18 @@ namespace NovelReader.Application.Services
         public async Task<CharacterResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var character = await _characterRepository.GetByIdAsync(id, cancellationToken);
-            return character is null ? null : CharacterResponse.FromEntity(character);
+            if (character is null)
+            {
+                return null;
+            }
+
+            var workExists = await _workRepository.ExistsAsync(character.WorkId, cancellationToken);
+            if (!workExists)
+            {
+                return null;
+            }
+
+            return CharacterResponse.FromEntity(character);
         }
 
         public async Task UpdateAsync(Guid id, UpdateCharacterRequest request, CancellationToken cancellationToken = default)
@@ -88,6 +99,12 @@ namespace NovelReader.Application.Services
 
             var character = await _characterRepository.GetByIdAsync(id, cancellationToken);
             if (character is null)
+            {
+                throw new KeyNotFoundException($"Personagem com ID {id} não encontrado.");
+            }
+
+            var workExists = await _workRepository.ExistsAsync(character.WorkId, cancellationToken);
+            if (!workExists)
             {
                 throw new KeyNotFoundException($"Personagem com ID {id} não encontrado.");
             }
@@ -108,6 +125,18 @@ namespace NovelReader.Application.Services
 
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         {
+            var character = await _characterRepository.GetByIdAsync(id, cancellationToken);
+            if (character is null)
+            {
+                throw new KeyNotFoundException($"Personagem com ID {id} não encontrado.");
+            }
+
+            var workExists = await _workRepository.ExistsAsync(character.WorkId, cancellationToken);
+            if (!workExists)
+            {
+                throw new KeyNotFoundException($"Personagem com ID {id} não encontrado.");
+            }
+
             await _characterRepository.DeleteAsync(id, cancellationToken);
         }
     }

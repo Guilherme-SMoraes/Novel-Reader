@@ -3,6 +3,7 @@ import type { Genre } from '../types';
 import { genresApi } from '../services/api';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { X, Plus, Trash2, Tag } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
@@ -25,6 +26,8 @@ export const ManageGenresModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [genreToDelete, setGenreToDelete] = useState<Genre | null>(null);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
 
   useEscapeKey(onClose, isOpen && !loading);
 
@@ -51,10 +54,16 @@ export const ManageGenresModal: React.FC<Props> = ({
 
   const handleConfirmDeleteGenre = async () => {
     if (!genreToDelete) return;
-    await genresApi.delete(genreToDelete.id);
-    showToast(`Gênero "${genreToDelete.name}" apagado.`, 'info');
-    onGenresUpdated();
-    setGenreToDelete(null);
+    try {
+      await genresApi.delete(genreToDelete.id);
+      showToast(`Gênero "${genreToDelete.name}" apagado.`, 'info');
+      onGenresUpdated();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao apagar gênero.';
+      showToast(msg, 'error');
+    } finally {
+      setGenreToDelete(null);
+    }
   };
 
   return (
@@ -131,15 +140,17 @@ export const ManageGenresModal: React.FC<Props> = ({
                     <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>{g.description}</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="btn-icon"
-                  title="Apagar gênero"
-                  style={{ color: '#f87171' }}
-                  onClick={() => setGenreToDelete(g)}
-                >
-                  <Trash2 size={16} />
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    title="Apagar gênero"
+                    style={{ color: '#f87171' }}
+                    onClick={() => setGenreToDelete(g)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             ))
           )}

@@ -21,14 +21,24 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
         {
-            var deleted = await _context.Genres
-                .Where(x => x.Id == id)
-                .ExecuteDeleteAsync(cancellationToken);
-
-            if(deleted == 0)
+            var genre = await _context.Genres.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            if (genre is null)
             {
                 throw new KeyNotFoundException($"Genre {id} não encontrado");
             }
+
+            var worksWithGenre = await _context.Works
+                .Include(w => w.Genres)
+                .Where(w => w.Genres.Any(g => g.Id == id))
+                .ToListAsync(cancellationToken);
+
+            foreach (var work in worksWithGenre)
+            {
+                work.RemoveGenre(id);
+            }
+
+            _context.Genres.Remove(genre);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<PagedResult<Genre>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken)

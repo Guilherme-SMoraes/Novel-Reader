@@ -55,15 +55,16 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
             var query = _context.Works
                 .AsNoTracking()
-                .Include(x => x.Genres)
-                .Include(x => x.Formats)
                 .Where(x => EF.Functions.ILike(x.Title, $"%{name}%") || x.AlternativeTitles.Any(t => EF.Functions.ILike(t, $"%{name}%")));
 
             var total = await query.CountAsync(cancellationToken);
 
             var items = await query
+                .OrderBy(x => x.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .ToListAsync(cancellationToken);
 
             return new PagedResult<Work>(items, total, page, pageSize);
@@ -85,8 +86,6 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
         {
             var query = _context.Works
                 .AsNoTracking()
-                .Include(x => x.Genres)
-                .Include(x => x.Formats)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -127,6 +126,8 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
                 .OrderBy(x => x.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .ToListAsync(cancellationToken);
 
             return new PagedResult<Work>(items, total, page, pageSize);
@@ -151,15 +152,16 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
         {
             var query = _context.Works
                 .AsNoTracking()
-                .Include(x => x.Genres)
-                .Include(x => x.Formats)
                 .Where(x => x.Genres.Any(w => w.Id == genreId));
 
             var total = await query.CountAsync(cancellationToken);
 
             var items = await query
+                .OrderBy(x => x.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Include(x => x.Genres)
+                .Include(x => x.Formats)
                 .ToListAsync(cancellationToken);
 
             return new PagedResult<Work>(items, total, page, pageSize);
@@ -185,10 +187,19 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
 
             var targetTypes = work.Formats.Select(f => f.WorkType).ToHashSet();
             var formatsToRemove = existingWork.Formats.Where(f => !targetTypes.Contains(f.WorkType)).ToList();
-            foreach (var f in formatsToRemove)
+            if (formatsToRemove.Count > 0)
             {
-                existingWork.Formats.Remove(f);
-                _context.WorkFormats.Remove(f);
+                var removedTypes = formatsToRemove.Select(f => f.WorkType).ToList();
+                var orphanedProgress = await _context.Progresses
+                    .Where(p => p.WorkId == existingWork.Id && removedTypes.Contains(p.WorkType))
+                    .ToListAsync(cancellationToken);
+                _context.Progresses.RemoveRange(orphanedProgress);
+
+                foreach (var f in formatsToRemove)
+                {
+                    existingWork.Formats.Remove(f);
+                    _context.WorkFormats.Remove(f);
+                }
             }
 
             foreach (var format in work.Formats)
