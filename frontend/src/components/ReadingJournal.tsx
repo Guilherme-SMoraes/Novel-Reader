@@ -33,6 +33,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
     return work.formats && work.formats.length > 0 ? work.formats[0].workType : 2;
   });
   const [formatRecords, setFormatRecords] = useState<Progress[]>([]);
+  const [latestProgressByFormat, setLatestProgressByFormat] = useState<Record<number, Progress>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(false);
@@ -55,6 +56,39 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
       linkWhereToRead: null,
     };
 
+  const refreshLatestProgress = useCallback(async () => {
+    try {
+      const items = await progressApi.getLatestByWorkId(work.id);
+      setLatestProgressByFormat((prev) => {
+        const next = { ...prev };
+        items.forEach((p) => {
+          next[p.workType] = p;
+        });
+        return next;
+      });
+    } catch (err: unknown) {
+      console.error('Falha ao obter resumo dos formatos:', err);
+    }
+  }, [work.id]);
+
+  useEffect(() => {
+    refreshLatestProgress();
+  }, [work.id, refreshLatestProgress]);
+
+  useEffect(() => {
+    if (progressList && progressList.length > 0) {
+      setLatestProgressByFormat((prev) => {
+        const next = { ...prev };
+        progressList.forEach((p) => {
+          if (!next[p.workType] || new Date(p.stoppedAt) > new Date(next[p.workType].stoppedAt)) {
+            next[p.workType] = p;
+          }
+        });
+        return next;
+      });
+    }
+  }, [progressList]);
+
   const loadFormatProgress = useCallback(
     async (formatType: WorkType, targetPage = 1, append = false) => {
       if (targetPage === 1) {
@@ -66,6 +100,9 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
       try {
         const res = await progressApi.getByWorkId(work.id, formatType, targetPage, 20);
         setFormatRecords((prev) => (append ? [...prev, ...res.items] : res.items));
+        if (res.items.length > 0) {
+          setLatestProgressByFormat((prev) => ({ ...prev, [formatType]: res.items[0] }));
+        }
         setCurrentPage(res.page);
         setHasMore(res.page < res.totalPages);
       } catch (err: unknown) {
@@ -110,13 +147,16 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
   });
 
   const latestProgress =
-    formatRecords[0] || (progressList && progressList.find((p) => p.workType === activeFormat.workType));
+    (formatRecords.length > 0 ? formatRecords[0] : null) ||
+    latestProgressByFormat[activeFormat.workType] ||
+    (progressList && progressList.find((p) => p.workType === activeFormat.workType));
   const currentChapter = latestProgress ? latestProgress.stoppedAtChapter.chapter : 0;
   const totalChapter = activeFormat.totalChapter.chapter;
   const pct = totalChapter > 0 ? ((currentChapter / totalChapter) * 100).toFixed(1) : '0';
 
   const handleProgressChanged = () => {
     loadFormatProgress(selectedWorkType, 1, false);
+    refreshLatestProgress();
     onProgressUpdated();
   };
 
@@ -132,7 +172,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
     try {
       const nextChapter = currentChapter + 1;
       const isCompleted = totalChapter > 0 && nextChapter >= totalChapter;
-      await progressApi.create({
+      const created = await progressApi.create({
         workId: work.id,
         workType: activeFormat.workType,
         stoppedAtChapter: {
@@ -142,6 +182,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
         readingStatus: isCompleted ? 2 : (latestProgress?.readingStatus || 1),
         readingDescription: null,
       });
+      setLatestProgressByFormat((prev) => ({ ...prev, [activeFormat.workType]: created }));
       if (isCompleted) {
         showToast(`Parabéns! Obra concluída no formato ${WorkTypeLabels[activeFormat.workType]}.`, 'success');
       }
@@ -175,7 +216,8 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
           {work.formats && work.formats.map((f) => {
             const isSelected = f.workType === activeFormat.workType;
             const fProg =
-              (isSelected && formatRecords[0]) ||
+              (isSelected && formatRecords.length > 0 ? formatRecords[0] : null) ||
+              latestProgressByFormat[f.workType] ||
               (progressList && progressList.find((p) => p.workType === f.workType));
             const fCurrent = fProg ? fProg.stoppedAtChapter.chapter : 0;
             const fPct = f.totalChapter.chapter > 0 ? Math.round((fCurrent / f.totalChapter.chapter) * 100) : 0;

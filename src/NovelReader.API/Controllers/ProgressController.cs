@@ -46,6 +46,17 @@ namespace NovelReader.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("latest")]
+        [ProducesResponseType(typeof(IReadOnlyList<ProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLatestByWorkId(
+            [FromRoute] Guid workId,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _progressService.GetLatestByWorkIdAsync(workId, cancellationToken);
+            return Ok(result);
+        }
+
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(ProgressResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

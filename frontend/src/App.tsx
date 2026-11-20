@@ -251,8 +251,9 @@ export function App() {
     try {
       const existingInWorks = works.find((w) => w.id === workId);
       const needWorkFetch = !existingInWorks;
-      const [progRes, charRes, attRes, fetchedWork] = await Promise.all([
+      const [progRes, latestProgRes, charRes, attRes, fetchedWork] = await Promise.all([
         progressApi.getByWorkId(workId),
+        progressApi.getLatestByWorkId(workId).catch(() => [] as Progress[]),
         charactersApi.getByWorkId(workId),
         attachmentsApi.getByWorkId(workId),
         needWorkFetch ? worksApi.getById(workId).catch(() => null) : Promise.resolve(null),
@@ -264,7 +265,10 @@ export function App() {
           setWorks((prev) => (prev.some((w) => w.id === fetchedWork.id) ? prev : [fetchedWork, ...prev]));
         }
       }
-      setProgressList(progRes.items);
+      const mergedProgressMap = new Map<string, Progress>();
+      latestProgRes.forEach((p) => mergedProgressMap.set(p.id, p));
+      progRes.items.forEach((p) => mergedProgressMap.set(p.id, p));
+      setProgressList(Array.from(mergedProgressMap.values()));
       setCharacters(charRes.items);
       setAttachments(attRes);
     } catch (err) {

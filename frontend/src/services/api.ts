@@ -169,6 +169,9 @@ export const progressApi = {
     return request<PagedResult<Progress>>(`/works/${workId}/progress?${q.toString()}`);
   },
 
+  getLatestByWorkId: (workId: string) =>
+    request<Progress[]>(`/works/${workId}/progress/latest`),
+
   create: (data: CreateProgressRequest) =>
     request<Progress>(`/works/${data.workId}/progress`, {
       method: 'POST',

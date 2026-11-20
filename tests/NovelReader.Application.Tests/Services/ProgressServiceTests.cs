@@ -259,5 +259,37 @@ namespace NovelReader.Application.Tests.Services
 
             await act.Should().ThrowAsync<ValidationException>();
         }
+
+        [Fact]
+        public async Task GetLatestByWorkIdAsync_WhenWorkDoesNotExist_ShouldThrowKeyNotFoundException()
+        {
+            var workId = Guid.NewGuid();
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            var act = async () => await _progressService.GetLatestByWorkIdAsync(workId, CancellationToken.None);
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        [Fact]
+        public async Task GetLatestByWorkIdAsync_WhenWorkExists_ShouldReturnLatestProgressList()
+        {
+            var workId = Guid.NewGuid();
+            _workRepositoryMock.Setup(x => x.ExistsAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            var p1 = new Progress(workId, WorkType.WebNovel, new Domain.ValueObjects.WorkChapter(null, 32), ReadingStatus.Reading);
+            var p2 = new Progress(workId, WorkType.Anime, new Domain.ValueObjects.WorkChapter(null, 13), ReadingStatus.Completed);
+
+            _progressRepositoryMock.Setup(x => x.GetLatestByWorkIdAsync(workId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Progress> { p1, p2 });
+
+            var result = await _progressService.GetLatestByWorkIdAsync(workId, CancellationToken.None);
+
+            result.Should().HaveCount(2);
+            result.Should().Contain(x => x.WorkType == WorkType.WebNovel && x.StoppedAtChapter.Chapter == 32);
+            result.Should().Contain(x => x.WorkType == WorkType.Anime && x.StoppedAtChapter.Chapter == 13);
+        }
     }
 }

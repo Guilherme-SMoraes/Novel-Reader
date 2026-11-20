@@ -63,6 +63,38 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             return new PagedResult<Progress>(items, total, page, pageSize);
         }
 
+        public async Task<IReadOnlyList<Progress>> GetLatestByWorkIdAsync(Guid workId, CancellationToken cancellationToken)
+        {
+            var workTypes = await _context.Progresses
+                .AsNoTracking()
+                .Where(x => x.WorkId == workId)
+                .Select(x => x.WorkType)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (workTypes.Count == 0)
+            {
+                return Array.Empty<Progress>();
+            }
+
+            var result = new List<Progress>(workTypes.Count);
+            foreach (var wt in workTypes)
+            {
+                var latest = await _context.Progresses
+                    .AsNoTracking()
+                    .Where(x => x.WorkId == workId && x.WorkType == wt)
+                    .OrderByDescending(x => x.StoppedAt)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (latest != null)
+                {
+                    result.Add(latest);
+                }
+            }
+
+            return result;
+        }
+
         public async Task UpdateDescriptionAsync(Guid id, string? description, CancellationToken cancellationToken)
         {
             var updated = await _context.Progresses

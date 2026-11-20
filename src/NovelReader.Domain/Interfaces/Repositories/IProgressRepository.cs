@@ -10,6 +10,7 @@ namespace NovelReader.Domain.Interfaces.Repositories
         Task UpdateDescriptionAsync(Guid id, string? description, CancellationToken cancellationToken);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken);
         Task<PagedResult<Progress>> GetByWorkIdAsync(Guid workId, WorkType? workType, int page, int pageSize, CancellationToken cancellationToken);
+        Task<IReadOnlyList<Progress>> GetLatestByWorkIdAsync(Guid workId, CancellationToken cancellationToken);
         Task<Progress?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     }
 }

@@ -79,6 +79,18 @@ namespace NovelReader.Application.Services
             return new PagedResult<ProgressResponse>(items, pagedProgress.TotalCount, pagedProgress.Page, pagedProgress.PageSize);
         }
 
+        public async Task<IReadOnlyList<ProgressResponse>> GetLatestByWorkIdAsync(Guid workId, CancellationToken cancellationToken = default)
+        {
+            var workExists = await _workRepository.ExistsAsync(workId, cancellationToken);
+            if (!workExists)
+            {
+                throw new KeyNotFoundException($"Obra com ID {workId} não encontrada.");
+            }
+
+            var latestProgressList = await _progressRepository.GetLatestByWorkIdAsync(workId, cancellationToken);
+            return latestProgressList.Select(ProgressResponse.FromEntity).ToList();
+        }
+
         public async Task<ProgressResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var progress = await _progressRepository.GetByIdAsync(id, cancellationToken);
