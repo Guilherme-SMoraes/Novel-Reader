@@ -11,7 +11,7 @@ import { CharacterGridSkeleton } from './Skeletons';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
 import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
-import { getActiveDraftMeta } from '../utils/formDrafts';
+import { getActiveDraftMeta, getSessionList, saveSessionList } from '../utils/formDrafts';
 
 interface Props {
   work: Work;
@@ -35,22 +35,33 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const { showToast } = useToast();
 
   useEffect(() => {
+    const savedIds = getSessionList('character', work.id);
     const activeDraft = getActiveDraftMeta();
+    const allIds = new Set<string>(savedIds);
     if (activeDraft && activeDraft.type === 'character' && activeDraft.workId === work.id) {
-      if (activeDraft.mode === 'create') {
-        setCharacterSessions((prev) => {
-          if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
-          return [...prev, { id: activeDraft.sessionKey, character: null }];
+      allIds.add(activeDraft.sessionKey);
+    }
+
+    if (allIds.size > 0) {
+      setCharacterSessions((prev) => {
+        const existingMap = new Map(prev.map((s) => [s.id, s]));
+        const merged: Array<{ id: string; character: Character | null }> = [];
+        allIds.forEach((id) => {
+          if (existingMap.has(id)) {
+            merged.push(existingMap.get(id)!);
+          } else if (id.startsWith('char-edit-')) {
+            const charId = id.replace('char-edit-', '');
+            const char = characters.find((c) => c.id === charId);
+            if (char) {
+              merged.push({ id, character: char });
+            }
+          } else {
+            merged.push({ id, character: null });
+          }
         });
-      } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
-        const char = characters.find((c) => c.id === activeDraft.entityId);
-        if (char) {
-          setCharacterSessions((prev) => {
-            if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
-            return [...prev, { id: activeDraft.sessionKey, character: char }];
-          });
-        }
-      }
+        saveSessionList('character', work.id, merged.map((s) => s.id));
+        return merged;
+      });
     }
   }, [work.id, characters]);
 
@@ -148,19 +159,29 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   const handleOpenCreate = () => {
     const sessionId = `char-create-${Date.now()}`;
-    setCharacterSessions((prev) => [...prev, { id: sessionId, character: null }]);
+    setCharacterSessions((prev) => {
+      const next = [...prev, { id: sessionId, character: null }];
+      saveSessionList('character', work.id, next.map((s) => s.id));
+      return next;
+    });
   };
 
   const handleOpenEdit = (character: Character) => {
     const sessionId = `char-edit-${character.id}`;
     setCharacterSessions((prev) => {
       if (prev.some((s) => s.id === sessionId)) return prev;
-      return [...prev, { id: sessionId, character }];
+      const next = [...prev, { id: sessionId, character }];
+      saveSessionList('character', work.id, next.map((s) => s.id));
+      return next;
     });
   };
 
   const handleCloseSession = (sessionId: string) => {
-    setCharacterSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setCharacterSessions((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      saveSessionList('character', work.id, next.map((s) => s.id));
+      return next;
+    });
   };
 
   return (

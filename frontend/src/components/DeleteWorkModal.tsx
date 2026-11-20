@@ -4,6 +4,7 @@ import { worksApi } from '../services/api';
 import { AlertOctagon, X } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { clearWorkDrafts } from '../utils/formDrafts';
 
 interface Props {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export const DeleteWorkModal: React.FC<Props> = ({ isOpen, work, onClose, onDele
 
     try {
       await worksApi.delete(work.id);
+      clearWorkDrafts(work.id);
       showToast(`Obra "${work.title}" excluída com sucesso.`, 'info');
       onDeleted();
       onClose();

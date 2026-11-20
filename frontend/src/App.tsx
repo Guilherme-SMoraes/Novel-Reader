@@ -11,7 +11,7 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { useAuth } from './context/AuthContext';
 import { BookOpen } from 'lucide-react';
 import { getNavParams, updateNavParams } from './utils/navigationState';
-import { getActiveDraftMeta } from './utils/formDrafts';
+import { getActiveDraftMeta, cleanupExpiredDrafts } from './utils/formDrafts';
 
 export function App() {
   useKeepAlive();
@@ -95,6 +95,7 @@ export function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      cleanupExpiredDrafts();
       fetchGenres();
       const activeDraft = getActiveDraftMeta();
       if (activeDraft) {

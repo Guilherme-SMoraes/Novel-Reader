@@ -6,7 +6,7 @@ import { worksApi } from '../services/api';
 import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
+import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { GenreMultiSelect } from './GenreMultiSelect';
 import { X, Minus, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
@@ -76,6 +76,7 @@ export const WorkModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const { showToast } = useToast();
 
   const { minimizeModal, closeModal, updateModalTitle } = useModalDock();
@@ -100,10 +101,11 @@ export const WorkModal: React.FC<Props> = ({
         setActiveTabWorkType(draft.activeTabWorkType || draft.formats[0].workType);
       }
       setError(null);
-      showToast('Rascunho recuperado com sucesso.', 'info');
+      setHasRecoveredDraft(true);
       return;
     }
 
+    setHasRecoveredDraft(false);
     if (workToEdit) {
       setTitle(workToEdit.title);
       setAlternativeTitles(workToEdit.alternativeTitles || []);
@@ -163,7 +165,7 @@ export const WorkModal: React.FC<Props> = ({
       setActiveTabWorkType(2);
     }
     setError(null);
-  }, [workToEdit, isOpen, effectiveSessionId, showToast]);
+  }, [workToEdit, isOpen, effectiveSessionId]);
 
   useEffect(() => {
     if (!isOpen || loading) return;
@@ -221,6 +223,91 @@ export const WorkModal: React.FC<Props> = ({
     }
   }, [title, isMinimized, effectiveSessionId, workToEdit, updateModalTitle]);
 
+  const isDirty = () => {
+    if (workToEdit) {
+      return (
+        title !== workToEdit.title ||
+        JSON.stringify(alternativeTitles) !== JSON.stringify(workToEdit.alternativeTitles || []) ||
+        description !== (workToEdit.description || '') ||
+        aggregatorLink !== workToEdit.aggregatorLink ||
+        coverImageUrl !== (workToEdit.coverImageUrl || '') ||
+        JSON.stringify(selectedGenreIds) !== JSON.stringify(workToEdit.genres ? workToEdit.genres.map((g) => g.id) : [])
+      );
+    }
+    return (
+      title.trim() !== '' ||
+      description.trim() !== '' ||
+      aggregatorLink.trim() !== '' ||
+      coverImageUrl.trim() !== '' ||
+      alternativeTitles.length > 0 ||
+      selectedGenreIds.length > 0
+    );
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft(effectiveSessionId, 'work');
+    setHasRecoveredDraft(false);
+    if (workToEdit) {
+      setTitle(workToEdit.title);
+      setAlternativeTitles(workToEdit.alternativeTitles || []);
+      setAltTitleInput('');
+      setDescription(workToEdit.description || '');
+      setOriginalLanguage(workToEdit.originalLanguage);
+      setAggregatorLink(workToEdit.aggregatorLink);
+      setCoverImageUrl(workToEdit.coverImageUrl || '');
+      setSelectedGenreIds(workToEdit.genres ? workToEdit.genres.map((g) => g.id) : []);
+
+      if (workToEdit.formats && workToEdit.formats.length > 0) {
+        const loadedFormats: FormatFormState[] = workToEdit.formats.map((f) => ({
+          workType: f.workType,
+          chapter: f.totalChapter.chapter.toString(),
+          volume: f.totalChapter.volume ? f.totalChapter.volume.toString() : '',
+          transChapter: f.translatedUpTo ? f.translatedUpTo.chapter.toString() : '',
+          transVolume: f.translatedUpTo?.volume ? f.translatedUpTo.volume.toString() : '',
+          transLanguage: f.translatedLanguage || '',
+          linkWhereToRead: f.linkWhereToRead || '',
+        }));
+        setFormats(loadedFormats);
+        setActiveTabWorkType(loadedFormats[0].workType);
+      } else {
+        setFormats([
+          {
+            workType: 2,
+            chapter: '100',
+            volume: '',
+            transChapter: '',
+            transVolume: '',
+            transLanguage: '',
+            linkWhereToRead: '',
+          },
+        ]);
+        setActiveTabWorkType(2);
+      }
+    } else {
+      setTitle('');
+      setAlternativeTitles([]);
+      setAltTitleInput('');
+      setDescription('');
+      setOriginalLanguage(3);
+      setAggregatorLink('');
+      setCoverImageUrl('');
+      setSelectedGenreIds([]);
+      setFormats([
+        {
+          workType: 2,
+          chapter: '100',
+          volume: '',
+          transChapter: '',
+          transVolume: '',
+          transLanguage: '',
+          linkWhereToRead: '',
+        },
+      ]);
+      setActiveTabWorkType(2);
+    }
+    showToast('Rascunho descartado.', 'info');
+  };
+
   const handleMinimize = () => {
     setIsMinimized(true);
     minimizeModal({
@@ -233,7 +320,14 @@ export const WorkModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
-    clearFormDraft(effectiveSessionId);
+    if (isDirty()) {
+      const confirmed = window.confirm(
+        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
+      );
+      if (confirmed) {
+        discardDraft(effectiveSessionId, 'work');
+      }
+    }
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -419,7 +513,7 @@ export const WorkModal: React.FC<Props> = ({
         await worksApi.create(req);
       }
 
-      clearFormDraft(effectiveSessionId);
+      discardDraft(effectiveSessionId, 'work');
       closeModal(effectiveSessionId);
       onSaved();
       onClose();
@@ -431,7 +525,14 @@ export const WorkModal: React.FC<Props> = ({
   };
 
   return createPortal(
-    <div className="modal-overlay">
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isDirty()) {
+          handleClose();
+        }
+      }}
+    >
       <div className="modal-content" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: '680px', width: '100%', padding: '24px 28px' }}>
         {/* Cabeçalho */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #1e293b', paddingBottom: 12 }}>
@@ -459,6 +560,41 @@ export const WorkModal: React.FC<Props> = ({
             </button>
           </div>
         </div>
+
+        {hasRecoveredDraft && (
+          <div
+            style={{
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid #0284c7',
+              color: '#38bdf8',
+              padding: '8px 12px',
+              borderRadius: 6,
+              marginBottom: 14,
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <span>📝 Rascunho recuperado automaticamente</span>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              style={{
+                background: 'transparent',
+                border: '1px solid #0284c7',
+                color: '#38bdf8',
+                borderRadius: 4,
+                padding: '2px 8px',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+              }}
+            >
+              Descartar rascunho
+            </button>
+          </div>
+        )}
 
         {error && (
           <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '10px 14px', borderRadius: 6, marginBottom: 16, fontSize: '0.85rem' }}>

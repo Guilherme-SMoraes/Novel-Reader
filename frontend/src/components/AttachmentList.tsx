@@ -5,12 +5,12 @@ import { AttachmentModal } from './AttachmentModal';
 import { ConfirmModal } from './ConfirmModal';
 import { MarkdownViewer } from './MarkdownViewer';
 import { useToast } from '../context/ToastContext';
-import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'lucide-react';
+import { Map as MapIcon, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'lucide-react';
 import { ImageLightbox } from './ImageLightbox';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
 import { AttachmentGridSkeleton } from './Skeletons';
-import { getActiveDraftMeta } from '../utils/formDrafts';
+import { getActiveDraftMeta, getSessionList, saveSessionList } from '../utils/formDrafts';
 
 interface Props {
   work: Work;
@@ -28,22 +28,33 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const { showToast } = useToast();
 
   useEffect(() => {
+    const savedIds = getSessionList('attachment', work.id);
     const activeDraft = getActiveDraftMeta();
+    const allIds = new Set<string>(savedIds);
     if (activeDraft && activeDraft.type === 'attachment' && activeDraft.workId === work.id) {
-      if (activeDraft.mode === 'create') {
-        setAttachmentSessions((prev) => {
-          if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
-          return [...prev, { id: activeDraft.sessionKey, attachment: null }];
+      allIds.add(activeDraft.sessionKey);
+    }
+
+    if (allIds.size > 0) {
+      setAttachmentSessions((prev) => {
+        const existingMap = new Map(prev.map((s) => [s.id, s]));
+        const merged: Array<{ id: string; attachment: Attachment | null }> = [];
+        allIds.forEach((id) => {
+          if (existingMap.has(id)) {
+            merged.push(existingMap.get(id)!);
+          } else if (id.startsWith('att-edit-')) {
+            const attId = id.replace('att-edit-', '');
+            const att = attachments.find((a) => a.id === attId);
+            if (att) {
+              merged.push({ id, attachment: att });
+            }
+          } else {
+            merged.push({ id, attachment: null });
+          }
         });
-      } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
-        const att = attachments.find((a) => a.id === activeDraft.entityId);
-        if (att) {
-          setAttachmentSessions((prev) => {
-            if (prev.some((s) => s.id === activeDraft.sessionKey)) return prev;
-            return [...prev, { id: activeDraft.sessionKey, attachment: att }];
-          });
-        }
-      }
+        saveSessionList('attachment', work.id, merged.map((s) => s.id));
+        return merged;
+      });
     }
   }, [work.id, attachments]);
 
@@ -82,19 +93,29 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
 
   const handleOpenCreate = () => {
     const sessionId = `att-create-${Date.now()}`;
-    setAttachmentSessions((prev) => [...prev, { id: sessionId, attachment: null }]);
+    setAttachmentSessions((prev) => {
+      const next = [...prev, { id: sessionId, attachment: null }];
+      saveSessionList('attachment', work.id, next.map((s) => s.id));
+      return next;
+    });
   };
 
   const handleOpenEdit = (attachment: Attachment) => {
     const sessionId = `att-edit-${attachment.id}`;
     setAttachmentSessions((prev) => {
       if (prev.some((s) => s.id === sessionId)) return prev;
-      return [...prev, { id: sessionId, attachment }];
+      const next = [...prev, { id: sessionId, attachment }];
+      saveSessionList('attachment', work.id, next.map((s) => s.id));
+      return next;
     });
   };
 
   const handleCloseAttachmentSession = (sessionId: string) => {
-    setAttachmentSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setAttachmentSessions((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      saveSessionList('attachment', work.id, next.map((s) => s.id));
+      return next;
+    });
   };
 
   const getCategoryColor = (cat: string) => {
@@ -121,7 +142,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
       {/* Top Controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Map size={22} color="#38bdf8" />
+          <MapIcon size={22} color="#38bdf8" />
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Anexos & Lore</h2>
           <span style={{ fontSize: '0.85rem', color: '#94a3b8', background: '#1e293b', padding: '2px 8px', borderRadius: '12px' }}>
             {attachments.length} {attachments.length === 1 ? 'item' : 'itens'}

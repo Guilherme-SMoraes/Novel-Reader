@@ -14,7 +14,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
+import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import {
   X,
   Minus,
@@ -80,6 +80,7 @@ export const CharacterModal: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasModifiedTags, setHasModifiedTags] = useState(false);
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +98,6 @@ export const CharacterModal: React.FC<Props> = ({
     closePopout,
   } = usePopoutModal(modalTitle);
 
-  // Available formats: either from the work or fallback to WebNovel
   const availableFormats = formats && formats.length > 0 ? formats : [{ workType: 2, totalChapter: { volume: null, chapter: 100 } } as WorkFormat];
 
   useEffect(() => {
@@ -113,10 +113,11 @@ export const CharacterModal: React.FC<Props> = ({
       setAffiliations(draft.affiliations || []);
       setAppearances(draft.appearances || {});
       setError(null);
-      showToast('Rascunho recuperado com sucesso.', 'info');
+      setHasRecoveredDraft(true);
       return;
     }
 
+    setHasRecoveredDraft(false);
     if (characterToEdit) {
       setName(characterToEdit.name);
       setCharacterType(characterToEdit.characterType);
@@ -146,7 +147,7 @@ export const CharacterModal: React.FC<Props> = ({
     setAffiliationInput('');
     setActiveTab('write');
     setError(null);
-  }, [characterToEdit, isOpen, effectiveSessionId, showToast]);
+  }, [characterToEdit, isOpen, effectiveSessionId]);
 
   useEffect(() => {
     if (!isOpen || loading) return;
@@ -202,6 +203,65 @@ export const CharacterModal: React.FC<Props> = ({
     }
   }, [name, isMinimized, effectiveSessionId, characterToEdit, updateModalTitle]);
 
+  const isDirty = () => {
+    if (characterToEdit) {
+      const origMap: Record<number, { chapter: string; volume: string }> = {};
+      characterToEdit.firstAppearances?.forEach((app) => {
+        origMap[app.workType] = {
+          chapter: app.chapter.chapter.toString(),
+          volume: app.chapter.volume ? app.chapter.volume.toString() : '',
+        };
+      });
+      return (
+        name !== characterToEdit.name ||
+        characterType !== characterToEdit.characterType ||
+        imageUrl !== (characterToEdit.imageUrl || '') ||
+        description !== (characterToEdit.description || '') ||
+        JSON.stringify(alternativeNames) !== JSON.stringify(characterToEdit.alternativeNames || []) ||
+        JSON.stringify(affiliations) !== JSON.stringify(characterToEdit.affiliations || []) ||
+        JSON.stringify(appearances) !== JSON.stringify(origMap)
+      );
+    }
+    return (
+      name.trim() !== '' ||
+      description.trim() !== '' ||
+      imageUrl.trim() !== '' ||
+      alternativeNames.length > 0 ||
+      affiliations.length > 0 ||
+      Object.keys(appearances).length > 0
+    );
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft(effectiveSessionId, 'character', workId);
+    setHasRecoveredDraft(false);
+    if (characterToEdit) {
+      setName(characterToEdit.name);
+      setCharacterType(characterToEdit.characterType);
+      setImageUrl(characterToEdit.imageUrl || '');
+      setDescription(characterToEdit.description || '');
+      setAlternativeNames(characterToEdit.alternativeNames || []);
+      setAffiliations(characterToEdit.affiliations || []);
+      const map: Record<number, { chapter: string; volume: string }> = {};
+      characterToEdit.firstAppearances?.forEach((app) => {
+        map[app.workType] = {
+          chapter: app.chapter.chapter.toString(),
+          volume: app.chapter.volume ? app.chapter.volume.toString() : '',
+        };
+      });
+      setAppearances(map);
+    } else {
+      setName('');
+      setCharacterType(1);
+      setImageUrl('');
+      setDescription('');
+      setAlternativeNames([]);
+      setAffiliations([]);
+      setAppearances({});
+    }
+    showToast('Rascunho descartado.', 'info');
+  };
+
   const handleMinimize = () => {
     if (isPoppedOut) {
       closePopout();
@@ -217,10 +277,17 @@ export const CharacterModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isDirty()) {
+      const confirmed = window.confirm(
+        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
+      );
+      if (confirmed) {
+        discardDraft(effectiveSessionId, 'character', workId);
+      }
+    }
     if (isPoppedOut) {
       closePopout();
     }
-    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose(hasModifiedTags);
   };
@@ -440,7 +507,7 @@ export const CharacterModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
-      clearFormDraft(effectiveSessionId);
+      discardDraft(effectiveSessionId, 'character', workId);
       closeModal(effectiveSessionId);
       onSaved(savedCharacter);
     } catch (err: unknown) {
@@ -511,7 +578,42 @@ export const CharacterModal: React.FC<Props> = ({
         </div>
       </div>
 
-        {error && (
+      {hasRecoveredDraft && (
+        <div
+          style={{
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid #0284c7',
+            color: '#38bdf8',
+            padding: '8px 12px',
+            borderRadius: 6,
+            marginBottom: 14,
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
+        >
+          <span>📝 Rascunho recuperado automaticamente</span>
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            style={{
+              background: 'transparent',
+              border: '1px solid #0284c7',
+              color: '#38bdf8',
+              borderRadius: 4,
+              padding: '2px 8px',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            Descartar rascunho
+          </button>
+        </div>
+      )}
+
+      {error && (
           <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '8px 12px', borderRadius: 6, marginBottom: 14, fontSize: '0.85rem' }}>
             {error}
           </div>
@@ -1001,7 +1103,7 @@ export const CharacterModal: React.FC<Props> = ({
     <div
       className="modal-overlay"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !isDirty()) {
           handleClose();
         }
       }}

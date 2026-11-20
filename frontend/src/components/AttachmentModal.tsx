@@ -6,7 +6,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
+import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { MarkdownViewer } from './MarkdownViewer';
 import { ImageInput } from './ImageInput';
 import {
@@ -118,6 +118,7 @@ export const AttachmentModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const { showToast } = useToast();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -144,10 +145,11 @@ export const AttachmentModal: React.FC<Props> = ({
       setImageUrl(draft.imageUrl || '');
       setContent(draft.content || '');
       setError(null);
-      showToast('Rascunho recuperado com sucesso.', 'info');
+      setHasRecoveredDraft(true);
       return;
     }
 
+    setHasRecoveredDraft(false);
     if (attachmentToEdit) {
       setTitle(attachmentToEdit.title);
       if (PRESET_CATEGORIES.includes(attachmentToEdit.category)) {
@@ -168,7 +170,7 @@ export const AttachmentModal: React.FC<Props> = ({
     }
     setError(null);
     setActiveTab('write');
-  }, [attachmentToEdit, isOpen, effectiveSessionId, showToast]);
+  }, [attachmentToEdit, isOpen, effectiveSessionId]);
 
   useEffect(() => {
     if (!isOpen || loading) return;
@@ -218,6 +220,54 @@ export const AttachmentModal: React.FC<Props> = ({
     }
   }, [title, isMinimized, effectiveSessionId, attachmentToEdit, updateModalTitle]);
 
+  const isDirty = () => {
+    if (attachmentToEdit) {
+      const initialCat = PRESET_CATEGORIES.includes(attachmentToEdit.category)
+        ? attachmentToEdit.category
+        : 'Outro';
+      const initialCustom = PRESET_CATEGORIES.includes(attachmentToEdit.category)
+        ? ''
+        : attachmentToEdit.category;
+      return (
+        title !== attachmentToEdit.title ||
+        category !== initialCat ||
+        customCategory !== initialCustom ||
+        imageUrl !== (attachmentToEdit.imageUrl || '') ||
+        content !== (attachmentToEdit.content || '')
+      );
+    }
+    return (
+      title.trim() !== '' ||
+      content.trim() !== '' ||
+      imageUrl.trim() !== '' ||
+      customCategory.trim() !== ''
+    );
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft(effectiveSessionId, 'attachment', workId);
+    setHasRecoveredDraft(false);
+    if (attachmentToEdit) {
+      setTitle(attachmentToEdit.title);
+      if (PRESET_CATEGORIES.includes(attachmentToEdit.category)) {
+        setCategory(attachmentToEdit.category);
+        setCustomCategory('');
+      } else {
+        setCategory('Outro');
+        setCustomCategory(attachmentToEdit.category);
+      }
+      setImageUrl(attachmentToEdit.imageUrl || '');
+      setContent(attachmentToEdit.content || '');
+    } else {
+      setTitle('');
+      setCategory('Mapa');
+      setCustomCategory('');
+      setImageUrl('');
+      setContent('');
+    }
+    showToast('Rascunho descartado.', 'info');
+  };
+
   const handleMinimize = () => {
     if (isPoppedOut) {
       closePopout();
@@ -233,10 +283,17 @@ export const AttachmentModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isDirty()) {
+      const confirmed = window.confirm(
+        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
+      );
+      if (confirmed) {
+        discardDraft(effectiveSessionId, 'attachment', workId);
+      }
+    }
     if (isPoppedOut) {
       closePopout();
     }
-    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -325,7 +382,7 @@ export const AttachmentModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
-      clearFormDraft(effectiveSessionId);
+      discardDraft(effectiveSessionId, 'attachment', workId);
       closeModal(effectiveSessionId);
       onSaved(savedAttachment);
     } catch (err: unknown) {
@@ -396,7 +453,42 @@ export const AttachmentModal: React.FC<Props> = ({
         </div>
       </div>
 
-        {error && (
+      {hasRecoveredDraft && (
+        <div
+          style={{
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid #0284c7',
+            color: '#38bdf8',
+            padding: '8px 12px',
+            borderRadius: 6,
+            marginBottom: 14,
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
+        >
+          <span>📝 Rascunho recuperado automaticamente</span>
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            style={{
+              background: 'transparent',
+              border: '1px solid #0284c7',
+              color: '#38bdf8',
+              borderRadius: 4,
+              padding: '2px 8px',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            Descartar rascunho
+          </button>
+        </div>
+      )}
+
+      {error && (
           <div style={{ padding: '10px', background: '#7f1d1d', borderRadius: '6px', color: '#fca5a5', marginBottom: '14px', fontSize: '0.9rem' }}>
             {error}
           </div>
@@ -696,7 +788,7 @@ export const AttachmentModal: React.FC<Props> = ({
     <div
       className="modal-overlay"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !isDirty()) {
           handleClose();
         }
       }}

@@ -7,7 +7,7 @@ import { useModalDock } from '../context/ModalDockContext';
 import { useToast } from '../context/ToastContext';
 import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { saveFormDraft, getFormDraft, clearFormDraft } from '../utils/formDrafts';
+import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
@@ -39,6 +39,7 @@ export const EditProgressModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
 
@@ -70,14 +71,15 @@ export const EditProgressModal: React.FC<Props> = ({
       setDescription(draft.description || '');
       setActiveTab('write');
       setError(null);
-      showToast('Rascunho recuperado com sucesso.', 'info');
+      setHasRecoveredDraft(true);
       return;
     }
 
+    setHasRecoveredDraft(false);
     setDescription(progress.readingDescription || '');
     setActiveTab('write');
     setError(null);
-  }, [progress, isOpen, effectiveSessionId, showToast]);
+  }, [progress, isOpen, effectiveSessionId]);
 
   useEffect(() => {
     if (!isOpen || loading) return;
@@ -103,6 +105,15 @@ export const EditProgressModal: React.FC<Props> = ({
     }
   }, [modalTitle, isMinimized, effectiveSessionId, updateModalTitle]);
 
+  const isDirty = () => description !== (progress.readingDescription || '');
+
+  const handleDiscardDraft = () => {
+    discardDraft(effectiveSessionId, 'progress', workId);
+    setHasRecoveredDraft(false);
+    setDescription(progress.readingDescription || '');
+    showToast('Rascunho descartado.', 'info');
+  };
+
   const handleMinimize = () => {
     if (isPoppedOut) {
       closePopout();
@@ -118,10 +129,17 @@ export const EditProgressModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isDirty()) {
+      const confirmed = window.confirm(
+        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
+      );
+      if (confirmed) {
+        discardDraft(effectiveSessionId, 'progress', workId);
+      }
+    }
     if (isPoppedOut) {
       closePopout();
     }
-    clearFormDraft(effectiveSessionId);
     closeModal(effectiveSessionId);
     onClose();
   };
@@ -153,7 +171,7 @@ export const EditProgressModal: React.FC<Props> = ({
       if (isPoppedOut) {
         closePopout();
       }
-      clearFormDraft(effectiveSessionId);
+      discardDraft(effectiveSessionId, 'progress', workId);
       closeModal(effectiveSessionId);
       onSaved();
       onClose();
@@ -280,6 +298,40 @@ export const EditProgressModal: React.FC<Props> = ({
             flex: 1,
           }}
         >
+          {hasRecoveredDraft && (
+            <div
+              style={{
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid #0284c7',
+                color: '#38bdf8',
+                padding: '8px 12px',
+                borderRadius: 6,
+                fontSize: '0.82rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}
+            >
+              <span>📝 Rascunho recuperado automaticamente</span>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #0284c7',
+                  color: '#38bdf8',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Descartar rascunho
+              </button>
+            </div>
+          )}
+
           {error && (
             <div
               style={{
@@ -390,7 +442,7 @@ export const EditProgressModal: React.FC<Props> = ({
     <div
       className="modal-overlay"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !isDirty()) {
           handleClose();
         }
       }}
