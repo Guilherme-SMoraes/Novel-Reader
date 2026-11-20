@@ -6,6 +6,7 @@ import { CreateProgressModal } from './CreateProgressModal';
 import { EditProgressModal } from './EditProgressModal';
 import { ConfirmModal } from './ConfirmModal';
 import { MarkdownViewer } from './MarkdownViewer';
+import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
 import { useToast } from '../context/ToastContext';
 import { BookMarked, Trash2, ExternalLink, Edit2 } from 'lucide-react';
 import {
@@ -46,6 +47,16 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
   const currentChapter = latestProgress ? latestProgress.stoppedAtChapter.chapter : 0;
   const totalChapter = activeFormat.totalChapter.chapter;
   const pct = totalChapter > 0 ? ((currentChapter / totalChapter) * 100).toFixed(1) : '0';
+
+  const {
+    visibleItems: visibleProgressList,
+    sentinelRef: progressSentinelRef,
+    hasMore: hasMoreProgress,
+  } = useInfiniteSlice({
+    items: formatProgressList,
+    batchSize: 20,
+    resetDeps: [selectedWorkType],
+  });
 
   const handleQuickAddChapter = async () => {
     const unitPlural = getUnitLabel(activeFormat.workType, { plural: true }).toLowerCase();
@@ -214,7 +225,7 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {formatProgressList.map((p) => (
+            {visibleProgressList.map((p) => (
               <div
                 key={p.id}
                 style={{
@@ -327,6 +338,19 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList, onProgress
                 </div>
               </div>
             ))}
+            {hasMoreProgress && (
+              <div
+                ref={progressSentinelRef}
+                style={{
+                  padding: '12px',
+                  textAlign: 'center',
+                  fontSize: '0.78rem',
+                  color: '#64748b',
+                }}
+              >
+                Carregando mais registros de acompanhamento...
+              </div>
+            )}
           </div>
         )}
       </div>

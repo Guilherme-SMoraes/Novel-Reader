@@ -79,6 +79,10 @@ export function App() {
     }
   }, [isAuthenticated]);
 
+  const [worksPage, setWorksPage] = useState(1);
+  const [hasMoreWorks, setHasMoreWorks] = useState(false);
+  const [loadingMoreWorks, setLoadingMoreWorks] = useState(false);
+
   const fetchWorks = async () => {
     if (!isAuthenticated) return;
     try {
@@ -88,9 +92,13 @@ export function App() {
         workType: selectedType || undefined,
         genreId: selectedGenreId || undefined,
         readingStatus: selectedStatus || undefined,
+        page: 1,
+        pageSize: 20,
       });
 
       setWorks(res.items);
+      setWorksPage(1);
+      setHasMoreWorks(res.page < res.totalPages);
 
       if (res.items.length > 0) {
         if (!selectedWorkId || !res.items.some((w) => w.id === selectedWorkId)) {
@@ -103,6 +111,30 @@ export function App() {
       console.error('Erro ao buscar obras:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMoreWorks = async () => {
+    if (!isAuthenticated || loadingMoreWorks || !hasMoreWorks) return;
+    try {
+      setLoadingMoreWorks(true);
+      const nextPage = worksPage + 1;
+      const res = await worksApi.getAll({
+        title: searchTitle || undefined,
+        workType: selectedType || undefined,
+        genreId: selectedGenreId || undefined,
+        readingStatus: selectedStatus || undefined,
+        page: nextPage,
+        pageSize: 20,
+      });
+
+      setWorks((prev) => [...prev, ...res.items]);
+      setWorksPage(nextPage);
+      setHasMoreWorks(nextPage < res.totalPages);
+    } catch (err) {
+      console.error('Erro ao carregar mais obras:', err);
+    } finally {
+      setLoadingMoreWorks(false);
     }
   };
 
@@ -207,6 +239,9 @@ export function App() {
           onResetFilters={handleResetFilters}
           onOpenManageGenres={() => setIsManageGenresOpen(true)}
           isMobile={isMobile}
+          onLoadMore={fetchMoreWorks}
+          hasMore={hasMoreWorks}
+          loadingMore={loadingMoreWorks}
         />
       </div>
 

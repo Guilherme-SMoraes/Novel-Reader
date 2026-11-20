@@ -5,6 +5,7 @@ import { SlidersHorizontal, Plus, BookOpen, LogOut } from 'lucide-react';
 import { SidebarWorksSkeleton } from './Skeletons';
 import { getUnitLabel } from '../utils/formatLabels';
 import { useAuth } from '../context/AuthContext';
+import { useInfiniteTrigger } from '../hooks/useInfiniteScroll';
 
 interface Props {
   works: Work[];
@@ -24,6 +25,9 @@ interface Props {
   onResetFilters: () => void;
   onOpenManageGenres?: () => void;
   isMobile?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export const Sidebar: React.FC<Props> = ({
@@ -44,9 +48,18 @@ export const Sidebar: React.FC<Props> = ({
   onResetFilters,
   onOpenManageGenres,
   isMobile = false,
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
 }) => {
   const { user, logout } = useAuth();
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
+
+  const { sentinelRef } = useInfiniteTrigger({
+    onIntersect: onLoadMore || (() => {}),
+    hasMore,
+    isLoading: loadingMore,
+  });
 
   const activeFiltersCount = (selectedType ? 1 : 0) + (selectedGenreId ? 1 : 0);
 
@@ -219,7 +232,13 @@ export const Sidebar: React.FC<Props> = ({
                 }}
               >
                 {w.coverImageUrl ? (
-                  <div style={{ width: 50, height: 70, borderRadius: 4, backgroundImage: `url('${w.coverImageUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                  <img
+                    src={w.coverImageUrl}
+                    alt={w.title}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: 50, height: 70, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                  />
                 ) : (
                   <div style={{ width: 50, height: 70, borderRadius: 4, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.2rem', color: '#64748b' }}>
                     📖
@@ -253,6 +272,11 @@ export const Sidebar: React.FC<Props> = ({
               </div>
             );
           })
+        )}
+        {hasMore && (
+          <div ref={sentinelRef} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
+            {loadingMore ? 'Carregando mais obras...' : 'Carregando mais...'}
+          </div>
         )}
       </div>
 

@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { Map, Plus, Edit2, Trash2, Maximize2, X, FileText, BookOpen } from 'lucide-react';
 import { ImageLightbox } from './ImageLightbox';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
 
 interface Props {
   work: Work;
@@ -36,6 +37,18 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
       (a.content && a.content.toLowerCase().includes(q)) ||
       a.category.toLowerCase().includes(q);
     return matchesCategory && matchesSearch;
+  });
+
+  const {
+    visibleItems: visibleAttachments,
+    sentinelRef: attachmentSentinelRef,
+    hasMore: hasMoreAttachments,
+    visibleCount,
+    totalCount: totalAttachments,
+  } = useInfiniteSlice({
+    items: filtered,
+    batchSize: 14,
+    resetDeps: [selectedCategory, searchQuery],
   });
 
   const handleConfirmDelete = async () => {
@@ -143,7 +156,7 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
-          {filtered.map((att) => {
+          {visibleAttachments.map((att) => {
             const catStyle = getCategoryColor(att.category);
             return (
               <div
@@ -173,6 +186,8 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
                     <img
                       src={att.imageUrl}
                       alt={att.title}
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '100%',
                         height: '100%',
@@ -293,6 +308,20 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasMoreAttachments && (
+        <div
+          ref={attachmentSentinelRef}
+          style={{
+            padding: '16px',
+            textAlign: 'center',
+            fontSize: '0.8rem',
+            color: '#64748b',
+          }}
+        >
+          Carregando mais anexos... ({visibleCount} de {totalAttachments})
         </div>
       )}
 

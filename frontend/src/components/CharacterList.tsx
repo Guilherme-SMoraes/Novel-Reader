@@ -10,6 +10,7 @@ import { Users, Plus, Trash2, Edit2, User, ArrowUpDown, Shield, Maximize2 } from
 import { CharacterGridSkeleton } from './Skeletons';
 import { getUnitLabel, isWatchable } from '../utils/formatLabels';
 import { ImageLightbox } from './ImageLightbox';
+import { useInfiniteSlice } from '../hooks/useInfiniteScroll';
 
 interface Props {
   work: Work;
@@ -24,8 +25,6 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const [filterQuery, setFilterQuery] = useState('');
   const [selectedAffiliation, setSelectedAffiliation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('role');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
 
   const [characterSessions, setCharacterSessions] = useState<Array<{ id: string; character: Character | null }>>([]);
   const [detailCharacter, setDetailCharacter] = useState<Character | null>(null);
@@ -44,17 +43,10 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
   const handleFilterChange = (val: string) => {
     setFilterQuery(val);
-    setCurrentPage(1);
   };
 
   const handleSortChange = (val: SortOption) => {
     setSortBy(val);
-    setCurrentPage(1);
-  };
-
-  const handlePageSizeChange = (val: number) => {
-    setPageSize(val);
-    setCurrentPage(1);
   };
 
   const filtered = useMemo(() => {
@@ -113,12 +105,17 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
     });
   }, [filtered, sortBy]);
 
-  const totalItems = sorted.length;
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
-  const validCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (validCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const paginatedCharacters = sorted.slice(startIndex, endIndex);
+  const {
+    visibleItems: visibleCharacters,
+    visibleCount,
+    totalCount: totalItems,
+    hasMore,
+    sentinelRef,
+  } = useInfiniteSlice({
+    items: sorted,
+    batchSize: 28,
+    resetDeps: [filterQuery, selectedAffiliation, sortBy],
+  });
 
   const handleConfirmDelete = async () => {
     if (!characterToDelete) return;
@@ -170,10 +167,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               <Shield size={14} color="#c084fc" />
               <select
                 value={selectedAffiliation}
-                onChange={(e) => {
-                  setSelectedAffiliation(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setSelectedAffiliation(e.target.value)}
                 style={{
                   padding: '6px 8px',
                   fontSize: '0.8rem',
@@ -254,10 +248,7 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
               <Shield size={14} color="#c084fc" style={{ flexShrink: 0 }} />
               <select
                 value={selectedAffiliation}
-                onChange={(e) => {
-                  setSelectedAffiliation(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setSelectedAffiliation(e.target.value)}
                 style={{
                   padding: '7px 10px',
                   fontSize: '0.82rem',
@@ -309,14 +300,14 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
 
       {/* Grid de Personagens */}
       {loading ? (
-        <CharacterGridSkeleton count={pageSize <= 20 ? pageSize : 12} />
-      ) : paginatedCharacters.length === 0 ? (
+        <CharacterGridSkeleton count={12} />
+      ) : visibleCharacters.length === 0 ? (
         <div style={{ background: '#121927', border: '1px dashed var(--border)', borderRadius: 10, padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           {characters.length === 0 ? 'Nenhum personagem cadastrado para esta obra.' : 'Nenhum personagem corresponde ao filtro informado.'}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))', gap: 16 }}>
-          {paginatedCharacters.map((c) => {
+          {visibleCharacters.map((c) => {
             const isHovered = hoveredCardId === c.id;
             return (
               <div
@@ -341,7 +332,19 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
                 {/* Foto ou Avatar Placeholder */}
                 <div style={{ height: 145, position: 'relative', background: '#0c121e', flexShrink: 0 }}>
                   {c.imageUrl ? (
-                    <div style={{ width: '100%', height: '100%', backgroundImage: `url('${c.imageUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
+                    <img
+                      src={c.imageUrl}
+                      alt={c.name}
+                      loading="lazy"
+                      decoding="async"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center top',
+                        display: 'block',
+                      }}
+                    />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
                       <User size={48} />
@@ -604,113 +607,18 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
         </div>
       )}
 
-      {/* Controles de Paginação */}
-      {totalItems > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginTop: 20,
-            paddingTop: 16,
-            borderTop: '1px solid #1e293b',
-            fontSize: '0.85rem',
-            color: '#94a3b8',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span>
-              Exibindo <strong>{startIndex + 1}–{endIndex}</strong> de <strong>{totalItems}</strong> personagens
-            </span>
-            <span style={{ color: '#475569' }}>|</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>Por página:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                style={{
-                  padding: '3px 8px',
-                  fontSize: '0.8rem',
-                  background: '#1e293b',
-                  color: '#f8fafc',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </label>
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={validCurrentPage === 1}
-                className="btn-secondary"
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '0.8rem',
-                  opacity: validCurrentPage === 1 ? 0.4 : 1,
-                  cursor: validCurrentPage === 1 ? 'not-allowed' : 'pointer',
-                }}
-                title="Primeira Página"
-              >
-                &laquo;
-              </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={validCurrentPage === 1}
-                className="btn-secondary"
-                style={{
-                  padding: '4px 10px',
-                  fontSize: '0.8rem',
-                  opacity: validCurrentPage === 1 ? 0.4 : 1,
-                  cursor: validCurrentPage === 1 ? 'not-allowed' : 'pointer',
-                }}
-                title="Página Anterior"
-              >
-                &lsaquo;
-              </button>
-
-              <span style={{ padding: '0 8px', fontWeight: 600, color: '#f8fafc' }}>
-                Página {validCurrentPage} de {totalPages}
+      {/* Footer com Status do Infinite Scroll */}
+      {!loading && sorted.length > 0 && (
+        <div style={{ marginTop: 24, textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+          {hasMore ? (
+            <div ref={sentinelRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '16px 0' }}>
+              <span className="badge badge-tag" style={{ fontSize: '0.78rem', padding: '6px 14px' }}>
+                Carregando mais personagens... ({visibleCount} de {totalItems})
               </span>
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={validCurrentPage === totalPages}
-                className="btn-secondary"
-                style={{
-                  padding: '4px 10px',
-                  fontSize: '0.8rem',
-                  opacity: validCurrentPage === totalPages ? 0.4 : 1,
-                  cursor: validCurrentPage === totalPages ? 'not-allowed' : 'pointer',
-                }}
-                title="Próxima Página"
-              >
-                &rsaquo;
-              </button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={validCurrentPage === totalPages}
-                className="btn-secondary"
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '0.8rem',
-                  opacity: validCurrentPage === totalPages ? 0.4 : 1,
-                  cursor: validCurrentPage === totalPages ? 'not-allowed' : 'pointer',
-                }}
-                title="Última Página"
-              >
-                &raquo;
-              </button>
+            </div>
+          ) : (
+            <div style={{ padding: '14px 0', borderTop: '1px solid #1e293b' }}>
+              <span>Exibindo todos os <strong>{totalItems}</strong> personagens</span>
             </div>
           )}
         </div>
