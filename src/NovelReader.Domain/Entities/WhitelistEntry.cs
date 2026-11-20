@@ -4,6 +4,7 @@ namespace NovelReader.Domain.Entities
     {
         public Guid Id { get; init; }
         public string Email { get; private set; }
+        public string? Description { get; private set; }
         public DateTime CreatedAt { get; init; }
         public string CreatedBy { get; private set; }
 
@@ -11,7 +12,7 @@ namespace NovelReader.Domain.Entities
         private WhitelistEntry() { }
 #pragma warning restore CS8618
 
-        public WhitelistEntry(string email, string createdBy)
+        public WhitelistEntry(string email, string createdBy, string? description = null)
         {
             if (string.IsNullOrWhiteSpace(email))
             {
@@ -22,6 +23,12 @@ namespace NovelReader.Domain.Entities
             Email = email.Trim().ToLowerInvariant();
             CreatedAt = DateTime.UtcNow;
             CreatedBy = string.IsNullOrWhiteSpace(createdBy) ? "System" : createdBy.Trim();
+            Description = description?.Trim();
+        }
+
+        public void UpdateDescription(string? description)
+        {
+            Description = description?.Trim();
         }
     }
 }

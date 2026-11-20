@@ -48,6 +48,12 @@ namespace NovelReader.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task UpdateAsync(WhitelistEntry entry, CancellationToken cancellationToken)
+        {
+            _context.WhitelistEntries.Update(entry);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task DeleteAsync(WhitelistEntry entry, CancellationToken cancellationToken)
         {
             _context.WhitelistEntries.Remove(entry);

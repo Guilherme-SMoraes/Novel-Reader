@@ -18,6 +18,7 @@ export interface AuthResponse {
 export interface WhitelistEntry {
   id: string;
   email: string;
+  description?: string | null;
   createdAt: string;
   createdBy: string;
 }

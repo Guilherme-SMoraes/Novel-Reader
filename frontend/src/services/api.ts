@@ -325,10 +325,15 @@ export const authApi = {
 
 export const whitelistApi = {
   getAll: () => request<WhitelistEntry[]>('/whitelist'),
-  add: (email: string) =>
+  add: (email: string, description?: string) =>
     request<WhitelistEntry>('/whitelist', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, description }),
+    }),
+  update: (id: string, description?: string | null) =>
+    request<WhitelistEntry>(`/whitelist/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ description }),
     }),
   remove: (id: string) =>
     request<void>(`/whitelist/${id}`, {

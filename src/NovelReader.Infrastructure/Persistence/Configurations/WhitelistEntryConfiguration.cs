@@ -23,6 +23,9 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
                    .IsRequired()
                    .HasMaxLength(256);
 
+            builder.Property(x => x.Description)
+                   .HasMaxLength(500);
+
             builder.Property(x => x.CreatedAt)
                    .IsRequired();
         }

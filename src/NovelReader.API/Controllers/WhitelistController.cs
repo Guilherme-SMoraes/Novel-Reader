@@ -32,7 +32,7 @@ namespace NovelReader.API.Controllers
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
             var entries = await _whitelistRepository.GetAllAsync(cancellationToken);
-            var dtos = entries.Select(e => new WhitelistEntryDto(e.Id, e.Email, e.CreatedAt, e.CreatedBy));
+            var dtos = entries.Select(e => new WhitelistEntryDto(e.Id, e.Email, e.CreatedAt, e.CreatedBy, e.Description));
             return Ok(dtos);
         }
 
@@ -68,11 +68,29 @@ namespace NovelReader.API.Controllers
                 }
             }
 
-            var entry = new WhitelistEntry(trimmedEmail, creatorEmail);
+            var entry = new WhitelistEntry(trimmedEmail, creatorEmail, request.Description?.Trim());
             await _whitelistRepository.CreateAsync(entry, cancellationToken);
 
-            var dto = new WhitelistEntryDto(entry.Id, entry.Email, entry.CreatedAt, entry.CreatedBy);
+            var dto = new WhitelistEntryDto(entry.Id, entry.Email, entry.CreatedAt, entry.CreatedBy, entry.Description);
             return StatusCode(StatusCodes.Status201Created, dto);
+        }
+
+        [HttpPut("{id:guid}")]
+        [ProducesResponseType(typeof(WhitelistEntryDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateWhitelistRequest request, CancellationToken cancellationToken)
+        {
+            var entry = await _whitelistRepository.GetByIdAsync(id, cancellationToken);
+            if (entry == null)
+            {
+                return NotFound(new { message = "Entrada da whitelist não encontrada." });
+            }
+
+            entry.UpdateDescription(request?.Description);
+            await _whitelistRepository.UpdateAsync(entry, cancellationToken);
+
+            var dto = new WhitelistEntryDto(entry.Id, entry.Email, entry.CreatedAt, entry.CreatedBy, entry.Description);
+            return Ok(dto);
         }
 
         [HttpDelete("{id:guid}")]

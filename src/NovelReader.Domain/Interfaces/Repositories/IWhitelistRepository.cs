@@ -9,6 +9,7 @@ namespace NovelReader.Domain.Interfaces.Repositories
         Task<WhitelistEntry?> GetByEmailAsync(string email, CancellationToken cancellationToken);
         Task<WhitelistEntry?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
         Task CreateAsync(WhitelistEntry entry, CancellationToken cancellationToken);
+        Task UpdateAsync(WhitelistEntry entry, CancellationToken cancellationToken);
         Task DeleteAsync(WhitelistEntry entry, CancellationToken cancellationToken);
     }
 }

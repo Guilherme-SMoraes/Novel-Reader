@@ -237,6 +237,10 @@ namespace NovelReader.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)

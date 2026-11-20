@@ -4,7 +4,7 @@ import type { WhitelistEntry } from '../types';
 import { whitelistApi } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { X, ShieldCheck, UserPlus, Trash2, Mail, ShieldAlert, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, UserPlus, Trash2, Mail, ShieldAlert, Loader2, Edit2, Check, Tag } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -16,8 +16,13 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [entries, setEntries] = useState<WhitelistEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDescription, setEditingDescription] = useState('');
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEscapeKey(onClose, isOpen);
 
@@ -44,6 +49,7 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleAddEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailToSubmit = newEmail.trim().toLowerCase();
+    const descriptionToSubmit = newDescription.trim() || undefined;
 
     if (!emailToSubmit) {
       showToast('Informe um e-mail válido.', 'error');
@@ -52,14 +58,41 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
     setSubmitting(true);
     try {
-      const created = await whitelistApi.add(emailToSubmit);
+      const created = await whitelistApi.add(emailToSubmit, descriptionToSubmit);
       setEntries(prev => [...prev, created]);
       setNewEmail('');
+      setNewDescription('');
       showToast(`E-mail ${emailToSubmit} autorizado com sucesso!`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Falha ao adicionar e-mail à whitelist.', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (entry: WhitelistEntry) => {
+    setEditingId(entry.id);
+    setEditingDescription(entry.description || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingDescription('');
+  };
+
+  const handleSaveDescription = async (entryId: string) => {
+    setUpdatingId(entryId);
+    const trimmed = editingDescription.trim() || null;
+    try {
+      const updated = await whitelistApi.update(entryId, trimmed);
+      setEntries(prev => prev.map(e => (e.id === entryId ? updated : e)));
+      setEditingId(null);
+      setEditingDescription('');
+      showToast('Identificação atualizada com sucesso!', 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Falha ao atualizar identificação.', 'error');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -108,7 +141,7 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
         className="modal-content"
         style={{
           width: '100%',
-          maxWidth: '560px',
+          maxWidth: '580px',
           maxHeight: '90vh',
           backgroundColor: '#1e293b',
           borderRadius: '16px',
@@ -176,55 +209,84 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         <div style={{ padding: '20px 24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <form onSubmit={handleAddEmail} style={{ display: 'flex', gap: 8 }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Mail
-                size={16}
-                color="#64748b"
-                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
-              />
-              <input
-                type="email"
-                placeholder="novo.usuario@gmail.com"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                disabled={submitting}
+          <form onSubmit={handleAddEmail} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: '1 1 240px' }}>
+                <Mail
+                  size={16}
+                  color="#64748b"
+                  style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <input
+                  type="email"
+                  placeholder="novo.usuario@gmail.com"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  disabled={submitting}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px 10px 38px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    color: '#f8fafc',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ position: 'relative', flex: '1 1 180px' }}>
+                <Tag
+                  size={16}
+                  color="#64748b"
+                  style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Descrição / Nome (ex: Amigo João)"
+                  value={newDescription}
+                  onChange={e => setNewDescription(e.target.value)}
+                  disabled={submitting}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px 10px 38px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    color: '#f8fafc',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || !newEmail.trim()}
                 style={{
-                  width: '100%',
-                  padding: '10px 14px 10px 38px',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid #334155',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '10px 18px',
+                  backgroundColor: '#3b82f6',
+                  border: 'none',
                   borderRadius: '10px',
-                  color: '#f8fafc',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                  cursor: submitting || !newEmail.trim() ? 'not-allowed' : 'pointer',
+                  opacity: submitting || !newEmail.trim() ? 0.6 : 1,
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
                 }}
-              />
+              >
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                <span>Autorizar</span>
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={submitting || !newEmail.trim()}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '10px 16px',
-                backgroundColor: '#3b82f6',
-                border: 'none',
-                borderRadius: '10px',
-                color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '0.88rem',
-                cursor: submitting || !newEmail.trim() ? 'not-allowed' : 'pointer',
-                opacity: submitting || !newEmail.trim() ? 0.6 : 1,
-                transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {submitting ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-              <span>Autorizar</span>
-            </button>
           </form>
 
           <div>
@@ -270,13 +332,15 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 {entries.map(entry => {
                   const isAdmin = entry.email.toLowerCase() === 'guisanmo1@gmail.com';
                   const isDeleting = deletingId === entry.id;
+                  const isEditing = editingId === entry.id;
+                  const isUpdating = updatingId === entry.id;
 
                   return (
                     <div
                       key={entry.id}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         justifyContent: 'space-between',
                         padding: '12px 14px',
                         backgroundColor: '#0f172a',
@@ -285,7 +349,7 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         gap: 12,
                       }}
                     >
-                      <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <span
                             style={{
@@ -313,6 +377,121 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             </span>
                           )}
                         </div>
+
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <input
+                              type="text"
+                              value={editingDescription}
+                              onChange={e => setEditingDescription(e.target.value)}
+                              placeholder="Identificação / Nome"
+                              disabled={isUpdating}
+                              autoFocus
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleSaveDescription(entry.id);
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                }
+                              }}
+                              style={{
+                                padding: '4px 8px',
+                                backgroundColor: '#1e293b',
+                                border: '1px solid #3b82f6',
+                                borderRadius: '6px',
+                                color: '#f8fafc',
+                                fontSize: '0.82rem',
+                                outline: 'none',
+                                flex: 1,
+                                maxWidth: '240px',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveDescription(entry.id)}
+                              disabled={isUpdating}
+                              title="Salvar"
+                              style={{
+                                background: '#10b981',
+                                border: 'none',
+                                color: '#ffffff',
+                                padding: 6,
+                                borderRadius: '6px',
+                                cursor: isUpdating ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {isUpdating ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEdit}
+                              disabled={isUpdating}
+                              title="Cancelar"
+                              style={{
+                                background: '#334155',
+                                border: 'none',
+                                color: '#94a3b8',
+                                padding: 6,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {entry.description ? (
+                              <span
+                                style={{
+                                  fontSize: '0.82rem',
+                                  color: '#38bdf8',
+                                  fontWeight: 500,
+                                  background: 'rgba(56, 189, 248, 0.1)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                }}
+                              >
+                                <Tag size={11} />
+                                {entry.description}
+                              </span>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(entry)}
+                              title={entry.description ? 'Alterar descrição' : 'Adicionar identificação'}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: entry.description ? '#64748b' : '#38bdf8',
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: '0.75rem',
+                                transition: 'color 0.15s ease',
+                              }}
+                            >
+                              <Edit2 size={12} />
+                              {!entry.description && <span>+ Adicionar identificação</span>}
+                            </button>
+                          </div>
+                        )}
+
                         <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
                           Cadastrado em {new Date(entry.createdAt).toLocaleDateString('pt-BR')} por {entry.createdBy}
                         </div>
@@ -337,6 +516,7 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             fontSize: '0.78rem',
                             fontWeight: 600,
                             transition: 'all 0.15s ease',
+                            alignSelf: 'center',
                           }}
                         >
                           {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -350,6 +530,7 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             alignItems: 'center',
                             padding: '6px',
                             color: '#475569',
+                            alignSelf: 'center',
                           }}
                         >
                           <ShieldAlert size={16} />

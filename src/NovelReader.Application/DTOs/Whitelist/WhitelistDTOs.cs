@@ -4,10 +4,16 @@ namespace NovelReader.Application.DTOs.Whitelist
         Guid Id,
         string Email,
         DateTime CreatedAt,
-        string CreatedBy
+        string CreatedBy,
+        string? Description
     );
 
     public record AddWhitelistRequest(
-        string Email
+        string Email,
+        string? Description
+    );
+
+    public record UpdateWhitelistRequest(
+        string? Description
     );
 }
