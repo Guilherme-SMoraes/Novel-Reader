@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: res.email,
       name: res.name,
       avatarUrl: res.avatarUrl,
+      role: res.role,
     });
   };
 
@@ -43,7 +44,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const profile = await authApi.getMe();
         setUser(profile);
-      } catch {
+      } catch (err) {
+        console.warn('Sessão expirada ou inválida:', err);
         authStorage.removeToken();
         setUser(null);
       } finally {

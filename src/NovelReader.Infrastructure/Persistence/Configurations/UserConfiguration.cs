@@ -32,6 +32,11 @@ namespace NovelReader.Infrastructure.Persistence.Configurations
             builder.Property(x => x.AvatarUrl)
                    .HasMaxLength(2048);
 
+            builder.Property(x => x.Role)
+                   .IsRequired()
+                   .HasMaxLength(50)
+                   .HasDefaultValue("User");
+
             builder.Property(x => x.CreatedAt)
                    .IsRequired();
         }

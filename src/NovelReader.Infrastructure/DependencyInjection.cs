@@ -20,6 +20,7 @@ namespace NovelReader.Infrastructure
 
             services.AddScoped<IWorkRepository, WorkRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IWhitelistRepository, WhitelistRepository>();
             services.AddScoped<IGenreRepository, GenreRepository>();
             services.AddScoped<IProgressRepository, ProgressRepository>();
             services.AddScoped<ICharacterRepository, CharacterRepository>();

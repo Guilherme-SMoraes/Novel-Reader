@@ -15,7 +15,8 @@ import type {
   Work,
   WorkType,
   User,
-  AuthResponse
+  AuthResponse,
+  WhitelistEntry
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -303,8 +304,8 @@ export const imagesApi = {
         else if (errData.errors) {
           errorMsg = Object.values(errData.errors).flat().join(', ');
         }
-      } catch {
-        // Ignore body parsing errors on non-json error responses
+      } catch (parseErr) {
+        console.warn('Erro ao processar corpo de resposta JSON:', parseErr);
       }
       throw new Error(errorMsg);
     }
@@ -320,4 +321,17 @@ export const authApi = {
       body: JSON.stringify({ idToken }),
     }),
   getMe: () => request<User>('/auth/me'),
+};
+
+export const whitelistApi = {
+  getAll: () => request<WhitelistEntry[]>('/whitelist'),
+  add: (email: string) =>
+    request<WhitelistEntry>('/whitelist', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  remove: (id: string) =>
+    request<void>(`/whitelist/${id}`, {
+      method: 'DELETE',
+    }),
 };

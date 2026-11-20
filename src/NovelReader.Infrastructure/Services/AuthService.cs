@@ -15,17 +15,20 @@ namespace NovelReader.Infrastructure.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IWhitelistRepository _whitelistRepository;
         private readonly ICurrentUserService _currentUserService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             IUserRepository userRepository,
+            IWhitelistRepository whitelistRepository,
             ICurrentUserService currentUserService,
             IConfiguration configuration,
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
+            _whitelistRepository = whitelistRepository;
             _currentUserService = currentUserService;
             _configuration = configuration;
             _logger = logger;
@@ -57,16 +60,33 @@ namespace NovelReader.Infrastructure.Services
                 throw new UnauthorizedAccessException("Credencial do Google inválida ou expirada.");
             }
 
+            var normalizedEmail = payload.Email.Trim().ToLowerInvariant();
+            var isAdminEmail = normalizedEmail.Equals(User.AdminEmail, StringComparison.OrdinalIgnoreCase);
+
+            var isAllowed = isAdminEmail || await _whitelistRepository.IsEmailAllowedAsync(normalizedEmail, cancellationToken);
+            if (!isAllowed)
+            {
+                _logger.LogWarning("Tentativa de login não autorizada para o e-mail: {Email}", normalizedEmail);
+                throw new UnauthorizedAccessException("Acesso restrito. Seu e-mail não possui permissão para acessar o sistema. Solicite acesso ao administrador.");
+            }
+
+            if (isAdminEmail && !await _whitelistRepository.IsEmailAllowedAsync(normalizedEmail, cancellationToken))
+            {
+                await _whitelistRepository.CreateAsync(new WhitelistEntry(normalizedEmail, "System"), cancellationToken);
+            }
+
             var user = await _userRepository.GetByGoogleIdAsync(payload.Subject, cancellationToken);
             if (user == null)
             {
                 var isFirstUser = !await _userRepository.HasAnyUserAsync(cancellationToken);
+                var role = (isAdminEmail || isFirstUser) ? "Admin" : "User";
 
                 user = new User(
                     payload.Subject,
                     payload.Email,
                     payload.Name,
-                    payload.Picture
+                    payload.Picture,
+                    role
                 );
 
                 await _userRepository.CreateAsync(user, cancellationToken);
@@ -79,6 +99,10 @@ namespace NovelReader.Infrastructure.Services
             }
             else
             {
+                if (isAdminEmail && user.Role != "Admin")
+                {
+                    user.SetRole("Admin");
+                }
                 user.UpdateProfile(payload.Name, payload.Picture);
                 await _userRepository.UpdateAsync(user, cancellationToken);
             }
@@ -90,7 +114,8 @@ namespace NovelReader.Infrastructure.Services
                 user.Id,
                 user.Email,
                 user.Name,
-                user.AvatarUrl
+                user.AvatarUrl,
+                user.Role
             );
         }
 
@@ -107,7 +132,7 @@ namespace NovelReader.Infrastructure.Services
                 return null;
             }
 
-            return new UserDto(user.Id, user.Email, user.Name, user.AvatarUrl);
+            return new UserDto(user.Id, user.Email, user.Name, user.AvatarUrl, user.Role);
         }
 
         private string GenerateJwtToken(User user)
@@ -127,6 +152,8 @@ namespace NovelReader.Infrastructure.Services
                 new(ClaimTypes.Email, user.Email),
                 new(JwtRegisteredClaimNames.Name, user.Name),
                 new(ClaimTypes.Name, user.Name),
+                new(ClaimTypes.Role, user.Role),
+                new("role", user.Role),
             };
 
             if (!string.IsNullOrWhiteSpace(user.AvatarUrl))

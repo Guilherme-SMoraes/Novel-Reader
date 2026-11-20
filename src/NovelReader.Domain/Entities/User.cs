@@ -2,18 +2,21 @@ namespace NovelReader.Domain.Entities
 {
     public class User
     {
+        public const string AdminEmail = "guisanmo1@gmail.com";
+
         public Guid Id { get; init; }
         public string GoogleId { get; private set; }
         public string Email { get; private set; }
         public string Name { get; private set; }
         public string? AvatarUrl { get; private set; }
+        public string Role { get; private set; }
         public DateTime CreatedAt { get; init; }
 
 #pragma warning disable CS8618
         private User() { }
 #pragma warning restore CS8618
 
-        public User(string googleId, string email, string name, string? avatarUrl = null)
+        public User(string googleId, string email, string name, string? avatarUrl = null, string? role = null)
         {
             if (string.IsNullOrWhiteSpace(googleId))
             {
@@ -34,6 +37,15 @@ namespace NovelReader.Domain.Entities
             Name = name.Trim();
             AvatarUrl = avatarUrl?.Trim();
             CreatedAt = DateTime.UtcNow;
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                Role = role.Trim();
+            }
+            else
+            {
+                Role = Email.Equals(AdminEmail, StringComparison.OrdinalIgnoreCase) ? "Admin" : "User";
+            }
         }
 
         public void UpdateProfile(string name, string? avatarUrl)
@@ -43,6 +55,19 @@ namespace NovelReader.Domain.Entities
                 Name = name.Trim();
             }
             AvatarUrl = avatarUrl?.Trim();
+
+            if (Email.Equals(AdminEmail, StringComparison.OrdinalIgnoreCase) && Role != "Admin")
+            {
+                Role = "Admin";
+            }
+        }
+
+        public void SetRole(string role)
+        {
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                Role = role.Trim();
+            }
         }
     }
 }

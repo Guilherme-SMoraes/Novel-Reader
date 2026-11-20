@@ -7,13 +7,15 @@ namespace NovelReader.Application.DTOs.Auth
         Guid UserId,
         string Email,
         string Name,
-        string? AvatarUrl
+        string? AvatarUrl,
+        string Role
     );
 
     public record UserDto(
         Guid Id,
         string Email,
         string Name,
-        string? AvatarUrl
+        string? AvatarUrl,
+        string Role
     );
 }

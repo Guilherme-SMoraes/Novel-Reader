@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { BookOpen, ShieldCheck, KeyRound } from 'lucide-react';
+import { BookOpen, ShieldCheck, KeyRound, ShieldAlert } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const isGoogleConfigured = !!googleClientId && googleClientId !== 'your_google_oauth_client_id_here.apps.googleusercontent.com';
@@ -19,11 +20,14 @@ export const LoginPage: React.FC = () => {
     }
 
     setLoading(true);
+    setErrorMessage(null);
     try {
       await loginWithGoogle(credentialResponse.credential);
       showToast('Login realizado com sucesso! Bem-vindo de volta.', 'success');
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Falha ao autenticar com o Google.', 'error');
+      const msg = err instanceof Error ? err.message : 'Falha ao autenticar com o Google.';
+      setErrorMessage(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -83,6 +87,28 @@ export const LoginPage: React.FC = () => {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          {errorMessage && (
+            <div
+              style={{
+                width: '100%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                color: '#fca5a5',
+                fontSize: '0.85rem',
+                textAlign: 'left',
+                lineHeight: 1.45,
+              }}
+            >
+              <ShieldAlert size={20} style={{ flexShrink: 0, marginTop: 1, color: '#ef4444' }} />
+              <div>{errorMessage}</div>
+            </div>
+          )}
+
           {isGoogleConfigured ? (
             <div style={{ minHeight: '44px', display: 'flex', justifyContent: 'center', width: '100%' }}>
               <GoogleLogin

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import type { Genre, ReadingStatus, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
-import { SlidersHorizontal, Plus, BookOpen, LogOut } from 'lucide-react';
+import { SlidersHorizontal, Plus, BookOpen, LogOut, ShieldCheck } from 'lucide-react';
 import { SidebarWorksSkeleton } from './Skeletons';
 import { getUnitLabel } from '../utils/formatLabels';
 import { useAuth } from '../context/AuthContext';
 import { useInfiniteTrigger } from '../hooks/useInfiniteScroll';
+import { ManageWhitelistModal } from './ManageWhitelistModal';
 
 interface Props {
   works: Work[];
@@ -54,6 +55,7 @@ export const Sidebar: React.FC<Props> = ({
 }) => {
   const { user, logout } = useAuth();
   const [showFiltersPopover, setShowFiltersPopover] = useState(false);
+  const [isWhitelistOpen, setIsWhitelistOpen] = useState(false);
 
   const { sentinelRef } = useInfiniteTrigger({
     onIntersect: onLoadMore || (() => {}),
@@ -300,14 +302,44 @@ export const Sidebar: React.FC<Props> = ({
               </div>
             </div>
           </div>
-          <button
-            onClick={logout}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Sair da Conta"
-          >
-            <LogOut size={16} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {user.role === 'Admin' && (
+              <button
+                type="button"
+                onClick={() => setIsWhitelistOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#60a5fa',
+                  cursor: 'pointer',
+                  padding: 6,
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.15s ease',
+                }}
+                title="Gerenciar Acessos (Whitelist)"
+              >
+                <ShieldCheck size={18} />
+              </button>
+            )}
+            <button
+              onClick={logout}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Sair da Conta"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
+      )}
+
+      {isWhitelistOpen && (
+        <ManageWhitelistModal
+          isOpen={isWhitelistOpen}
+          onClose={() => setIsWhitelistOpen(false)}
+        />
       )}
     </aside>
   );

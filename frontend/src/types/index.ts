@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatarUrl?: string | null;
+  role: string;
 }
 
 export interface AuthResponse {
@@ -11,6 +12,14 @@ export interface AuthResponse {
   email: string;
   name: string;
   avatarUrl?: string | null;
+  role: string;
+}
+
+export interface WhitelistEntry {
+  id: string;
+  email: string;
+  createdAt: string;
+  createdBy: string;
 }
 
 export type WorkType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;

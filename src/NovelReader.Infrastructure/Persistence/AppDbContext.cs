@@ -16,6 +16,7 @@ namespace NovelReader.Infrastructure.Persistence
         public Guid? CurrentUserId => _currentUserService?.UserId;
 
         public DbSet<User> Users { get; set; }
+        public DbSet<WhitelistEntry> WhitelistEntries { get; set; }
         public DbSet<Work> Works { get; set; }
         public DbSet<WorkFormat> WorkFormats { get; set; }
         public DbSet<Genre> Genres { get; set; }
