@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { Progress, Work, WorkType } from '../types';
 import { WorkTypeLabels } from '../types';
 import { progressApi } from '../services/api';
@@ -120,14 +120,19 @@ export const ReadingJournal: React.FC<Props> = ({ work, progressList = [], onPro
     loadFormatProgress(selectedWorkType, 1, false);
   }, [selectedWorkType, work.id, loadFormatProgress]);
 
+  const draftRestoredRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (draftRestoredRef.current === work.id) return;
     const activeDraft = getActiveDraftMeta();
     if (activeDraft && activeDraft.type === 'progress' && activeDraft.workId === work.id) {
       if (activeDraft.mode === 'create') {
+        draftRestoredRef.current = work.id;
         setIsModalOpen(true);
       } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
         const item = formatRecords.find((p) => p.id === activeDraft.entityId);
         if (item) {
+          draftRestoredRef.current = work.id;
           setProgressToEdit(item);
         }
       }

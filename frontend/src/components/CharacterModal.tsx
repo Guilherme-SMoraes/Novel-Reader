@@ -16,6 +16,7 @@ import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
+import { ConfirmModal } from './ConfirmModal';
 import {
   X,
   Minus,
@@ -82,6 +83,8 @@ export const CharacterModal: React.FC<Props> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasModifiedTags, setHasModifiedTags] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const isClosingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -281,14 +284,23 @@ export const CharacterModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isClosingRef.current) return;
     if (isDirty()) {
-      const confirmed = window.confirm(
-        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
-      );
-      if (confirmed) {
-        discardDraft(effectiveSessionId, 'character', workId);
-      }
+      setShowDiscardConfirm(true);
+      return;
     }
+    isClosingRef.current = true;
+    if (isPoppedOut) {
+      closePopout();
+    }
+    closeModal(effectiveSessionId);
+    onClose(hasModifiedTags);
+  };
+
+  const handleConfirmDiscard = () => {
+    isClosingRef.current = true;
+    discardDraft(effectiveSessionId, 'character', workId);
+    setShowDiscardConfirm(false);
     if (isPoppedOut) {
       closePopout();
     }
@@ -308,7 +320,7 @@ export const CharacterModal: React.FC<Props> = ({
     }
   };
 
-  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut);
+  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut && !showDiscardConfirm);
 
   if (!isOpen || isMinimized) return null;
 
@@ -1101,21 +1113,32 @@ export const CharacterModal: React.FC<Props> = ({
       </div>
     );
 
-  if (isPoppedOut && popoutContainer) {
-    return createPortal(modalContent, popoutContainer);
-  }
-
-  return createPortal(
-    <div
-      className="modal-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isDirty()) {
-          handleClose();
-        }
-      }}
-    >
-      {modalContent}
-    </div>,
-    document.body
+  return (
+    <>
+      {isPoppedOut && popoutContainer
+        ? createPortal(modalContent, popoutContainer)
+        : createPortal(
+            <div
+              className="modal-overlay"
+              onClick={(e) => {
+                if (e.target === e.currentTarget && !isDirty()) {
+                  handleClose();
+                }
+              }}
+            >
+              {modalContent}
+            </div>,
+            document.body
+          )}
+      <ConfirmModal
+        isOpen={showDiscardConfirm}
+        title="Descartar Rascunho"
+        message="Existem alterações não salvas neste formulário. Deseja descartar o rascunho salvo ou continuar editando?"
+        confirmText="Descartar Rascunho"
+        danger={true}
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
+    </>
   );
 };

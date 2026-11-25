@@ -33,23 +33,23 @@ export const ModalDockProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const restoreModal = useCallback((id: string) => {
-    setMinimizedModals((prev) => {
-      const item = prev.find((m) => m.id === id);
-      if (item) {
-        item.onRestore();
-      }
-      return prev.filter((m) => m.id !== id);
-    });
-  }, []);
+    const item = minimizedModals.find((m) => m.id === id);
+    if (item) {
+      item.onRestore();
+    }
+    setMinimizedModals((prev) => prev.filter((m) => m.id !== id));
+  }, [minimizedModals]);
+
+  const dismissModal = useCallback((id: string) => {
+    const item = minimizedModals.find((m) => m.id === id);
+    if (item) {
+      item.onClose();
+    }
+    setMinimizedModals((prev) => prev.filter((m) => m.id !== id));
+  }, [minimizedModals]);
 
   const closeModal = useCallback((id: string) => {
-    setMinimizedModals((prev) => {
-      const item = prev.find((m) => m.id === id);
-      if (item) {
-        item.onClose();
-      }
-      return prev.filter((m) => m.id !== id);
-    });
+    setMinimizedModals((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
   const updateModalTitle = useCallback((id: string, title: string) => {
@@ -199,7 +199,7 @@ export const ModalDockProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    closeModal(m.id);
+                    dismissModal(m.id);
                   }}
                   title="Fechar e descartar rascunho"
                 >

@@ -9,6 +9,7 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
 import { GenreMultiSelect } from './GenreMultiSelect';
+import { ConfirmModal } from './ConfirmModal';
 import { X, Minus, Layers, Plus } from 'lucide-react';
 import { ImageInput } from './ImageInput';
 import {
@@ -78,6 +79,8 @@ export const WorkModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const isClosingRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
 
@@ -324,19 +327,25 @@ export const WorkModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isClosingRef.current) return;
     if (isDirty()) {
-      const confirmed = window.confirm(
-        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
-      );
-      if (confirmed) {
-        discardDraft(effectiveSessionId, 'work');
-      }
+      setShowDiscardConfirm(true);
+      return;
     }
+    isClosingRef.current = true;
     closeModal(effectiveSessionId);
     onClose();
   };
 
-  useEscapeKey(handleClose, isOpen && !isMinimized && !loading);
+  const handleConfirmDiscard = () => {
+    isClosingRef.current = true;
+    discardDraft(effectiveSessionId, 'work');
+    setShowDiscardConfirm(false);
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  useEscapeKey(handleClose, isOpen && !isMinimized && !loading && !showDiscardConfirm);
 
   if (!isOpen || isMinimized) return null;
 
@@ -934,6 +943,16 @@ export const WorkModal: React.FC<Props> = ({
           </div>
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={showDiscardConfirm}
+        title="Descartar Rascunho"
+        message="Existem alterações não salvas neste formulário. Deseja descartar o rascunho salvo ou continuar editando?"
+        confirmText="Descartar Rascunho"
+        danger={true}
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
     </div>,
     document.body
   );

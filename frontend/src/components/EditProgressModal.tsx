@@ -9,6 +9,7 @@ import { usePopoutModal } from '../hooks/usePopoutModal';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useCtrlEnterSubmit } from '../hooks/useCtrlEnterSubmit';
 import { saveFormDraft, getFormDraft, discardDraft } from '../utils/formDrafts';
+import { ConfirmModal } from './ConfirmModal';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownViewer } from './MarkdownViewer';
 import { X, Minus, ExternalLink, ArrowDownLeft } from 'lucide-react';
@@ -41,6 +42,8 @@ export const EditProgressModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasRecoveredDraft, setHasRecoveredDraft] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const isClosingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
@@ -133,14 +136,23 @@ export const EditProgressModal: React.FC<Props> = ({
   };
 
   const handleClose = () => {
+    if (isClosingRef.current) return;
     if (isDirty()) {
-      const confirmed = window.confirm(
-        'Deseja descartar as alterações deste rascunho? Clique em OK para descartar ou Cancelar para manter o rascunho salvo.'
-      );
-      if (confirmed) {
-        discardDraft(effectiveSessionId, 'progress', workId);
-      }
+      setShowDiscardConfirm(true);
+      return;
     }
+    isClosingRef.current = true;
+    if (isPoppedOut) {
+      closePopout();
+    }
+    closeModal(effectiveSessionId);
+    onClose();
+  };
+
+  const handleConfirmDiscard = () => {
+    isClosingRef.current = true;
+    discardDraft(effectiveSessionId, 'progress', workId);
+    setShowDiscardConfirm(false);
     if (isPoppedOut) {
       closePopout();
     }
@@ -160,7 +172,7 @@ export const EditProgressModal: React.FC<Props> = ({
     }
   };
 
-  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut);
+  useEscapeKey(handleClose, isOpen && !isMinimized && !isPoppedOut && !showDiscardConfirm);
 
   if (!isOpen || isMinimized) return null;
 
@@ -439,21 +451,32 @@ export const EditProgressModal: React.FC<Props> = ({
     </div>
   );
 
-  if (isPoppedOut && popoutContainer) {
-    return createPortal(modalContent, popoutContainer);
-  }
-
-  return createPortal(
-    <div
-      className="modal-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isDirty()) {
-          handleClose();
-        }
-      }}
-    >
-      {modalContent}
-    </div>,
-    document.body
+  return (
+    <>
+      {isPoppedOut && popoutContainer
+        ? createPortal(modalContent, popoutContainer)
+        : createPortal(
+            <div
+              className="modal-overlay"
+              onClick={(e) => {
+                if (e.target === e.currentTarget && !isDirty()) {
+                  handleClose();
+                }
+              }}
+            >
+              {modalContent}
+            </div>,
+            document.body
+          )}
+      <ConfirmModal
+        isOpen={showDiscardConfirm}
+        title="Descartar Rascunho"
+        message="Existem alterações não salvas neste formulário. Deseja descartar o rascunho salvo ou continuar editando?"
+        confirmText="Descartar Rascunho"
+        danger={true}
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
+    </>
   );
 };

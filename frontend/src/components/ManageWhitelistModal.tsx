@@ -4,6 +4,7 @@ import type { WhitelistEntry } from '../types';
 import { whitelistApi } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { ConfirmModal } from './ConfirmModal';
 import { X, ShieldCheck, UserPlus, Trash2, Mail, ShieldAlert, Loader2, Edit2, Check, Tag } from 'lucide-react';
 
 interface Props {
@@ -23,8 +24,9 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDescription, setEditingDescription] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [entryToRevoke, setEntryToRevoke] = useState<WhitelistEntry | null>(null);
 
-  useEscapeKey(onClose, isOpen);
+  useEscapeKey(onClose, isOpen && !entryToRevoke);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -96,15 +98,19 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleRemove = async (entry: WhitelistEntry) => {
+  const handleRemove = (entry: WhitelistEntry) => {
     if (entry.email.toLowerCase() === 'guisanmo1@gmail.com') {
       showToast('O administrador principal não pode ser removido da whitelist.', 'error');
       return;
     }
 
-    const confirmed = window.confirm(`Deseja revogar o acesso do e-mail "${entry.email}"?`);
-    if (!confirmed) return;
+    setEntryToRevoke(entry);
+  };
 
+  const handleConfirmRevoke = async () => {
+    if (!entryToRevoke) return;
+    const entry = entryToRevoke;
+    setEntryToRevoke(null);
     setDeletingId(entry.id);
     try {
       await whitelistApi.remove(entry.id);
@@ -117,7 +123,9 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  return createPortal(
+  return (
+    <>
+      {createPortal(
     <div
       className="modal-overlay"
       onClick={e => {
@@ -573,5 +581,17 @@ export const ManageWhitelistModal: React.FC<Props> = ({ isOpen, onClose }) => {
       </div>
     </div>,
     document.body
+    )}
+    <ConfirmModal
+      isOpen={!!entryToRevoke}
+      title="Revogar Acesso"
+      message={`Deseja revogar o acesso do e-mail "${entryToRevoke?.email}"?`}
+      confirmText="Revogar"
+      cancelText="Cancelar"
+      danger={true}
+      onConfirm={handleConfirmRevoke}
+      onCancel={() => setEntryToRevoke(null)}
+    />
+    </>
   );
 };

@@ -93,39 +93,44 @@ export function App() {
     }
   };
 
+  const draftRestoredRef = useRef(false);
+
   useEffect(() => {
     if (isAuthenticated) {
-      cleanupExpiredDrafts();
-      fetchGenres();
-      const activeDraft = getActiveDraftMeta();
-      if (activeDraft) {
-        if (activeDraft.type === 'work') {
-          if (activeDraft.mode === 'create') {
-            setWorkToEdit(null);
-            setIsWorkModalOpen(true);
-          } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
-            worksApi
-              .getById(activeDraft.entityId)
-              .then((w) => {
-                setWorkToEdit(w);
-                setIsWorkModalOpen(true);
-              })
-              .catch((err) => {
-                console.error('Failed to load work for draft restoration', err);
-              });
-          }
-        } else if (activeDraft.workId) {
-          setSelectedWorkId(activeDraft.workId);
-          selectedWorkIdRef.current = activeDraft.workId;
-          const targetTab =
-            activeDraft.type === 'progress'
-              ? 'journal'
-              : activeDraft.type === 'character'
-              ? 'characters'
-              : 'attachments';
-          updateNavParams({ workId: activeDraft.workId, tab: targetTab });
-          if (isMobile) {
-            setMobileView('detail');
+      if (!draftRestoredRef.current) {
+        draftRestoredRef.current = true;
+        cleanupExpiredDrafts();
+        fetchGenres();
+        const activeDraft = getActiveDraftMeta();
+        if (activeDraft) {
+          if (activeDraft.type === 'work') {
+            if (activeDraft.mode === 'create') {
+              setWorkToEdit(null);
+              setIsWorkModalOpen(true);
+            } else if (activeDraft.mode === 'edit' && activeDraft.entityId) {
+              worksApi
+                .getById(activeDraft.entityId)
+                .then((w) => {
+                  setWorkToEdit(w);
+                  setIsWorkModalOpen(true);
+                })
+                .catch((err) => {
+                  console.error('Failed to load work for draft restoration', err);
+                });
+            }
+          } else if (activeDraft.workId) {
+            setSelectedWorkId(activeDraft.workId);
+            selectedWorkIdRef.current = activeDraft.workId;
+            const targetTab =
+              activeDraft.type === 'progress'
+                ? 'journal'
+                : activeDraft.type === 'character'
+                ? 'characters'
+                : 'attachments';
+            updateNavParams({ workId: activeDraft.workId, tab: targetTab });
+            if (isMobile) {
+              setMobileView('detail');
+            }
           }
         }
       }
@@ -141,6 +146,7 @@ export function App() {
         }
       }
     } else if (!authLoading) {
+      draftRestoredRef.current = false;
       setGenres([]);
       setWorks([]);
       setSelectedWorkId(null);

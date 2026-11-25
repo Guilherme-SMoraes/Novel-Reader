@@ -37,12 +37,13 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
   const { showToast } = useToast();
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const initialDraftRestoredRef = useRef<string | null>(null);
 
   useEffect(() => {
     const savedIds = getSessionList('character', work.id);
-    const activeDraft = getActiveDraftMeta();
     const allIds = new Set<string>(savedIds);
-    if (activeDraft && activeDraft.type === 'character' && activeDraft.workId === work.id) {
+    const activeDraft = getActiveDraftMeta();
+    if (initialDraftRestoredRef.current !== work.id && activeDraft && activeDraft.type === 'character' && activeDraft.workId === work.id) {
       allIds.add(activeDraft.sessionKey);
     }
 
@@ -63,6 +64,9 @@ export const CharacterList: React.FC<Props> = ({ work, characters, loading = fal
             merged.push({ id, character: null });
           }
         });
+        if (merged.length > 0) {
+          initialDraftRestoredRef.current = work.id;
+        }
         saveSessionList('character', work.id, merged.map((s) => s.id));
         return merged;
       });

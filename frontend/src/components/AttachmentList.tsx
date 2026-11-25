@@ -27,12 +27,13 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
   const [selectedAttachmentForView, setSelectedAttachmentForView] = useState<Attachment | null>(null);
   const { showToast } = useToast();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const initialDraftRestoredRef = useRef<string | null>(null);
 
   useEffect(() => {
     const savedIds = getSessionList('attachment', work.id);
-    const activeDraft = getActiveDraftMeta();
     const allIds = new Set<string>(savedIds);
-    if (activeDraft && activeDraft.type === 'attachment' && activeDraft.workId === work.id) {
+    const activeDraft = getActiveDraftMeta();
+    if (initialDraftRestoredRef.current !== work.id && activeDraft && activeDraft.type === 'attachment' && activeDraft.workId === work.id) {
       allIds.add(activeDraft.sessionKey);
     }
 
@@ -53,6 +54,9 @@ export const AttachmentList: React.FC<Props> = ({ work, attachments, onAttachmen
             merged.push({ id, attachment: null });
           }
         });
+        if (merged.length > 0) {
+          initialDraftRestoredRef.current = work.id;
+        }
         saveSessionList('attachment', work.id, merged.map((s) => s.id));
         return merged;
       });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
@@ -7,6 +8,7 @@ interface Props {
   title: string;
   message: string;
   confirmText?: string;
+  cancelText?: string;
   danger?: boolean;
   onConfirm: () => Promise<void> | void;
   onCancel: () => void;
@@ -17,6 +19,7 @@ export const ConfirmModal: React.FC<Props> = ({
   title,
   message,
   confirmText = 'Excluir',
+  cancelText = 'Cancelar',
   danger = true,
   onConfirm,
   onCancel,
@@ -39,8 +42,8 @@ export const ConfirmModal: React.FC<Props> = ({
     }
   };
 
-  return (
-    <div className="modal-overlay">
+  return createPortal(
+    <div className="modal-overlay" style={{ zIndex: 1200 }}>
       <div className="modal-content" style={{ maxWidth: 460, width: '100%', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -77,7 +80,7 @@ export const ConfirmModal: React.FC<Props> = ({
             className="btn-secondary"
             style={{ padding: '8px 16px' }}
           >
-            Cancelar
+            {cancelText}
           </button>
           <button
             type="button"
@@ -100,6 +103,7 @@ export const ConfirmModal: React.FC<Props> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
